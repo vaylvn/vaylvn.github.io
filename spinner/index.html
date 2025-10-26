@@ -56,60 +56,30 @@ const ctx = canvas.getContext("2d");
 let config = {spinDelay:0,autoSpin:false,arrowAngle:0,segments:[]};
 let spinning=false;
 let currentRotation=0;
-const POINTER_COLOR="#222";
+const POINTER_COLOR="#111";
 
 /* ---------- Spinner Rendering ---------- */
 function drawSpinner(cfg,rotation=0){
   currentRotation = rotation;
   const total = cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
 
-  // Adjust pointer position based on arrow angle
-  const pointerPos = ((2*Math.PI - rotation) + (cfg.arrowAngle*Math.PI/180)) % (2*Math.PI);
-  let highlightedIndex=-1;
-
-  // find which segment pointer is over
-  let testStart=0;
-  cfg.segments.forEach((seg,i)=>{
-    const ang=(seg.weight/total)*2*Math.PI;
-    const end=testStart+ang;
-    if(pointerPos>=testStart && pointerPos<end) highlightedIndex=i;
-    testStart=end;
-  });
-
   ctx.clearRect(0,0,400,400);
+  let start = rotation;
 
-  // ----- Pass 1: fills -----
-  let drawStart = rotation;
-  cfg.segments.forEach((seg)=>{
+  cfg.segments.forEach(seg=>{
     const ang=(seg.weight/total)*2*Math.PI;
     ctx.beginPath();
     ctx.moveTo(200,200);
-    ctx.arc(200,200,200,drawStart,drawStart+ang);
+    ctx.arc(200,200,200,start,start+ang);
     ctx.closePath();
     ctx.fillStyle = seg.color || "#888";
     ctx.fill();
-    drawStart += ang;
-  });
-
-  // ----- Pass 2: outlines -----
-  drawStart = rotation;
-  cfg.segments.forEach((seg,i)=>{
-    const ang=(seg.weight/total)*2*Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(200,200);
-    ctx.arc(200,200,200,drawStart,drawStart+ang);
-    ctx.closePath();
-    ctx.lineWidth = (i===highlightedIndex)?4:2;
-    ctx.strokeStyle = (i===highlightedIndex)? "#000":"#fff";
+    ctx.strokeStyle="#fff";
+    ctx.lineWidth=2;
     ctx.stroke();
-    drawStart += ang;
-  });
 
-  // ----- Labels -----
-  drawStart = rotation;
-  cfg.segments.forEach((seg)=>{
-    const ang=(seg.weight/total)*2*Math.PI;
-    const mid = drawStart + ang/2;
+    // label
+    const mid=start+ang/2;
     ctx.save();
     ctx.translate(200,200);
     ctx.rotate(mid);
@@ -118,17 +88,18 @@ function drawSpinner(cfg,rotation=0){
     ctx.font="16px sans-serif";
     ctx.fillText(seg.label,180,5);
     ctx.restore();
-    drawStart += ang;
+
+    start+=ang;
   });
 
-  // ----- Pointer (rotatable) -----
+  // Draw pointer last, relative to angle
   ctx.save();
   ctx.translate(200,200);
   ctx.rotate(cfg.arrowAngle*Math.PI/180);
   ctx.beginPath();
-  ctx.moveTo(-10,-200);
+  ctx.moveTo(-10,-200);   // base width
   ctx.lineTo(10,-200);
-  ctx.lineTo(0,-220);
+  ctx.lineTo(0,-220);     // tip above the circle
   ctx.closePath();
   ctx.fillStyle=POINTER_COLOR;
   ctx.fill();
@@ -142,7 +113,7 @@ function startSpin(){
   const duration=4000;
   const startTime=performance.now();
   const startRot=currentRotation;
-  const targetRot=startRot + 10*Math.PI + Math.random()*Math.PI; // random stop
+  const targetRot=startRot + 10*Math.PI + Math.random()*Math.PI;
   requestAnimationFrame(function anim(now){
     const p=Math.min((now-startTime)/duration,1);
     const eased=1-Math.pow(1-p,3);
@@ -225,9 +196,7 @@ if(!dataParam){
     config=JSON.parse(atob(dataParam));
     drawSpinner(config);
 
-    // Allow manual click-to-spin
     canvas.onclick=startSpin;
-
     if(config.autoSpin){
       const delay=(config.spinDelay??0)*1000;
       setTimeout(startSpin,delay);
