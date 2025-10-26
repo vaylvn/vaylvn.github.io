@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Doc Redactor — Client-side Demo</title>
+
+<style>
+  :root{--bg:#0f1720;--panel:#071323;--muted:#9fb1c8;--accent:#1f3342}
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e6eef8;margin:18px}
+  .wrap{max-width:980px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:center}
+  h1{font-size:18px;margin:0 0 8px}
+  .controls{display:flex;gap:.5rem;align-items:center;margin:10px 0 14px}
+  input[type=file]{padding:.35rem;border-radius:6px;background:var(--accent);border:1px solid #274;color:#e6eef8}
+  button{padding:.4rem .7rem;border-radius:6px;border:1px solid #274;background:var(--accent);color:#e6eef8;cursor:pointer}
+  textarea#input{width:100%;min-height:140px;padding:.6rem;background:var(--panel);border:1px solid #223;color:#e6eef8;font-family:monospace}
+  #preview{border:1px solid #223;background:var(--panel);min-height:200px;padding:12px;overflow:auto;white-space:pre-wrap}
+  mark.entity{padding:0 .12rem;border-radius:4px;cursor:pointer}
+  mark[data-entity="EMAIL"]{background:#ffc857;color:#111}
+  mark[data-entity="PHONE"]{background:#90be6d;color:#042}
+  mark[data-entity="DATE"]{background:#8ecae6;color:#042}
+  mark[data-entity="NAME"]{background:#d4a5ff;color:#111}
+  mark.redacted{background:#000;color:#000}
+  .hint{color:var(--muted);font-size:13px;margin-top:8px}
+  footer{color:#7f97ab;margin-top:14px;font-size:13px}
+  label.small{font-size:13px;color:var(--muted)}
+</style>
+
+<!-- lightweight NLP + docx parser -->
+<script src="https://unpkg.com/compromise@13.11.0/builds/compromise.min.js"></script>
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Doc Redactor — Client-side demo</h1>
+      <div class="hint">Paste text or upload a .docx file. Everything runs locally in your browser.</div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <input id="fileInput" type="file" accept=".txt,.md,.docx"/>
+    <button id="btnDetect">Detect Entities</button>
+    <button id="btnDownload">Download Redacted</button>
+    <button id="btnClear">Clear</button>
+  </div>
+
+  <label class="small">Or paste text here:</label>
+  <textarea id="input" placeholder="Paste or type text here..."></textarea>
+
+  <div style="margin-top:10px">
+    <label class="small">Detected text preview (click highlights to toggle redaction):</label>
+    <div id="preview" tabindex="0" aria-label="Detected text area"></div>
+  </div>
+
+  <p class="hint">Nothing is uploaded; detections use lightweight regex + compromise NLP. Not for production use but good for learning and testing.</p>
+  <footer>Click a highlight to black it out. Use Ctrl + Enter to re-run detection on pasted text.</footer>
+</div>
+
+<script>
+/* ---------- Utilities ---------- */
+const escapeHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const PHONE_RE = /\+?\d[\d \-\(\)]{6,}\d/g;
+const DATE_RE = /\b\d{1,2}[\/\-\.\s]\d{1,2}[\/\-\.\s]\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,4}\b/ig;
+
+function findMatches(text){
+  const matches=[];
+  let m;
+  while((m=EMAIL_RE.exec(text))!==null)matches.push({s:m.index,e:m.index+m[0].length,l:'EMAIL',t:m[0]});
+  while((m=PHONE_RE.exec(text))!==null)matches.push({s:m.index,e:m.index+m[0].length,l:'PHONE',t:m[0]});
+  while((m=DATE_RE.exec(text))!==null)matches.push({s:m.index,e:m.index+m[0].length,l:'DATE',t:m[0]});
+  try{
+    const doc=nlp(text);
+    doc.people().out('offsets').forEach(p=>matches.push({s:p.offset.start,e:p.offset.start+p.offset.length,l:'NAME',t:p.text}));
+  }catch(e){console.warn(e);}
+  matches.sort((a,b)=>a.s-b.s||b.e-a.e);
+  const filtered=[];let lastE=-1;
+  for(const it of matches){if(it.s>=lastE){filtered.push(it);lastE=it.e;}}
+  return filtered;
+}
+
+function highlightText(text,m){
+  if(!m||m.length===0)return escapeHtml(text);
+  let out='',last=0;
+  for(const x of m){
+    out+=escapeHtml(text.slice(last,x.s));
+    const safe=escapeHtml(x.t);
+    out+=`<mark class="entity" data-entity="${x.l}" tabindex="0">${safe}</mark>`;
+    last=x.e;
+  }
+  out+=escapeHtml(text.slice(last));
+  return out;
+}
+
+/* ---------- DOM hooks ---------- */
+const input=document.getElementById('input'),
+      preview=document.getElementById('preview'),
+      fileInput=document.getElementById('fileInput'),
+      btnDetect=document.getElementById('btnDetect'),
+      btnDownload=document.getElementById('btnDownload'),
+      btnClear=document.getElementById('btnClear');
+
+async function doDetect(){
+  let text=input.value||'';
+  if(fileInput.files&&fileInput.files.length>0){
+    const f=fileInput.files[0];
+    if(f.name.toLowerCase().endsWith('.docx')){
+      try{
+        const ab=await f.arrayBuffer();
+        const res=await mammoth.extractRawText({arrayBuffer:ab});
+        text=res.value||'';
+      }catch(err){console.error(err);text=await f.text();}
+    }else{text=await f.text();}
+  }
+  if(!text){preview.innerHTML='<em style="color:#9fb1c8">No text found.</em>';return;}
+  const m=findMatches(text);
+  preview.innerHTML=highlightText(text,m);
+}
+
+/* toggle redaction */
+preview.addEventListener('click',e=>{
+  if(e.target.tagName==='MARK')e.target.classList.toggle('redacted');
+});
+preview.addEventListener('keydown',e=>{
+  if((e.key===' '||e.key==='Enter')&&e.target.tagName==='MARK'){e.preventDefault();e.target.classList.toggle('redacted');}
+});
+
+/* download redacted */
+function downloadRedacted(){
+  const w=document.createTreeWalker(preview,NodeFilter.SHOW_ALL,null,false);
+  const parts=[];let n;
+  while(n=w.nextNode()){
+    if(n.nodeType===3)parts.push(n.nodeValue);
+    else if(n.nodeType===1&&n.tagName==='MARK'){
+      parts.push(n.classList.contains('redacted')?'[REDACTED]':n.textContent);
+    }
+  }
+  const out=parts.join('');
+  const blob=new Blob([out],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='redacted.txt';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+
+/* clear */
+function clearAll(){input.value='';fileInput.value='';preview.innerHTML='';}
+
+/* event hooks */
+btnDetect.addEventListener('click',doDetect);
+btnDownload.addEventListener('click',downloadRedacted);
+btnClear.addEventListener('click',clearAll);
+input.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')doDetect();});
+</script>
+</body>
+</html>
