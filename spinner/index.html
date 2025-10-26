@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vayl Spinner</title>
+<style>
+  body{font-family:sans-serif;margin:20px;text-align:center;background:#fafafa;color:#222}
+  table{margin:10px auto;border-collapse:collapse}
+  td,th{border:1px solid #ccc;padding:4px 6px}
+  input[type=color]{width:40px;height:30px;border:none;background:none}
+  #spinnerCanvas{display:block;margin:20px auto;border-radius:50%;background:white}
+  #editor input,button{margin:4px}
+  #shareUrl{width:80%;padding:4px}
+</style>
+</head>
+<body>
+<div id="editor">
+  <h2>Spinner Configurator</h2>
+  <label>Auto-spin delay (seconds):
+    <input type="number" id="spinDelay" min="0" value="0">
+  </label>
+  <table>
+    <thead><tr><th>Label</th><th>Color</th><th>Weight</th><th></th></tr></thead>
+    <tbody id="segments"></tbody>
+  </table>
+  <button id="addSegment">+ Add Segment</button>
+
+  <h3>Shareable URL</h3>
+  <input id="shareUrl" readonly>
+  <button id="copyUrl">Copy</button>
+
+  <h3>Load Existing</h3>
+  <input id="urlImport" placeholder="Paste spinner URL">
+  <button id="importUrl">Load</button>
+</div>
+
+<canvas id="spinnerCanvas" width="400" height="400"></canvas>
+
+<script>
+const params = new URLSearchParams(location.search);
+const dataParam = params.get("data");
+const editor = document.getElementById("editor");
+const canvas = document.getElementById("spinnerCanvas");
+const ctx = canvas.getContext("2d");
+let config = {spinDelay:0,segments:[]}, spinning=false;
+
+/* ---------- Spinner Rendering ---------- */
+function drawSpinner(cfg,rotation=0){
+  const total=cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
+  let start=rotation;
+  ctx.clearRect(0,0,400,400);
+  cfg.segments.forEach(seg=>{
+    const ang=(seg.weight/total)*2*Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(200,200);
+    ctx.arc(200,200,200,start,start+ang);
+    ctx.fillStyle=seg.color||"#888";
+    ctx.fill();
+    ctx.strokeStyle="#fff";
+    ctx.lineWidth=2;
+    ctx.stroke();
+    const mid=start+ang/2;
+    ctx.save();
+    ctx.translate(200,200);
+    ctx.rotate(mid);
+    ctx.textAlign="right";
+    ctx.fillStyle="#000";
+    ctx.font="16px sans-serif";
+    ctx.fillText(seg.label,180,5);
+    ctx.restore();
+    start+=ang;
+  });
+}
+
+function startSpin(){
+  if(spinning||!config.segments.length)return;
+  spinning=true;
+  const duration=4000;
+  const startTime=performance.now();
+  requestAnimationFrame(function anim(now){
+    const p=Math.min((now-startTime)/duration,1);
+    const eased=1-Math.pow(1-p,3);
+    const rot=eased*10*Math.PI;
+    drawSpinner(config,rot);
+    if(p<1)requestAnimationFrame(anim);else spinning=false;
+  });
+}
+
+/* ---------- Editor Mode ---------- */
+if(!dataParam){
+  const tableBody=document.getElementById("segments");
+
+  function addRow(seg={label:"",color:"#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"),weight:1}){
+    const row=document.createElement("tr");
+    row.innerHTML=`
+      <td><input class="label" value="${seg.label}"></td>
+      <td><input type="color" class="color" value="${seg.color}"></td>
+      <td><input type="number" class="weight" min="1" value="${seg.weight}"></td>
+      <td><button class="remove">✕</button></td>`;
+    tableBody.appendChild(row);
+    row.querySelector(".remove").onclick=()=>{row.remove();updateConfig();};
+    ["label","color","weight"].forEach(cls=>{
+      row.querySelector("."+cls).oninput=updateConfig;
+    });
+  }
+
+  document.getElementById("addSegment").onclick=()=>{addRow();updateConfig();};
+  document.getElementById("spinDelay").oninput=updateConfig;
+  document.getElementById("copyUrl").onclick=()=>{
+    navigator.clipboard.writeText(document.getElementById("shareUrl").value);
+  };
+  document.getElementById("importUrl").onclick=()=>{
+    const url=document.getElementById("urlImport").value.trim();
+    try{
+      const u=new URL(url);
+      const enc=u.searchParams.get("data");
+      if(!enc)throw 0;
+      const cfg=JSON.parse(atob(enc));
+      tableBody.innerHTML="";
+      document.getElementById("spinDelay").value=cfg.spinDelay??0;
+      cfg.segments.forEach(addRow);
+      updateConfig();
+    }catch(e){alert("Invalid URL");}
+  };
+
+  function updateConfig(){
+    const rows=[...tableBody.querySelectorAll("tr")];
+    config.segments=rows.map(r=>({
+      label:r.querySelector(".label").value,
+      color:r.querySelector(".color").value,
+      weight:parseFloat(r.querySelector(".weight").value)||1
+    }));
+    config.spinDelay=parseFloat(document.getElementById("spinDelay").value)||0;
+    drawSpinner(config);
+    const encoded=btoa(JSON.stringify(config));
+    const url=`${location.origin}${location.pathname}?data=${encoded}`;
+    document.getElementById("shareUrl").value=url;
+  }
+
+  addRow();
+  updateConfig();
+
+/* ---------- Viewer Mode ---------- */
+}else{
+  editor.style.display="none";
+  try{
+    config=JSON.parse(atob(dataParam));
+    drawSpinner(config);
+    const delay=(config.spinDelay??0)*1000;
+    setTimeout(startSpin,delay);
+  }catch(e){
+    document.body.innerHTML="<h3>Invalid or corrupted spinner data.</h3>";
+  }
+}
+</script>
+</body>
+</html>
