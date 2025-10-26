@@ -46,24 +46,44 @@ const dataParam = params.get("data");
 const editor = document.getElementById("editor");
 const canvas = document.getElementById("spinnerCanvas");
 const ctx = canvas.getContext("2d");
-let config = {spinDelay:0,autoSpin:false,segments:[]}, spinning=false;
+
+let config = {spinDelay:0,autoSpin:false,segments:[]};
+let spinning=false;
+let currentRotation=0;
+const POINTER_COLOR="#222";
 
 /* ---------- Spinner Rendering ---------- */
 function drawSpinner(cfg,rotation=0){
-  const total=cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
-  let start=rotation;
+  currentRotation = rotation;
+  const total = cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
+  const pointerPos = (2*Math.PI - (rotation % (2*Math.PI))) % (2*Math.PI);
+  let highlightedIndex=-1;
+
+  // find which segment the pointer is over
+  let testStart=0;
+  cfg.segments.forEach((seg,i)=>{
+    const ang=(seg.weight/total)*2*Math.PI;
+    const end=testStart+ang;
+    if(pointerPos>=testStart && pointerPos<end) highlightedIndex=i;
+    testStart=end;
+  });
+
+  // draw spinner
   ctx.clearRect(0,0,400,400);
-  cfg.segments.forEach(seg=>{
+  let drawStart=rotation;
+  cfg.segments.forEach((seg,i)=>{
     const ang=(seg.weight/total)*2*Math.PI;
     ctx.beginPath();
     ctx.moveTo(200,200);
-    ctx.arc(200,200,200,start,start+ang);
+    ctx.arc(200,200,200,drawStart,drawStart+ang);
     ctx.fillStyle=seg.color||"#888";
     ctx.fill();
-    ctx.strokeStyle="#fff";
-    ctx.lineWidth=2;
+    ctx.strokeStyle = (i===highlightedIndex) ? "#000" : "#fff";
+    ctx.lineWidth = (i===highlightedIndex) ? 4 : 2;
     ctx.stroke();
-    const mid=start+ang/2;
+
+    // label
+    const mid=drawStart+ang/2;
     ctx.save();
     ctx.translate(200,200);
     ctx.rotate(mid);
@@ -72,19 +92,32 @@ function drawSpinner(cfg,rotation=0){
     ctx.font="16px sans-serif";
     ctx.fillText(seg.label,180,5);
     ctx.restore();
-    start+=ang;
+
+    drawStart+=ang;
   });
+
+  // draw pointer arrow (fixed top)
+  ctx.beginPath();
+  ctx.moveTo(190,10);
+  ctx.lineTo(210,10);
+  ctx.lineTo(200,30);
+  ctx.closePath();
+  ctx.fillStyle=POINTER_COLOR;
+  ctx.fill();
 }
 
+/* ---------- Spin Logic ---------- */
 function startSpin(){
   if(spinning||!config.segments.length)return;
   spinning=true;
   const duration=4000;
   const startTime=performance.now();
+  const startRot=currentRotation;
+  const targetRot=startRot + 10*Math.PI + Math.random()*Math.PI; // random stop
   requestAnimationFrame(function anim(now){
     const p=Math.min((now-startTime)/duration,1);
     const eased=1-Math.pow(1-p,3);
-    const rot=eased*10*Math.PI;
+    const rot=startRot + eased*(targetRot-startRot);
     drawSpinner(config,rot);
     if(p<1)requestAnimationFrame(anim);else spinning=false;
   });
@@ -154,7 +187,7 @@ if(!dataParam){
     config=JSON.parse(atob(dataParam));
     drawSpinner(config);
 
-    // Allow click-to-spin
+    // Allow manual click-to-spin
     canvas.onclick=startSpin;
 
     if(config.autoSpin){
