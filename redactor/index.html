@@ -58,44 +58,55 @@ async function renderPDF(arrayBuffer){
   }
 }
 
-/* draw/drag overlay logic */
-function attachOverlay(canvas,pageNum){
-  // keep this inside attachOverlay(canvas, pageNum)
+function attachOverlay(canvas, pageNum) {
   const ctx = canvas.getContext('2d');
+  redactions[pageNum] = [];
   let start = null;
-  let preview = null;
+  let dragging = false;
 
-  canvas.addEventListener('mousedown', e => {
-    const r = canvas.getBoundingClientRect();
-    start = { x: e.clientX - r.left, y: e.clientY - r.top };
-    preview = null;
-  });
-
-  canvas.addEventListener('mousemove', e => {
-    if (!start) return;
-    const r = canvas.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-
-    // restore snapshot without clearing whole canvas
+  const redrawAll = () => {
     const img = new Image();
     img.src = canvas.dataset.bg;
     img.onload = () => {
       ctx.drawImage(img, 0, 0);
-      // draw existing boxes
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       for (const b of redactions[pageNum] || []) ctx.fillRect(b.x, b.y, b.w, b.h);
-      // draw current preview box
+    };
+  };
+
+  canvas.addEventListener('mousedown', e => {
+    const r = canvas.getBoundingClientRect();
+    start = { x: e.clientX - r.left, y: e.clientY - r.top };
+    dragging = true;
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!dragging || !start) return;
+    const r = canvas.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    // live preview: redraw background + existing boxes + current box
+    const img = new Image();
+    img.src = canvas.dataset.bg;
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      for (const b of redactions[pageNum] || []) ctx.fillRect(b.x, b.y, b.w, b.h);
+
       ctx.strokeStyle = '#00ffff';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.2;
       ctx.strokeRect(start.x, start.y, x - start.x, y - start.y);
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillStyle = 'rgba(0,255,255,0.15)';
       ctx.fillRect(start.x, start.y, x - start.x, y - start.y);
     };
   });
 
-  canvas.addEventListener('mouseup', e => {
-    if (!start) return;
+  // use window to guarantee we catch mouseup even if cursor leaves canvas
+  window.addEventListener('mouseup', e => {
+    if (!dragging || !start) return;
+    dragging = false;
+
     const r = canvas.getBoundingClientRect();
     const end = { x: e.clientX - r.left, y: e.clientY - r.top };
     const x = Math.min(start.x, end.x);
@@ -103,19 +114,14 @@ function attachOverlay(canvas,pageNum){
     const w = Math.abs(end.x - start.x);
     const h = Math.abs(end.y - start.y);
     redactions[pageNum].push({ x, y, w, h });
-
-    // repaint final state once
-    const img = new Image();
-    img.src = canvas.dataset.bg;
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      for (const b of redactions[pageNum] || []) ctx.fillRect(b.x, b.y, b.w, b.h);
-    };
+    redrawAll();
     start = null;
   });
 
+  // clear boxes if needed externally
+  canvas._redrawAll = redrawAll;
 }
+
 
 /* redraw page with all boxes */
 function redraw(canvas,pageNum){
