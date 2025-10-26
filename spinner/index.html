@@ -23,6 +23,12 @@
     Auto-spin enabled:
     <input type="checkbox" id="autoSpin">
   </label>
+  <br>
+  <label>Arrow angle (°):
+    <input type="range" id="arrowAngle" min="0" max="360" value="0" style="width:200px;">
+    <span id="arrowAngleValue">0</span>°
+  </label>
+
   <table>
     <thead><tr><th>Label</th><th>Color</th><th>Weight</th><th></th></tr></thead>
     <tbody id="segments"></tbody>
@@ -47,7 +53,7 @@ const editor = document.getElementById("editor");
 const canvas = document.getElementById("spinnerCanvas");
 const ctx = canvas.getContext("2d");
 
-let config = {spinDelay:0,autoSpin:false,segments:[]};
+let config = {spinDelay:0,autoSpin:false,arrowAngle:0,segments:[]};
 let spinning=false;
 let currentRotation=0;
 const POINTER_COLOR="#222";
@@ -56,10 +62,12 @@ const POINTER_COLOR="#222";
 function drawSpinner(cfg,rotation=0){
   currentRotation = rotation;
   const total = cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
-  const pointerPos = (2*Math.PI - (rotation % (2*Math.PI))) % (2*Math.PI);
+
+  // Adjust pointer position based on arrow angle
+  const pointerPos = ((2*Math.PI - rotation) + (cfg.arrowAngle*Math.PI/180)) % (2*Math.PI);
   let highlightedIndex=-1;
 
-  // find which segment the pointer is over
+  // find which segment pointer is over
   let testStart=0;
   cfg.segments.forEach((seg,i)=>{
     const ang=(seg.weight/total)*2*Math.PI;
@@ -68,22 +76,40 @@ function drawSpinner(cfg,rotation=0){
     testStart=end;
   });
 
-  // draw spinner
   ctx.clearRect(0,0,400,400);
-  let drawStart=rotation;
+
+  // ----- Pass 1: fills -----
+  let drawStart = rotation;
+  cfg.segments.forEach((seg)=>{
+    const ang=(seg.weight/total)*2*Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(200,200);
+    ctx.arc(200,200,200,drawStart,drawStart+ang);
+    ctx.closePath();
+    ctx.fillStyle = seg.color || "#888";
+    ctx.fill();
+    drawStart += ang;
+  });
+
+  // ----- Pass 2: outlines -----
+  drawStart = rotation;
   cfg.segments.forEach((seg,i)=>{
     const ang=(seg.weight/total)*2*Math.PI;
     ctx.beginPath();
     ctx.moveTo(200,200);
     ctx.arc(200,200,200,drawStart,drawStart+ang);
-    ctx.fillStyle=seg.color||"#888";
-    ctx.fill();
-    ctx.strokeStyle = (i===highlightedIndex) ? "#000" : "#fff";
-    ctx.lineWidth = (i===highlightedIndex) ? 4 : 2;
+    ctx.closePath();
+    ctx.lineWidth = (i===highlightedIndex)?4:2;
+    ctx.strokeStyle = (i===highlightedIndex)? "#000":"#fff";
     ctx.stroke();
+    drawStart += ang;
+  });
 
-    // label
-    const mid=drawStart+ang/2;
+  // ----- Labels -----
+  drawStart = rotation;
+  cfg.segments.forEach((seg)=>{
+    const ang=(seg.weight/total)*2*Math.PI;
+    const mid = drawStart + ang/2;
     ctx.save();
     ctx.translate(200,200);
     ctx.rotate(mid);
@@ -92,18 +118,21 @@ function drawSpinner(cfg,rotation=0){
     ctx.font="16px sans-serif";
     ctx.fillText(seg.label,180,5);
     ctx.restore();
-
-    drawStart+=ang;
+    drawStart += ang;
   });
 
-  // draw pointer arrow (fixed top)
+  // ----- Pointer (rotatable) -----
+  ctx.save();
+  ctx.translate(200,200);
+  ctx.rotate(cfg.arrowAngle*Math.PI/180);
   ctx.beginPath();
-  ctx.moveTo(190,10);
-  ctx.lineTo(210,10);
-  ctx.lineTo(200,30);
+  ctx.moveTo(-10,-200);
+  ctx.lineTo(10,-200);
+  ctx.lineTo(0,-220);
   ctx.closePath();
   ctx.fillStyle=POINTER_COLOR;
   ctx.fill();
+  ctx.restore();
 }
 
 /* ---------- Spin Logic ---------- */
@@ -126,6 +155,8 @@ function startSpin(){
 /* ---------- Editor Mode ---------- */
 if(!dataParam){
   const tableBody=document.getElementById("segments");
+  const angleInput=document.getElementById("arrowAngle");
+  const angleValue=document.getElementById("arrowAngleValue");
 
   function addRow(seg={label:"",color:"#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"),weight:1}){
     const row=document.createElement("tr");
@@ -144,6 +175,10 @@ if(!dataParam){
   document.getElementById("addSegment").onclick=()=>{addRow();updateConfig();};
   document.getElementById("spinDelay").oninput=updateConfig;
   document.getElementById("autoSpin").onchange=updateConfig;
+  angleInput.oninput=()=>{
+    angleValue.textContent=angleInput.value;
+    updateConfig();
+  };
   document.getElementById("copyUrl").onclick=()=>{
     navigator.clipboard.writeText(document.getElementById("shareUrl").value);
   };
@@ -157,6 +192,8 @@ if(!dataParam){
       tableBody.innerHTML="";
       document.getElementById("spinDelay").value=cfg.spinDelay??0;
       document.getElementById("autoSpin").checked=!!cfg.autoSpin;
+      angleInput.value = cfg.arrowAngle ?? 0;
+      angleValue.textContent = angleInput.value;
       cfg.segments.forEach(addRow);
       updateConfig();
     }catch(e){alert("Invalid URL");}
@@ -171,6 +208,7 @@ if(!dataParam){
     }));
     config.spinDelay=parseFloat(document.getElementById("spinDelay").value)||0;
     config.autoSpin=document.getElementById("autoSpin").checked;
+    config.arrowAngle=parseFloat(angleInput.value)||0;
     drawSpinner(config);
     const encoded=btoa(JSON.stringify(config));
     const url=`${location.origin}${location.pathname}?data=${encoded}`;
