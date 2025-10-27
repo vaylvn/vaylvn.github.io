@@ -46,6 +46,51 @@ h3 {
 
 section { margin-bottom: 15px; }
 
+
+
+/* ------------------ DASHBOARD ------------------ */
+.appearance {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-auto-rows: minmax(36px, auto);
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.appearance h3 {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.appearance label {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.appearance input[type="color"],
+.appearance .range-wrap {
+  justify-self: start;
+}
+
+.range-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.range-wrap span {
+  width: 20px;
+  text-align: right;
+}
+
+/* ----------------------------------------------- */
+
+
+
 label {
   display: inline-flex;
   align-items: center;
@@ -162,6 +207,8 @@ tr:nth-child(even) td { background: #2b2b2b; }
   right: 10px;
   pointer-events: none;
 }
+
+
 
 /* Responsive */
 @media (max-width: 800px) {
