@@ -30,28 +30,34 @@
       <section class="appearance">
 		  <h3>Appearance</h3>
 
-		  <div class="row">
-			<label for="dividerColor">Divider color</label>
-			<input type="color" id="dividerColor" value="#ffffff">
-			<label for="dividerWidth">Thickness</label>
-			<input type="range" id="dividerWidth" min="1" max="10" value="2">
-			<span id="dividerWidthVal">2</span>px
+		  <div class="group">
+			<label class="group-title">Divider</label>
+			<div class="controls">
+			  <input type="color" id="dividerColor" value="#ffffff">
+			  <label for="dividerWidth">Thickness</label>
+			  <input type="range" id="dividerWidth" min="1" max="10" value="2">
+			  <span id="dividerWidthVal">2</span>
+			</div>
 		  </div>
 
-		  <div class="row">
-			<label for="rimColor">Rim color</label>
-			<input type="color" id="rimColor" value="#000000">
-			<label for="rimWidth">Thickness</label>
-			<input type="range" id="rimWidth" min="1" max="10" value="3">
-			<span id="rimWidthVal">3</span>px
+		  <div class="group">
+			<label class="group-title">Rim</label>
+			<div class="controls">
+			  <input type="color" id="rimColor" value="#000000">
+			  <label for="rimWidth">Thickness</label>
+			  <input type="range" id="rimWidth" min="1" max="10" value="3">
+			  <span id="rimWidthVal">3</span>
+			</div>
 		  </div>
 
-		  <div class="row">
-			<label for="arrowOutline">Arrow outline</label>
-			<input type="color" id="arrowOutline" value="#ffffff">
-			<label for="arrowWidth">Outline thickness</label>
-			<input type="range" id="arrowWidth" min="1" max="10" value="2">
-			<span id="arrowWidthVal">2</span>px
+		  <div class="group">
+			<label class="group-title">Arrow</label>
+			<div class="controls">
+			  <input type="color" id="arrowOutline" value="#ffffff">
+			  <label for="arrowWidth">Outline thickness</label>
+			  <input type="range" id="arrowWidth" min="1" max="10" value="2">
+			  <span id="arrowWidthVal">2</span>
+			</div>
 		  </div>
 		</section>
 
@@ -66,8 +72,10 @@
             <option value="tick">Tick</option>
             <option value="boop">Boop</option>
           </select>
+		  <input type="text" id="customSoundUrl" placeholder="Or select custom URL..." style="width:400px"><br>
+        
+		  
         </label><br>
-        <label>Custom URL <input type="text" id="customSoundUrl" placeholder="https://..." style="width:240px"></label><br>
         <label>Tick density <input type="range" id="tickDensity" min="5" max="100" value="30">
           <span id="tickDensityVal">30</span></label>
       </section>
