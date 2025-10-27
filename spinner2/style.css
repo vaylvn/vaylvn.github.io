@@ -18,7 +18,7 @@ body {
 #editor {
   background: #242424;
   color: #e0e0e0;
-  width: min(420px, 30%);
+  width: min(720px, 50%);
   border-right: 1px solid #333;
   box-shadow: 2px 0 12px rgba(0,0,0,0.4);
   padding: 20px 24px;
