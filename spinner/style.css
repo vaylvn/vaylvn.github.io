@@ -50,42 +50,40 @@ section { margin-bottom: 15px; }
 
 /* ------------------ DASHBOARD ------------------ */
 .appearance {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-auto-rows: minmax(36px, auto);
-  align-items: center;
-  column-gap: 12px;
-  row-gap: 8px;
-  max-width: 480px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .appearance h3 {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-bottom: 10px;
+  margin: 0 0 4px 0;
+  font-weight: 600;
 }
 
-.appearance label {
-  justify-self: end;
-  white-space: nowrap;
-}
-
-.appearance input[type="color"],
-.appearance .range-wrap {
-  justify-self: start;
-}
-
-.range-wrap {
-  display: flex;
+.row {
+  display: grid;
+  grid-template-columns: auto 40px auto 1fr auto;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
-.range-wrap span {
-  width: 20px;
+.row input[type="color"] {
+  width: 40px;
+  height: 24px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.row input[type="range"] {
+  width: 100%;
+}
+
+.row span {
+  min-width: 24px;
   text-align: right;
 }
+
 
 /* ----------------------------------------------- */
 
