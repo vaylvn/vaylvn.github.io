@@ -190,14 +190,6 @@ body[data-mode="live"] {
   background: transparent !important;
 }
 
-body[data-mode="live"] #spinnerPanel {
-  background: transparent !important;
-}
-
-body[data-mode="live"] #spinnerCanvas {
-  background: transparent !important;
-  box-shadow: none !important;
-}
 
 /* Hide version text in live mode */
 body[data-mode="live"] #version {
@@ -210,7 +202,11 @@ body[data-mode="live"] #version {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;
+  background: #1a1a1a;
+}
+
+body[data-mode="live"] #spinnerPanel {
+  background: transparent !important;
 }
 
 #spinnerCanvas {
@@ -221,6 +217,11 @@ body[data-mode="live"] #version {
   cursor: pointer;
   box-shadow: 0 0 40px rgba(0,0,0,0.4);
   transition: transform 0.25s ease;
+}
+
+body[data-mode="live"] #spinnerCanvas {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Footer */
