@@ -3,89 +3,258 @@
 <head>
 <meta charset="UTF-8">
 <title>Vayl Spinner</title>
-<style>
-  body {font-family: Inter, sans-serif; background:#f6f7f8; color:#222; margin:0; text-align:center;}
-  h2,h3{margin:10px 0 5px;}
-  #editor{background:white;box-shadow:0 2px 8px rgba(0,0,0,.1);border-radius:8px;
-          padding:15px 20px;margin:20px auto;display:inline-block;text-align:left;}
-  section{border-top:1px solid #ddd;padding-top:10px;margin-top:10px;}
-  label{display:inline-flex;align-items:center;gap:4px;margin:5px 10px 5px 0;}
-  input[type=color]{width:40px;height:28px;border:none;background:none;}
-  input[type=number],select{height:26px;}
-  input[type=range]{width:120px;vertical-align:middle;}
-  table{margin-top:8px;border-collapse:collapse;font-size:13px;width:100%;}
-  td,th{border:1px solid #ccc;padding:3px 5px;text-align:center;}
-  .mini{width:40px;text-align:center;}
-  .styleBtn{cursor:pointer;padding:1px 3px;border:1px solid #aaa;border-radius:3px;user-select:none;}
-  .styleBtn.active{background:#e0e0e0;}
-  #spinnerCanvas{display:block;margin:25px auto 10px;border-radius:50%;background:white;cursor:pointer;}
-  #shareUrl{width:80%;}
-  #version{font-size:12px;color:#777;position:fixed;bottom:8px;right:10px;}
-</style>
-
 <link rel="stylesheet"
- href="https://fonts.googleapis.com/css2?family=Roboto&family=Lato&family=Poppins&family=Montserrat&family=Merriweather&family=Open+Sans&family=Raleway&family=Oswald&family=Playfair+Display&display=swap">
+ href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+<style>
+/* ========= GLOBAL LAYOUT ========= */
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ========= SIDEBAR / DASHBOARD ========= */
+#editor {
+  background: #242424;
+  color: #e0e0e0;
+  width: min(420px, 30%);
+  border-right: 1px solid #333;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.4);
+  padding: 20px 24px;
+  overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+h2 {
+  color: #fff;
+  font-weight: 600;
+  font-size: 20px;
+  margin: 0 0 15px 0;
+  text-align: left;
+}
+
+h3 {
+  font-weight: 600;
+  color: #fff;
+  font-size: 15px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+  margin: 18px 0 10px 0;
+  text-align: left;
+}
+
+section {
+  margin-bottom: 15px;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+/* ========= INPUTS ========= */
+input[type="color"],
+input[type="number"],
+input[type="text"],
+select {
+  background: #333;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+input[type="color"] { width: 38px; height: 26px; padding: 0; border: none; }
+
+input[type="range"] {
+  width: 130px;
+  accent-color: #888;
+}
+
+button {
+  background: #333;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s, border 0.2s;
+}
+button:hover { background: #3a3a3a; border-color: #666; }
+button:active { background: #2e2e2e; }
+
+#addSegment {
+  background: #1f6feb;
+  border: none;
+  color: white;
+  font-weight: 500;
+  margin-top: 8px;
+}
+#addSegment:hover { background: #398bff; }
+
+/* ========= TABLE ========= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 13px;
+}
+th, td {
+  border: 1px solid #333;
+  padding: 4px;
+  text-align: center;
+}
+th {
+  background: #2e2e2e;
+  font-weight: 600;
+}
+tr:nth-child(even) td { background: #2b2b2b; }
+
+/* ========= STYLE BUTTONS ========= */
+.styleBtn {
+  cursor: pointer;
+  padding: 2px 4px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  user-select: none;
+  background: #333;
+}
+.styleBtn.active {
+  background: #4b8df8;
+  border-color: #4b8df8;
+  color: #fff;
+}
+
+/* ========= SPINNER PANEL ========= */
+#spinnerPanel {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1a1a1a;
+  position: relative;
+}
+
+#spinnerCanvas {
+  display: block;
+  margin: auto;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 40px rgba(0,0,0,0.4);
+  transition: transform 0.25s ease;
+}
+#spinnerCanvas:hover {
+  transform: scale(1.02);
+  filter: brightness(1.05);
+}
+
+/* ========= FOOTER ========= */
+#version {
+  font-size: 12px;
+  color: #777;
+  position: fixed;
+  bottom: 8px;
+  right: 10px;
+  pointer-events: none;
+}
+
+/* ========= RESPONSIVE ========= */
+@media (max-width: 800px) {
+  #layout {
+    flex-direction: column;
+  }
+  #editor {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #333;
+    box-shadow: none;
+  }
+  #spinnerPanel {
+    padding: 20px 0;
+  }
+}
+</style>
 </head>
+
 <body>
+<div id="layout">
+  <aside id="editor">
+    <h2>Vayl Spinner Configurator</h2>
 
-<div id="editor">
-  <h2>Vayl Spinner Configurator</h2>
+    <section>
+      <h3>General</h3>
+      <label>Auto-spin delay <input type="number" id="spinDelay" min="0" value="0">s</label>
+      <label>Auto-spin <input type="checkbox" id="autoSpin"></label><br>
+      <label>Spin duration <input type="range" id="spinDuration" min="1000" max="10000" step="250" value="4000">
+        <span id="spinDurationVal">4000</span> ms</label>
+    </section>
 
-  <section>
-    <h3>General</h3>
-    <label>Auto-spin delay <input type="number" id="spinDelay" min="0" value="0">s</label>
-    <label>Auto-spin <input type="checkbox" id="autoSpin"></label><br>
-    <label>Spin duration <input type="range" id="spinDuration" min="1000" max="10000" step="250" value="4000">
-      <span id="spinDurationVal">4000</span> ms</label>
-  </section>
+    <section>
+      <h3>Global Style</h3>
+      <label>Divider color <input type="color" id="dividerColor" value="#ffffff"></label>
+      <label>Thickness <input type="range" id="dividerWidth" min="1" max="10" value="2"> <span id="dividerWidthVal">2</span>px</label><br>
+      <label>Rim color <input type="color" id="rimColor" value="#000000"></label>
+      <label>Thickness <input type="range" id="rimWidth" min="1" max="10" value="3"> <span id="rimWidthVal">3</span>px</label><br>
+      <label>Arrow outline <input type="color" id="arrowOutline" value="#ffffff"></label>
+      <label>Arrow outline thickness <input type="range" id="arrowWidth" min="1" max="10" value="2"> <span id="arrowWidthVal">2</span>px</label>
+    </section>
 
-  <section>
-    <h3>Global Style</h3>
-    <label>Divider color <input type="color" id="dividerColor" value="#ffffff"></label>
-    <label>Thickness <input type="range" id="dividerWidth" min="1" max="10" value="2"> <span id="dividerWidthVal">2</span>px</label><br>
-    <label>Rim color <input type="color" id="rimColor" value="#000000"></label>
-    <label>Thickness <input type="range" id="rimWidth" min="1" max="10" value="3"> <span id="rimWidthVal">3</span>px</label><br>
-    <label>Arrow outline <input type="color" id="arrowOutline" value="#ffffff"></label>
-    <label>Arrow outline thickness <input type="range" id="arrowWidth" min="1" max="10" value="2"> <span id="arrowWidthVal">2</span>px</label>
-  </section>
+    <section>
+      <h3>Audio</h3>
+      <label>Sound
+        <select id="soundSelect">
+          <option value="none">None</option>
+          <option value="click">Click</option>
+          <option value="tick">Tick</option>
+          <option value="boop">Boop</option>
+        </select>
+      </label><br>
+      <label>Custom URL <input type="text" id="customSoundUrl" placeholder="https://..." style="width:240px"></label><br>
+      <label>Tick density <input type="range" id="tickDensity" min="5" max="100" value="30">
+        <span id="tickDensityVal">30</span></label>
+    </section>
 
-  <section>
-    <h3>Audio</h3>
-    <label>Sound
-      <select id="soundSelect">
-        <option value="none">None</option>
-        <option value="click">Click</option>
-        <option value="tick">Tick</option>
-        <option value="boop">Boop</option>
-      </select>
-    </label><br>
-    <label>Custom URL <input type="text" id="customSoundUrl" placeholder="https://..." style="width:240px"></label><br>
-    <label>Tick density <input type="range" id="tickDensity" min="5" max="100" value="30">
-      <span id="tickDensityVal">30</span></label>
-  </section>
+    <section>
+      <h3>Segments</h3>
+      <table>
+        <thead><tr><th>Label</th><th>Color</th><th>Weight</th><th>Font</th><th>Size</th><th>B</th><th>I</th><th>U</th><th></th></tr></thead>
+        <tbody id="segments"></tbody>
+      </table>
+      <button id="addSegment">+ Add Segment</button>
+    </section>
 
-  <section>
-    <h3>Segments</h3>
-    <table>
-      <thead><tr><th>Label</th><th>Color</th><th>Weight</th><th>Font</th><th>Size</th><th>B</th><th>I</th><th>U</th><th></th></tr></thead>
-      <tbody id="segments"></tbody>
-    </table>
-    <button id="addSegment">+ Add Segment</button>
-  </section>
+    <section>
+      <h3>Export / Import</h3>
+      <input id="shareUrl" readonly>
+      <button id="copyUrl">Copy</button><br>
+      <input id="urlImport" placeholder="Paste spinner URL">
+      <button id="importUrl">Load</button>
+    </section>
+  </aside>
 
-  <section>
-    <h3>Export / Import</h3>
-    <input id="shareUrl" readonly>
-    <button id="copyUrl">Copy</button><br>
-    <input id="urlImport" placeholder="Paste spinner URL">
-    <button id="importUrl">Load</button>
-  </section>
+  <main id="spinnerPanel">
+    <canvas id="spinnerCanvas" width="400" height="400"></canvas>
+  </main>
 </div>
-
-<canvas id="spinnerCanvas" width="400" height="400"></canvas>
-<p id="version">v2.4.4</p>
+<p id="version">v2.5</p>
 
 <script>
+/* === JS LOGIC FROM V2.4.4 (unchanged) === */
 const GOOGLE_FONTS=["Roboto","Lato","Poppins","Montserrat","Merriweather","Open Sans","Raleway","Oswald","Playfair+Display"];
 const params=new URLSearchParams(location.search);
 const dataParam=params.get("data");
@@ -109,18 +278,15 @@ function preloadAudio(src){
   try{
     cachedAudio=new Audio(src);
     cachedAudio.load();
-    console.log("[Spinner] Preloaded:",src);
   }catch(e){console.warn("Audio preload failed:",e);}
 }
 function playSoundOnce(src,vol=0.4){
   try{
     const a=cachedAudio?cachedAudio.cloneNode():new Audio(src);
-    a.volume=vol;a.currentTime=0;
-    a.play().catch(()=>console.warn("Audio failed to play (CORS/invalid?)"));
-  }catch(e){console.warn("Audio play error:",e);}
+    a.volume=vol;a.currentTime=0;a.play().catch(()=>{});
+  }catch(e){}
 }
 
-/* ---------- Draw Spinner ---------- */
 function drawSpinner(cfg,rotation=0){
   currentRotation=rotation;
   const total=cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
@@ -170,7 +336,6 @@ function drawSpinner(cfg,rotation=0){
   ctx.lineWidth=cfg.arrowWidth;ctx.strokeStyle=cfg.arrowOutline;ctx.stroke();
 }
 
-/* ---------- Spin ---------- */
 function startSpin(){
   if(spinning||!config.segments.length)return;
   spinning=true;
@@ -194,7 +359,7 @@ function startSpin(){
   });
 }
 
-/* ---------- Editor ---------- */
+/* === Editor === */
 if(!dataParam){
   const tb=document.getElementById("segments");
   const updateVal=(id,val)=>document.getElementById(id).textContent=val;
