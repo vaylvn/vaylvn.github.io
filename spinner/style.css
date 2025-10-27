@@ -191,7 +191,7 @@ tr:nth-child(even) td { background: #2b2b2b; }
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #1a1a1a;
+  background: transparent;
 }
 
 #spinnerCanvas {
