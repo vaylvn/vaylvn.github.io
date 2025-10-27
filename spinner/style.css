@@ -185,6 +185,25 @@ tr:nth-child(even) td { background: #2b2b2b; }
   color: #fff;
 }
 
+/* When in live mode (OBS), remove all background layers */
+body[data-mode="live"] {
+  background: transparent !important;
+}
+
+body[data-mode="live"] #spinnerPanel {
+  background: transparent !important;
+}
+
+body[data-mode="live"] #spinnerCanvas {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hide version text in live mode */
+body[data-mode="live"] #version {
+  display: none !important;
+}
+
 /* Spinner Panel */
 #spinnerPanel {
   flex: 1;
@@ -202,10 +221,6 @@ tr:nth-child(even) td { background: #2b2b2b; }
   cursor: pointer;
   box-shadow: 0 0 40px rgba(0,0,0,0.4);
   transition: transform 0.25s ease;
-}
-#spinnerCanvas:hover {
-  transform: scale(1.02);
-  filter: brightness(1.05);
 }
 
 /* Footer */
