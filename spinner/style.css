@@ -196,15 +196,21 @@ body[data-mode="live"] #version {
   display: none !important;
 }
 
-/* Spinner Panel */
+/* Spinner panel — dark in config, transparent only in live mode */
 #spinnerPanel {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #1a1a1a;
+  background: #1a1a1a; /* default for config */
 }
 
+/* explicitly protect config mode */
+body[data-mode="config"] #spinnerPanel {
+  background: #1a1a1a !important;
+}
+
+/* transparent only when in live mode */
 body[data-mode="live"] #spinnerPanel {
   background: transparent !important;
 }
