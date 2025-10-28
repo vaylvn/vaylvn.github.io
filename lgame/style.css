@@ -93,6 +93,14 @@ h2 {
 }
 
 
+#skipBtn {
+	width: min(45vw, 175px);
+}
+
+#restartBtn {
+	width: min(45vw, 175px);
+}
+
 
 
 @keyframes shake {
@@ -137,7 +145,13 @@ h2 {
 }
 .cell.player { background: rgba(0,255,255,0.4); }
 .cell.cpu    { background: rgba(255, 80, 80,0.4); }
-.cell.token  { background: rgba(255,255,255,0.15); }
+
+.cell.token  { 
+	background: rgba(255,255,255,0.5); 
+	border-radius: 90px;
+}
+
+
 .cell.preview { background: rgba(0, 255, 255, 0.85); }
 
 
@@ -148,6 +162,20 @@ h2 {
   box-shadow: 0 0 10px 3px rgba(255,80,80,0.6);
 }
 
+
+#skipBtn {
+  opacity: 0.4;
+  transition: opacity 0.3s ease; /* smooth fade */
+}
+
+#skipBtn:enabled {
+  opacity: 1;
+}
+
+#skipBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
 
 
 footer {
@@ -165,7 +193,7 @@ footer button {
 
 button {
   background: rgba(34, 34, 34, 1.0); 
-  border: 5px solid rgba(238, 238, 238, 1.0); 
+  border: 2px solid rgba(238, 238, 238, 1.0); 
   
   color: var(--text);
   padding: 0.4rem 1rem;

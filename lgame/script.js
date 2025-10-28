@@ -16,6 +16,11 @@ let gameOver = false;
 // Global phase control
 let selectedNeutral = null;
 
+const skipBtn = document.getElementById("skipBtn");
+skipBtn.addEventListener("click", skipNeutralMove);
+skipBtn.disabled = true;
+
+
 
 // Build grid
 for (let y = 0; y < SIZE; y++) {
@@ -115,7 +120,7 @@ boardEl.addEventListener("click", e => {
     drawBoard();
     selectedNeutral = null;
     clearNeutralHighlights();
-    showSkipButton(false);
+    allowSkipButton(false);
     endPlayerTurn();
   }
 });
@@ -179,7 +184,7 @@ function commitMove(path) {
   drawBoard();
   gamePhase = "moveNeutral";
   highlightNeutrals();
-  showSkipButton(true);
+  allowSkipButton(true);
 }
 
 
@@ -324,16 +329,15 @@ function isPathClear(path) {
 
 
 
-const skipBtn = document.getElementById("skipBtn");
-skipBtn.addEventListener("click", skipNeutralMove);
 
-function showSkipButton(show) {
-  skipBtn.style.display = show ? "inline-block" : "none";
+
+function allowSkipButton(allow) {
+  skipBtn.disabled = !allow;
 }
 
 function skipNeutralMove() {
   console.log("Neutral move skipped.");
-  showSkipButton(false);
+  allowSkipButton(false);
   clearNeutralHighlights();
   endPlayerTurn();
 }
@@ -485,6 +489,11 @@ function minimax(board, depth, alpha, beta, isCpuTurn) {
       beta = Math.min(beta, adjusted);
       if (beta <= alpha) break;
     }
+	
+	if (!bestMove && moves.length > 0) {
+	  bestMove = moves[Math.floor(Math.random() * moves.length)];
+	}
+		
     return { score: minEval, bestMove };
   }
 }
@@ -564,7 +573,7 @@ function generateAllLPositions(board, who) {
   const positions = [];
   const opponent = (who === PLAYER) ? CPU : PLAYER;
 
-  // Collect the coordinates of this player's current L
+  // record current L coordinates
   const currentL = [];
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
@@ -572,25 +581,33 @@ function generateAllLPositions(board, who) {
     }
   }
 
+  // clone and clear the player's L
+  const tempBoard = board.map(r => [...r]);
+  for (let y = 0; y < SIZE; y++)
+    for (let x = 0; x < SIZE; x++)
+      if (tempBoard[y][x] === who) tempBoard[y][x] = EMPTY;
+
   for (let yOff = 0; yOff < SIZE; yOff++) {
     for (let xOff = 0; xOff < SIZE; xOff++) {
       for (const shape of shapes) {
         const coords = shape.map(p => ({x: p.x + xOff, y: p.y + yOff}));
         if (coords.every(p => p.x >= 0 && p.y >= 0 && p.x < SIZE && p.y < SIZE)) {
-          if (isLegalPlacement(board, coords, opponent)) {
-            // skip placements identical to current
+          if (isLegalPlacement(tempBoard, coords, opponent)) {
+            // skip identical placement
             const keyset = coords.map(p => `${p.x},${p.y}`);
-            const same =
-              keyset.length === currentL.length &&
-              keyset.every(k => currentL.includes(k));
+            const same = keyset.length === currentL.length &&
+                         keyset.every(k => currentL.includes(k));
             if (!same) positions.push(coords);
           }
         }
       }
     }
   }
+
   return positions;
 }
+
+
 
 
 
