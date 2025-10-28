@@ -14,6 +14,14 @@ html, body {
 	width: min(45vw, 175px);
 }
 
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(17, 17, 17, 1);
+  pointer-events: none;
+}
+
 
 body {
   margin: 0;
@@ -22,12 +30,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center; /* centers everything vertically */
-  background: var(--bg);
+  background: rgba(17, 17, 17, 1);
   color: var(--text);
   font-family: "Inter", sans-serif;
   user-select: none;
   overflow-y: auto;
 }
+
+
 
 h2 {
   margin-top: 0.75rem;
@@ -196,7 +206,7 @@ footer button {
 
 button {
   background: rgba(34, 34, 34, 1.0); 
-  border: 2px solid rgba(238, 238, 238, 1.0); 
+  border: 2px solid rgba(34, 34, 34, 1.0); 
   
   color: var(--text);
   padding: 0.4rem 1rem;
@@ -205,6 +215,5 @@ button {
   font-size: inherit;
 }
 button:hover { 
-	background: rgba(170, 170, 170, 1.0);  
-	color: black;
+	border: 2px solid rgba(51, 51, 51, 1.0); 
 }
