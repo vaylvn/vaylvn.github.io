@@ -9,7 +9,7 @@ const cells = [];
 
 let turn = "player";
 let gamePhase = "moveL"; // "moveL", "moveNeutral", or "cpuTurn"
-let difficulty = "hard";  // "easy", "medium", "hard"
+let difficulty = "easy";  // "easy", "medium", "hard"
 let gameOver = false;
 
 
