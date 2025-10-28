@@ -9,7 +9,7 @@ const cells = [];
 
 let turn = "player";
 let gamePhase = "moveL"; // "moveL", "moveNeutral", or "cpuTurn"
-let difficulty = "medium";  // "easy", "medium", "hard"
+let difficulty = "hard";  // "easy", "medium", "hard"
 let gameOver = false;
 
 
@@ -246,9 +246,9 @@ function isValidL(path) {
 function getDepthForDifficulty() {
   switch (difficulty) {
     case "easy":   return 1;  // shallow, almost random
-    case "medium": return 3;  // balanced
-    case "hard":   return 5;  // deep, strong
-    default:       return 3;
+    case "medium": return 2;  // balanced
+    case "hard":   return 3;  // deep, strong
+    default:       return 2;
   }
 }
 
@@ -290,16 +290,13 @@ function addToPath(el) {
 
 
 function highlightActiveL() {
-  // Board border color changes based on turn
   if (turn === "player") {
-    boardEl.style.borderColor = "cyan";
+    boardEl.style.boxShadow = "0 0 20px 4px rgba(0, 255, 255, 0.8)";
+    boardEl.style.borderColor = "transparent";
   } else {
-    boardEl.style.borderColor = "rgb(255, 80, 80)";
+    boardEl.style.boxShadow = "0 0 20px 4px rgba(255, 80, 80, 0.8)";
+    boardEl.style.borderColor = "transparent";
   }
-
-  // Optional: blob mood
-  const blobEl = document.getElementById("blob");
-  blobEl.className = turn === "player" ? "blob-calm" : "blob-smug";
 }
 
 function isPathClear(path) {
@@ -364,34 +361,33 @@ function endPlayerTurn() {
 
 
 
-function cpuTurn() {
+async function cpuTurn() {
   const status = document.getElementById("status");
-  if (status) status.textContent = `CPU thinking... (${difficulty})`;
+  if (status) status.textContent = `CPU thinking...`;
 
-  const thinkTime = difficulty === "easy" ? 300 : difficulty === "medium" ? 600 : 900;
+  // ✅ Let browser paint this change before freezing thread
+  await new Promise(requestAnimationFrame);
+
+  const thinkTime = difficulty === "easy" ? 300 : difficulty === "medium" ? 1000 : 2000;
   const depth = getDepthForDifficulty();
   const { bestMove } = minimax(board, depth, -Infinity, Infinity, true);
 
   if (!bestMove) {
-    // CPU has no valid moves → player wins
     declareWinner(PLAYER);
     return;
   }
 
   // Highlight CPU's planned L
-  highlightCpuMove(bestMove.shape);
+  // highlightCpuMove(bestMove.shape);
 
   setTimeout(() => {
-    // Remove old CPU L
     for (let y = 0; y < SIZE; y++)
       for (let x = 0; x < SIZE; x++)
         if (board[y][x] === CPU) board[y][x] = EMPTY;
 
-    // Place new CPU L
     for (const p of bestMove.shape) board[p.y][p.x] = CPU;
     drawBoard();
 
-    // Then move neutral (if any)
     setTimeout(() => {
       if (bestMove.neutral) {
         const { from, to } = bestMove.neutral;
@@ -402,19 +398,17 @@ function cpuTurn() {
       }
       drawBoard();
 
-      // ✅ Now board state is stable — perform win check
       const playerMoves = generateAllLPositions(board, PLAYER);
       if (playerMoves.length === 0) {
         declareWinner(CPU);
         return;
       }
 
-      // Give control back to player
       turn = "player";
       gamePhase = "moveL";
       if (status) status.textContent = "Your turn!";
       drawBoard();
-    }, 500); // small delay after neutral move
+    }, 500);
   }, thinkTime);
 }
 

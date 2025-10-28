@@ -13,17 +13,22 @@ html, body {
 
 body {
   margin: 0;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* centers everything vertically */
   background: var(--bg);
   color: var(--text);
   font-family: "Inter", sans-serif;
   user-select: none;
-  min-height: 100vh;   /* allow scroll if needed */
   overflow-y: auto;
+}
+
+h2 {
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  text-align: center;
 }
 
 #game {
@@ -37,6 +42,36 @@ body {
   width: 100%;
   max-width: 600px;
 }
+
+#game, header, #dashboard {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+#dashboard button {
+  flex: 1 1 auto;
+  min-width: 90px;
+}
+
+#dashboard span {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
 
 /* Board grid */
 #board {
@@ -57,6 +92,9 @@ body {
   user-select: none;   /* no text selection highlight */
 }
 
+
+
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
@@ -76,11 +114,12 @@ body {
 }
 
 .highlight-neutral {
-  outline: 2px solid yellow;
+  outline: 2px solid white;
 }
 
 .selected-neutral {
-  outline: 3px solid orange;
+  /* outline: 3px solid rgba(0, 255, 255, 0.85); */
+  background: rgba(238, 238, 238, 1.0) !important;
 }
 
 .cpu-preview {
@@ -99,7 +138,7 @@ body {
 .cell.player { background: rgba(0,255,255,0.4); }
 .cell.cpu    { background: rgba(255, 80, 80,0.4); }
 .cell.token  { background: rgba(255,255,255,0.15); }
-.cell.preview { background: rgba(0, 255, 255, 0.35); }
+.cell.preview { background: rgba(0, 255, 255, 0.85); }
 
 
 .glow-player {
@@ -125,12 +164,16 @@ footer button {
 }
 
 button {
-  background: none;
-  border: 1px solid var(--accent);
+  background: rgba(34, 34, 34, 1.0); 
+  border: 5px solid rgba(238, 238, 238, 1.0); 
+  
   color: var(--text);
   padding: 0.4rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   font-size: inherit;
 }
-button:hover { background: var(--accent); color: #000; }
+button:hover { 
+	background: rgba(170, 170, 170, 1.0);  
+	color: black;
+}

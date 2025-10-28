@@ -3,28 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>L-Game: Blob Battle</title>
+  <title>L-Game</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h2>L-Game: Blob Battle</h2>
+  
+
+
+  <div id="game">
+  
+	<h2>L</h2>
 
 	<header>
 	  <div id="status">Your turn!</div>
 	</header>
-
-
-  <div id="game">
+  
     <div id="board"></div>
-    <div id="blob" class="blob-calm"></div>
-  </div>
-
-  <footer>
-	<button id="skipBtn" style="display:none;">Skip Neutral Move</button>
-    <button id="undoBtn">Undo</button>
-    <button id="restartBtn">Restart</button>
+	
+	<div id="dashboard">
+		<button id="skipBtn" style="display:none;">End Move</button>
+		<button id="restartBtn">Restart</button>
+	  </div>
     <span>Difficulty: <strong id="diffLabel">Medium</strong></span>
-  </footer>
+	
+  </div>
+  
+  
+
+
 
   <script src="script.js"></script>
 </body>
