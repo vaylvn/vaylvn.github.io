@@ -368,77 +368,56 @@ function cpuTurn() {
   const status = document.getElementById("status");
   if (status) status.textContent = `CPU thinking... (${difficulty})`;
 
-  // thinking time scales slightly with difficulty
   const thinkTime = difficulty === "easy" ? 300 : difficulty === "medium" ? 600 : 900;
-
   const depth = getDepthForDifficulty();
   const { bestMove } = minimax(board, depth, -Infinity, Infinity, true);
 
   if (!bestMove) {
-	  // CPU has no valid moves -> player wins
-	declareWinner(PLAYER);
-	return;
+    // CPU has no valid moves → player wins
+    declareWinner(PLAYER);
+    return;
   }
 
-  // --- Phase 1: highlight intended L move before committing ---
+  // Highlight CPU's planned L
   highlightCpuMove(bestMove.shape);
-  console.log("CPU planning L move:", bestMove.shape);
 
   setTimeout(() => {
-    // remove old L
-    for (let y = 0; y < SIZE; y++) {
-      for (let x = 0; x < SIZE; x++) {
+    // Remove old CPU L
+    for (let y = 0; y < SIZE; y++)
+      for (let x = 0; x < SIZE; x++)
         if (board[y][x] === CPU) board[y][x] = EMPTY;
-      }
-    }
 
-    // apply new L
+    // Place new CPU L
     for (const p of bestMove.shape) board[p.y][p.x] = CPU;
     drawBoard();
 
-    // --- Phase 2: move neutral, with revalidation ---
-    if (bestMove.neutral) {
-      setTimeout(() => {
+    // Then move neutral (if any)
+    setTimeout(() => {
+      if (bestMove.neutral) {
         const { from, to } = bestMove.neutral;
-
         if (board[to.y][to.x] === EMPTY) {
           board[from.y][from.x] = EMPTY;
           board[to.y][to.x] = TOKEN;
-          console.log("CPU moved neutral:", from, "→", to);
-        } else {
-          console.log("Skipped neutral move (blocked by new L).");
         }
+      }
+      drawBoard();
 
-        drawBoard();
+      // ✅ Now board state is stable — perform win check
+      const playerMoves = generateAllLPositions(board, PLAYER);
+      if (playerMoves.length === 0) {
+        declareWinner(CPU);
+        return;
+      }
 
-        // --- Phase 3: give turn back to player ---
-        setTimeout(() => {
-          turn = "player";
-          gamePhase = "moveL";
-          drawBoard();
-          if (status) status.textContent = "Your turn!";
-          console.log("Your turn!");
-        }, 400);
-      }, 400);
-    } else {
-      // if no neutral move chosen
-      setTimeout(() => {
-		  // Before switching back, see if player can move
-		  const playerMoves = generateAllLPositions(board, PLAYER);
-		  if (playerMoves.length === 0) {
-			declareWinner(CPU);
-			return;
-		  }
-
-		  turn = "player";
-		  gamePhase = "moveL";
-		  drawBoard();
-		  if (status) status.textContent = "Your turn!";
-		  console.log("Your turn!");
-		}, 400);
-    }
+      // Give control back to player
+      turn = "player";
+      gamePhase = "moveL";
+      if (status) status.textContent = "Your turn!";
+      drawBoard();
+    }, 500); // small delay after neutral move
   }, thinkTime);
 }
+
 
 
 function highlightCpuMove(shape) {
@@ -457,16 +436,11 @@ function highlightCpuMove(shape) {
 
 function declareWinner(winner) {
   gameOver = true;
-  const status = document.getElementById("status");
-  const message = winner === PLAYER ? "You win!" : "CPU wins!";
-  console.log(message);
-  if (status) status.textContent = message;
-
-  // Optionally disable further clicks or drags
   gamePhase = "ended";
-
-  // Optional visual overlay (later you can add Restart)
+  const status = document.getElementById("status");
+  status.textContent = winner === PLAYER ? "You win!" : "CPU wins!";
 }
+
 
 
 
