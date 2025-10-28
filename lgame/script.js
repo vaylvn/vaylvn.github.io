@@ -26,7 +26,7 @@ skipBtn.disabled = true;
 
 
 function playSound(name, { volume = 0.3, rate = 1.0 } = {}) {
-  if (!soundEnabled || !sounds[name]) return;
+  if (!audioEnabled || !sounds[name]) return;
 
   const source = audioCtx.createBufferSource();
   const gain = audioCtx.createGain();
@@ -53,8 +53,9 @@ async function loadSound(name, url) {
 
 async function loadAllSounds() {
   await Promise.all([
-    loadSound("bloop", "assets/bloop.mp3"),
-    loadSound("win", "assets/win.mp3"),
+    loadSound("boop", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/boop.mp3"),
+    loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click.mp3"),
+	loadSound("click2", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click2.mp3"),
   ]);
   console.log("Sounds ready");
 }
@@ -74,6 +75,7 @@ function toggleAudio() {
     : "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audiooff.png";
 
   audioBtn.style.background = `url("${img}") center/70% no-repeat`;
+  audioBtn.style.backgroundColor = `rgba(34, 34, 34, 1.0)`;
 }
 
 
@@ -331,6 +333,9 @@ function highlightNeutrals() {
 
 
 function shakeBoard() {
+	
+	playSound("click2", { volume: 0.15, rate: 1.0 });
+	
   boardEl.classList.add("shake");
   setTimeout(() => boardEl.classList.remove("shake"), 300);
 }
@@ -428,7 +433,7 @@ function addToPath(el) {
   // 🔊 play faint "bloop" when adding a new tile
   dragStep++;
   const pitch = 1.0 + dragStep * 0.07; // gentle pitch ramp per tile
-  playSound("bloop", { volume: 0.15, rate: pitch });
+  playSound("click", { volume: 0.15, rate: pitch });
 }
 
 
