@@ -106,12 +106,40 @@ h2 {
 }
 
 
+#button-tray {
+  display: flex;
+  justify-content: center;
+  align-items: center; /* ← ensures all buttons share vertical alignment */
+  gap: 0.3rem;
+}
+
 #skipBtn {
-	width: min(45vw, 175px);
+	width: min(40vw, 150px);
 }
 
 #restartBtn {
-	width: min(45vw, 175px);
+	width: min(40vw, 150px);
+}
+
+#audioBtn {
+	width: min(10vw, 50px);
+	background: url("https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audioon.png") center/70% no-repeat;
+	background-color: rgba(34, 34, 34, 1.0); 
+}
+
+button {
+	height: 40px;
+  background: rgba(34, 34, 34, 1.0); 
+  border: 2px solid rgba(34, 34, 34, 1.0); 
+  
+  color: var(--text);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: inherit;
+}
+button:hover { 
+	border: 2px solid rgba(51, 51, 51, 1.0); 
 }
 
 
@@ -204,16 +232,3 @@ footer button {
   min-width: 100px;
 }
 
-button {
-  background: rgba(34, 34, 34, 1.0); 
-  border: 2px solid rgba(34, 34, 34, 1.0); 
-  
-  color: var(--text);
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: inherit;
-}
-button:hover { 
-	border: 2px solid rgba(51, 51, 51, 1.0); 
-}

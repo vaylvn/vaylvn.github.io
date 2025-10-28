@@ -12,6 +12,7 @@ let gamePhase = "moveL"; // "moveL", "moveNeutral", or "cpuTurn"
 let difficulty = "easy";  // "easy", "medium", "hard"
 let gameOver = false;
 
+let audioEnabled = true;
 
 // Global phase control
 let selectedNeutral = null;
@@ -19,6 +20,61 @@ let selectedNeutral = null;
 const skipBtn = document.getElementById("skipBtn");
 skipBtn.addEventListener("click", skipNeutralMove);
 skipBtn.disabled = true;
+
+
+
+
+
+function playSound(name, { volume = 0.3, rate = 1.0 } = {}) {
+  if (!soundEnabled || !sounds[name]) return;
+
+  const source = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  source.buffer = sounds[name];
+  source.playbackRate.value = rate;
+  gain.gain.value = volume;
+  source.connect(gain).connect(audioCtx.destination);
+  source.start(0);
+}
+
+
+
+
+
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const sounds = {};
+
+async function loadSound(name, url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  sounds[name] = await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function loadAllSounds() {
+  await Promise.all([
+    loadSound("bloop", "assets/bloop.mp3"),
+    loadSound("win", "assets/win.mp3"),
+  ]);
+  console.log("Sounds ready");
+}
+
+
+
+
+
+const audioBtn = document.getElementById("audioBtn");
+audioBtn.addEventListener("click", toggleAudio);
+
+
+function toggleAudio() {
+  audioEnabled = !audioEnabled;
+  const img = audioEnabled
+    ? "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audioon.png"
+    : "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audiooff.png";
+
+  audioBtn.style.background = `url("${img}") center/70% no-repeat`;
+}
 
 
 
@@ -207,8 +263,11 @@ function continueDrag(e) {
 }
 
 function endDrag() {
+
   if (!dragging) return;
   dragging = false;
+
+	dragStep = 0;
 
   if (isValidL(path) && isPathClear(path)) {
     console.log("%cVALID MOVE", "color: lime;");
@@ -217,6 +276,7 @@ function endDrag() {
     console.log("%cINVALID MOVE", "color: red;");
     shakeBoard();
   }
+
 
   clearPreview();
 }
@@ -350,6 +410,8 @@ function maybeAddRandomness(score) {
 
 
 
+let dragStep = 0;
+
 
 
 
@@ -359,8 +421,14 @@ function addToPath(el) {
   const y = parseInt(el.dataset.y);
   const already = path.find(p => p.x === x && p.y === y);
   if (already) return;
+
   path.push({ x, y });
   el.classList.add("preview");
+
+  // 🔊 play faint "bloop" when adding a new tile
+  dragStep++;
+  const pitch = 1.0 + dragStep * 0.07; // gentle pitch ramp per tile
+  playSound("bloop", { volume: 0.15, rate: pitch });
 }
 
 
@@ -776,5 +844,7 @@ function resetGame() {
   drawBoard();
 }
 
+
+loadAllSounds();
 
 resetGame();
