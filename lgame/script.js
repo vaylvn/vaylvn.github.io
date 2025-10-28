@@ -296,11 +296,11 @@ function addToPath(el) {
 
 function highlightActiveL() {
   if (turn === "player") {
-    boardEl.style.boxShadow = "0 0 20px 4px rgba(0, 255, 255, 0.8)";
-    boardEl.style.borderColor = "transparent";
+    boardEl.style.boxShadow = "0 0 100px 4px rgba(0, 255, 255, 0.2)";
+    // boardEl.style.borderColor = "transparent";
   } else {
-    boardEl.style.boxShadow = "0 0 20px 4px rgba(255, 80, 80, 0.8)";
-    boardEl.style.borderColor = "transparent";
+    boardEl.style.boxShadow = "0 0 100px 4px rgba(255, 80, 80, 0.2)";
+    // boardEl.style.borderColor = "transparent";
   }
 }
 
