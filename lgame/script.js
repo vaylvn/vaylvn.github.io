@@ -23,8 +23,46 @@ skipBtn.disabled = true;
 
 
 const restartBtn = document.getElementById("restartBtn");
-restartBtn.addEventListener("click", resetGame);
+restartBtn.addEventListener("click", resetGameButton);
 
+
+const easyBtn = document.getElementById("easyBtn");
+easyBtn.addEventListener("click", () => setDifficulty("easy"));
+const mediumBtn = document.getElementById("mediumBtn");
+mediumBtn.addEventListener("click", () => setDifficulty("medium"));
+const hardBtn = document.getElementById("hardBtn");
+hardBtn.addEventListener("click", () => setDifficulty("hard"));
+
+
+
+function resetGameButton() {
+	playSound("click", { volume: 0.5, rate: 1.0 });
+	resetGame();
+}
+
+
+
+function setDifficulty(dif) {
+	
+	
+	playSound("click", { volume: 0.5, rate: 1.0 });
+
+	
+	console.log(dif);
+	
+	difficulty = dif;
+	resetGame();
+	
+	
+	easyBtn.style.boxShadow = (dif === "easy") ? `inset 0 0 0 2px white` : `inset 0 0 0 2px transparent`;
+	mediumBtn.style.boxShadow = (dif === "medium") ? `inset 0 0 0 2px white` : `inset 0 0 0 2px transparent`;
+	hardBtn.style.boxShadow = (dif === "hard") ? `inset 0 0 0 2px white` : `inset 0 0 0 2px transparent`;
+	
+	easyBtn.disabled = (dif === "easy");
+	mediumBtn.disabled = (dif === "medium");
+	hardBtn.disabled = (dif === "hard");
+	
+}
 
 
 
@@ -81,6 +119,10 @@ function toggleAudio() {
 
   audioBtn.style.background = `url("${img}") center/70% no-repeat`;
   audioBtn.style.backgroundColor = `rgba(34, 34, 34, 1.0)`;
+  
+  if (audioEnabled) playSound("click", { volume: 0.5, rate: 1.0 });
+ 
+  
 }
 
 
@@ -356,33 +398,31 @@ function shakeBoard() {
 function isValidL(path) {
   if (path.length !== 4) return false;
 
-  // All coordinates unique
-  const coords = path.map(p => `${p.x},${p.y}`);
-  if (new Set(coords).size !== 4) return false;
+  // Normalise: shift so the smallest x/y becomes (0,0)
+  const minX = Math.min(...path.map(p => p.x));
+  const minY = Math.min(...path.map(p => p.y));
+  const norm = path.map(p => ({ x: p.x - minX, y: p.y - minY }));
 
-  // Determine bounding box
-  const xs = path.map(p => p.x);
-  const ys = path.map(p => p.y);
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const width = maxX - minX + 1;
-  const height = maxY - minY + 1;
+  // Define all 8 legal L shapes relative to (0,0)
+  const validShapes = [
+    // --- wide ---
+    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1}], // ┘
+    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:2,y:1}], // └
+    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:0,y:0}], // ┐
+    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:2,y:0}], // ┌
+    // --- tall ---
+    [{x:0,y:0},{x:0,y:1},{x:0,y:2},{x:1,y:0}], // ⎾
+    [{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:0,y:0}], // ⏌
+    [{x:0,y:0},{x:0,y:1},{x:0,y:2},{x:1,y:2}], // ⎿
+    [{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:0,y:2}], // ⏋
+  ];
 
-  // Must form 2×3 or 3×2 rectangle
-  if (!((width === 3 && height === 2) || (width === 2 && height === 3))) return false;
-
-  // Count how many of the 6 cells in bounding box are occupied
-  const occupied = [];
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      if (path.find(p => p.x === x && p.y === y)) occupied.push({x,y});
-    }
-  }
-
-  // An L means exactly one of the 6 is empty
-  if (occupied.length !== 4) return false; // sanity
-  return (width * height - occupied.length) === 2; // should leave 2 empties (diagonal)
+  // Compare ignoring order
+  return validShapes.some(shape =>
+    shape.every(p => norm.some(c => c.x === p.x && c.y === p.y))
+  );
 }
+
 
 
 
@@ -490,6 +530,7 @@ function allowSkipButton(allow) {
 }
 
 function skipNeutralMove() {
+  playSound("click", { volume: 0.5, rate: 1.0 });
   console.log("Neutral move skipped.");
   allowSkipButton(false);
   clearNeutralHighlights();
@@ -915,6 +956,18 @@ function resetGame() {
 
 
 }
+
+
+
+
+easyBtn.style.boxShadow = `inset 0 0 0 2px white`;
+mediumBtn.style.boxShadow = `inset 0 0 0 2px transparent`;
+hardBtn.style.boxShadow = `inset 0 0 0 2px transparent`;
+
+easyBtn.disabled = true;
+mediumBtn.disabled = false;
+hardBtn.disabled = false;
+
 
 
 loadAllSounds();

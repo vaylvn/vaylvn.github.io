@@ -199,6 +199,10 @@ button:hover {
   background: rgba(238, 238, 238, 1.0) !important;
 }
 
+
+
+
+
 .cpu-preview {
   background-color: rgba(255, 80, 80, 0.4);
   transition: background-color 0.3s ease;
