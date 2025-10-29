@@ -387,7 +387,7 @@ function highlightNeutrals() {
 
 function shakeBoard() {
 	
-	playSound("boop", { volume: 0.5, rate: 1.0 });
+	playSound("shake", { volume: 0.5, rate: 1.0 });
 	
   boardEl.classList.add("shake");
   setTimeout(() => boardEl.classList.remove("shake"), 300);
