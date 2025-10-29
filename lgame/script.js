@@ -702,8 +702,12 @@ function minimax(board, depth, alpha, beta, isCpuTurn) {
 	
 	
 	if (difficulty === "easy" && Math.random() < 0.7) {
-      bestMove = moves[Math.floor(Math.random() * moves.length)];
-    }
+		bestMove = moves[Math.floor(Math.random() * moves.length)];
+    } else if (difficulty === "medium" && Math.random() < 0.4) {
+		bestMove = moves[Math.floor(Math.random() * moves.length)];
+	} else if (difficulty === "hard" && Math.random() < 0.2) {
+		bestMove = moves[Math.floor(Math.random() * moves.length)];
+	}
 	
     return { score: maxEval, bestMove };
   } else {

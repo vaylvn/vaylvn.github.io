@@ -34,5 +34,11 @@ body {
 .cell.highlight { background:#444; }
 .cell.valid { background:#2a2; }
 
+.cell.adjacent {
+  background: #333;
+  outline: 2px solid #666;
+}
+
+
 #status { font-weight:600; }
 button { padding:0.5rem 1rem; cursor:pointer; }
