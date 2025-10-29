@@ -238,11 +238,17 @@ boardEl.addEventListener("click", e => {
     clearNeutralHighlights();
     target.classList.add("selected-neutral");
     console.log("Selected neutral:", selectedNeutral);
+	
+	playSound("click2", { volume: 0.15, rate: 1.5 });
+	
     return;
   }
 
   // Step 2: move token
   if (selectedNeutral && value === EMPTY) {
+	  
+	playSound("click2", { volume: 0.15, rate: 1.3 });
+	  
     board[selectedNeutral.y][selectedNeutral.x] = EMPTY;
     board[y][x] = TOKEN;
     drawBoard();
@@ -334,7 +340,7 @@ function highlightNeutrals() {
 
 function shakeBoard() {
 	
-	playSound("click2", { volume: 0.15, rate: 1.0 });
+	playSound("boop", { volume: 0.15, rate: 1.0 });
 	
   boardEl.classList.add("shake");
   setTimeout(() => boardEl.classList.remove("shake"), 300);
