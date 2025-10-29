@@ -59,8 +59,7 @@ async function loadAllSounds() {
     loadSound("boop", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/boop.mp3"),
     loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click.mp3"),
 	loadSound("click2", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click2.mp3"),
-	loadSound("loss", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/loss.mp3"),
-	loadSound("win", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/win.mp3"),
+	loadSound("endgame", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/endgame.mp3"),
 	loadSound("shake", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/shake.mp3"),
   ]);
   console.log("Sounds ready");
@@ -592,9 +591,9 @@ function declareWinner(winner) {
   
   
   if (winner === PLAYER) {
-	  playSound("win", { volume: 0.5, rate: 1.0 });
+	  playSound("endgame", { volume: 0.5, rate: 1.3 });
   } else {
-	  playSound("loss", { volume: 0.5, rate: 1.0 });
+	  playSound("endgame", { volume: 0.5, rate: 0.3 });
   }
   
   const status = document.getElementById("status");
