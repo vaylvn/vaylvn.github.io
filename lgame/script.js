@@ -22,6 +22,9 @@ skipBtn.addEventListener("click", skipNeutralMove);
 skipBtn.disabled = true;
 
 
+const restartBtn = document.getElementById("restartBtn");
+restartBtn.addEventListener("click", resetGame);
+
 
 
 
@@ -56,6 +59,9 @@ async function loadAllSounds() {
     loadSound("boop", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/boop.mp3"),
     loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click.mp3"),
 	loadSound("click2", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click2.mp3"),
+	loadSound("loss", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/loss.mp3"),
+	loadSound("win", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/win.mp3"),
+	loadSound("shake", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/shake.mp3"),
   ]);
   console.log("Sounds ready");
 }
@@ -163,7 +169,7 @@ const particles = Array.from({ length: 40 }, () => ({
 
 function draw() {
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  ctx.fillStyle = "rgba(255,255,255,0.3)";
   for (const p of particles) {
     // gentle orbit
     p.a += p.s;
@@ -239,7 +245,7 @@ boardEl.addEventListener("click", e => {
     target.classList.add("selected-neutral");
     console.log("Selected neutral:", selectedNeutral);
 	
-	playSound("click2", { volume: 0.15, rate: 1.5 });
+	playSound("click2", { volume: 0.5, rate: 1.5 });
 	
     return;
   }
@@ -247,7 +253,7 @@ boardEl.addEventListener("click", e => {
   // Step 2: move token
   if (selectedNeutral && value === EMPTY) {
 	  
-	playSound("click2", { volume: 0.15, rate: 1.3 });
+	playSound("click2", { volume: 0.5, rate: 1.3 });
 	  
     board[selectedNeutral.y][selectedNeutral.x] = EMPTY;
     board[y][x] = TOKEN;
@@ -340,7 +346,7 @@ function highlightNeutrals() {
 
 function shakeBoard() {
 	
-	playSound("boop", { volume: 0.15, rate: 1.0 });
+	playSound("boop", { volume: 0.5, rate: 1.0 });
 	
   boardEl.classList.add("shake");
   setTimeout(() => boardEl.classList.remove("shake"), 300);
@@ -439,7 +445,7 @@ function addToPath(el) {
   // 🔊 play faint "bloop" when adding a new tile
   dragStep++;
   const pitch = 1.0 + dragStep * 0.07; // gentle pitch ramp per tile
-  playSound("click", { volume: 0.15, rate: pitch });
+  playSound("click", { volume: 0.5, rate: pitch });
 }
 
 
@@ -516,7 +522,7 @@ function endPlayerTurn() {
 
 async function cpuTurn() {
   const status = document.getElementById("status");
-  if (status) status.textContent = `CPU thinking...`;
+  if (status) status.textContent = "CPU THINKING...";
 
   // ✅ Let browser paint this change before freezing thread
   await new Promise(requestAnimationFrame);
@@ -559,7 +565,7 @@ async function cpuTurn() {
 
       turn = "player";
       gamePhase = "moveL";
-      if (status) status.textContent = "Your turn!";
+      if (status) status.textContent = "YOUR TURN";
       drawBoard();
     }, 500);
   }, thinkTime);
@@ -580,12 +586,41 @@ function highlightCpuMove(shape) {
 
 
 
-
 function declareWinner(winner) {
   gameOver = true;
   gamePhase = "ended";
+  
+  
+  if (winner === PLAYER) {
+	  playSound("win", { volume: 0.5, rate: 1.0 });
+  } else {
+	  playSound("loss", { volume: 0.5, rate: 1.0 });
+  }
+  
   const status = document.getElementById("status");
-  status.textContent = winner === PLAYER ? "You win!" : "CPU wins!";
+  
+	
+	status.style.opacity = 0;
+	
+  const msg = document.getElementById("winMessage");
+  const boardEl = document.getElementById("board");
+
+	
+
+  msg.textContent = winner === PLAYER ? "YOU WIN" : "CPU WINS";
+  msg.style.opacity = 1;          // show message
+  boardEl.classList.add("fade-out"); // fade out board
+
+  // after fade, reset board invisibly
+  setTimeout(() => {
+    resetGame(); // your existing reset logic
+    msg.style.opacity = 0;        // hide text
+  }, 2000);
+
+  // fade board back in a bit later
+  setTimeout(() => {
+    boardEl.classList.remove("fade-out");
+  }, 4000);
 }
 
 
@@ -624,6 +659,12 @@ function minimax(board, depth, alpha, beta, isCpuTurn) {
       alpha = Math.max(alpha, adjusted);
       if (beta <= alpha) break; // α-β pruning
     }
+	
+	
+	if (difficulty === "easy" && Math.random() < 0.7) {
+      bestMove = moves[Math.floor(Math.random() * moves.length)];
+    }
+	
     return { score: maxEval, bestMove };
   } else {
     let minEval = Infinity;
@@ -719,42 +760,46 @@ function generateAllLPositions(board, who) {
     [{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:0,y:2}],
   ];
 
-  const positions = [];
-  const opponent = (who === PLAYER) ? CPU : PLAYER;
+  const opponent = who === PLAYER ? CPU : PLAYER;
 
-  // record current L coordinates
+  // record current L as array of {x, y}
   const currentL = [];
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      if (board[y][x] === who) currentL.push(`${x},${y}`);
-    }
-  }
+  for (let y = 0; y < SIZE; y++)
+    for (let x = 0; x < SIZE; x++)
+      if (board[y][x] === who) currentL.push({x, y});
 
   // clone and clear the player's L
   const tempBoard = board.map(r => [...r]);
-  for (let y = 0; y < SIZE; y++)
-    for (let x = 0; x < SIZE; x++)
-      if (tempBoard[y][x] === who) tempBoard[y][x] = EMPTY;
+  for (const {x, y} of currentL) tempBoard[y][x] = EMPTY;
+
+  const positions = [];
 
   for (let yOff = 0; yOff < SIZE; yOff++) {
     for (let xOff = 0; xOff < SIZE; xOff++) {
       for (const shape of shapes) {
         const coords = shape.map(p => ({x: p.x + xOff, y: p.y + yOff}));
-        if (coords.every(p => p.x >= 0 && p.y >= 0 && p.x < SIZE && p.y < SIZE)) {
-          if (isLegalPlacement(tempBoard, coords, opponent)) {
-            // skip identical placement
-            const keyset = coords.map(p => `${p.x},${p.y}`);
-            const same = keyset.length === currentL.length &&
-                         keyset.every(k => currentL.includes(k));
-            if (!same) positions.push(coords);
-          }
-        }
+
+        // inside bounds?
+        if (!coords.every(p => p.x >= 0 && p.y >= 0 && p.x < SIZE && p.y < SIZE))
+          continue;
+
+        // legal placement?
+        if (!isLegalPlacement(tempBoard, coords, opponent)) continue;
+
+        // skip *exactly* identical shape, not partial overlap
+        const same =
+          coords.length === currentL.length &&
+          coords.every(a => currentL.some(b => b.x === a.x && b.y === a.y));
+
+        if (!same) positions.push(coords);
       }
     }
   }
 
   return positions;
 }
+
+
 
 
 
@@ -830,6 +875,11 @@ function generateNeutralMoves(board) {
 
 
 function resetGame() {
+
+	const status = document.getElementById("status");
+	status.textContent = "YOUR TURN";
+	
+
   board = createEmptyBoard();
 
   // Player L (bottom-left facing upward-right)
@@ -852,7 +902,19 @@ function resetGame() {
   cpuCells.forEach(p => board[p.y][p.x] = CPU);
   neutralPieces.forEach(p => board[p.y][p.x] = TOKEN);
 
+	turn = "player";
+		gamePhase = "moveL";
+		gameOver = false;
+
   drawBoard();
+
+
+	setTimeout(() => {
+		status.style.opacity = 1;
+		
+	  }, 3000);
+
+
 }
 
 

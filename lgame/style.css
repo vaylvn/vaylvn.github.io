@@ -95,7 +95,7 @@ h2 {
   background: var(--grid);
   border: 3px solid white; /* default */
   border-radius: 8px;
-  transition: border-color 0.4s ease;
+  /* transition: border-color 0.4s ease; */
   
   width: min(90vw, 350px); /* smaller for mobile */
   margin: 0 auto;
@@ -103,6 +103,34 @@ h2 {
   aspect-ratio: 1 / 1;
   touch-action: none;  /* also reinforce here */
   user-select: none;   /* no text selection highlight */
+  
+  transition: opacity 1s ease;
+  z-index: 2;
+}
+
+
+#status {
+	font-size: 1.5rem;
+	font-weight: 600;
+}
+
+
+#winMessage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: white;
+  opacity: 0;
+  transition: opacity 1s ease;
+  z-index: 1; /* below board, above bg */
+}
+
+
+#board.fade-out {
+  opacity: 0;
 }
 
 
