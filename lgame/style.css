@@ -216,8 +216,8 @@ button:hover {
   justify-content: center;
   transition: background 0.2s;
 }
-.cell.player { background: rgba(0,255,255,0.4); }
-.cell.cpu    { background: rgba(255, 80, 80,0.4); }
+.cell.player { background: rgba(0,255,255,0.4); transition: border-radius 0.2s ease; }
+.cell.cpu    { background: rgba(255, 80, 80,0.4); transition: border-radius 0.2s ease; }
 
 .cell.token  { 
 	background: rgba(255,255,255,0.5); 
@@ -226,6 +226,21 @@ button:hover {
 
 
 .cell.preview { background: rgba(0, 255, 255, 0.85); }
+
+
+
+.cell {
+  border-radius: 0;
+  
+}
+
+/* Rounded corners for player/cpu tiles */
+.player.round-tl, .cpu.round-tl { border-top-left-radius: 20px; }
+.player.round-tr, .cpu.round-tr { border-top-right-radius: 20px; }
+.player.round-bl, .cpu.round-bl { border-bottom-left-radius: 20px; }
+.player.round-br, .cpu.round-br { border-bottom-right-radius: 20px; }
+
+
 
 
 .glow-player {

@@ -164,16 +164,35 @@ function drawBoard() {
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const cell = getCell(x, y);
-      cell.className = "cell";
+      cell.className = "cell"; // reset base class
 
-      if (board[y][x] === PLAYER) cell.classList.add("player");
-      if (board[y][x] === CPU) cell.classList.add("cpu");
-      if (board[y][x] === TOKEN) cell.classList.add("token");
+      const value = board[y][x];
+      if (value === PLAYER || value === CPU) {
+        const cls = value === PLAYER ? "player" : "cpu";
+        cell.classList.add(cls);
+
+        // neighbour check — find which sides have same owner
+        const n = {
+          top:    y > 0 && board[y - 1][x] === value,
+          bottom: y < SIZE - 1 && board[y + 1][x] === value,
+          left:   x > 0 && board[y][x - 1] === value,
+          right:  x < SIZE - 1 && board[y][x + 1] === value,
+        };
+
+        // round only *outer* corners
+        if (!n.top && !n.left) cell.classList.add("round-tl");
+        if (!n.top && !n.right) cell.classList.add("round-tr");
+        if (!n.bottom && !n.left) cell.classList.add("round-bl");
+        if (!n.bottom && !n.right) cell.classList.add("round-br");
+      }
+
+      if (value === TOKEN) cell.classList.add("token");
     }
   }
 
   highlightActiveL();
 }
+
 
 
 
