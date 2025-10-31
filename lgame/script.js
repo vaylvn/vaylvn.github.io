@@ -620,6 +620,11 @@ async function cpuTurn() {
 
   const thinkTime = difficulty === "easy" ? 300 : difficulty === "medium" ? 1000 : 2000;
   const depth = getDepthForDifficulty();
+  
+  
+  console.log("CPU about to move. Valid moves:", generateAllLegalMoves(board, CPU).length);
+
+  
   const { bestMove } = minimax(board, depth, -Infinity, Infinity, true);
 
   if (!bestMove) {
@@ -807,22 +812,29 @@ function isGameOver(board) {
 }
 
 function applyMove(board, move, who) {
+  // work on a copy to prevent accidental shared mutations
+  const newBoard = board.map(r => [...r]);
+
   // remove old L
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      if (board[y][x] === who) board[y][x] = EMPTY;
+      if (newBoard[y][x] === who) newBoard[y][x] = EMPTY;
     }
   }
+
   // place new L
-  for (const p of move.shape) board[p.y][p.x] = who;
+  for (const p of move.shape) newBoard[p.y][p.x] = who;
+
   // move neutral if defined
   if (move.neutral) {
     const { from, to } = move.neutral;
-    board[from.y][from.x] = EMPTY;
-    board[to.y][to.x] = TOKEN;
+    newBoard[from.y][from.x] = EMPTY;
+    newBoard[to.y][to.x] = TOKEN;
   }
-  return board;
+
+  return newBoard;
 }
+
 
 function evaluateBoard(board) {
   // very simple heuristic: mobility difference
@@ -911,6 +923,9 @@ function generateAllLegalMoves(board, who) {
   const allMoves = [];
   const Lpositions = generateAllLPositions(board, who);
   const neutralMoves = generateNeutralMoves(board);
+
+	console.log("generateAllLegalMoves who=", who, "Lpositions:", Lpositions.length);
+
 
   for (const shape of Lpositions) {
     // Option 1: don’t move any neutral
