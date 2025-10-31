@@ -17,6 +17,38 @@ let audioEnabled = true;
 // Global phase control
 let selectedNeutral = null;
 
+
+
+
+
+const infoBtn = document.getElementById("infoBtn");
+const infoOverlay = document.getElementById("infoOverlay");
+const closeInfoBtn = document.getElementById("closeInfoBtn");
+
+infoBtn.addEventListener("click", () => {
+  infoOverlay.classList.add("visible");
+});
+
+closeInfoBtn.addEventListener("click", () => {
+  infoOverlay.classList.remove("visible");
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const skipBtn = document.getElementById("skipBtn");
 skipBtn.addEventListener("click", skipNeutralMove);
 skipBtn.disabled = true;
