@@ -95,7 +95,14 @@ function renderTray() {
 	  document.documentElement.classList.remove("dragging-cursor"); // <—
 	});
 
-	
+		// --- touch support ---
+	pieceEl.addEventListener('touchstart', (e) => {
+	  draggedPiece = i;
+	  pieceEl.classList.add('dragging');
+	  const touch = e.touches[0];
+	  dragOffset.x = 0;
+	  dragOffset.y = 0; // optional offset logic later
+	});
 	
 
 
@@ -116,14 +123,7 @@ function renderTray() {
 
 
 
-// --- touch support ---
-pieceEl.addEventListener('touchstart', (e) => {
-  draggedPiece = i;
-  pieceEl.classList.add('dragging');
-  const touch = e.touches[0];
-  dragOffset.x = 0;
-  dragOffset.y = 0; // optional offset logic later
-});
+
 
 pieceEl.addEventListener('touchmove', (e) => {
   e.preventDefault();
