@@ -8,6 +8,7 @@ let board = [];
 let tray = [];
 let score = 0;
 let draggedPiece = null;
+let dragOffset = {x: 0, y: 0};
 
 const SHAPES = [
   [[0,0]],                            // single
@@ -48,8 +49,12 @@ function generatePiece() {
 }
 
 function renderTray() {
-  trayEl.innerHTML = "";
-  tray.forEach((piece, i) => {
+  for (let i = 0; i < 3; i++) {
+    const slot = document.querySelector(`.tray-slot[data-slot='${i}']`);
+    slot.innerHTML = "";
+    const piece = tray[i];
+    if (!piece) continue;
+
     const pieceEl = document.createElement("div");
     pieceEl.classList.add("piece");
     const width = Math.max(...piece.shape.map(p => p[0])) + 1;
@@ -57,15 +62,13 @@ function renderTray() {
     pieceEl.style.gridTemplateColumns = `repeat(${width}, 48px)`;
     pieceEl.style.gridTemplateRows = `repeat(${height}, 48px)`;
 
-    // Create a small 2D map for piece blocks
     const map = Array.from({length: height}, () => Array(width).fill(0));
     piece.shape.forEach(([x,y]) => map[y][x] = 1);
 
     for (let y=0; y<height; y++) {
       for (let x=0; x<width; x++) {
         const block = document.createElement("div");
-        if (map[y][x] === 1) block.className = `block ${piece.color}`;
-        else block.className = "block empty";
+        block.className = map[y][x] ? `block ${piece.color}` : "block empty";
         pieceEl.appendChild(block);
       }
     }
@@ -73,9 +76,12 @@ function renderTray() {
     pieceEl.draggable = true;
     pieceEl.dataset.index = i;
 
-    pieceEl.addEventListener("dragstart", () => {
+    pieceEl.addEventListener("dragstart", (e) => {
       draggedPiece = i;
       pieceEl.classList.add("dragging");
+      const img = new Image();
+      img.src = "";
+      e.dataTransfer.setDragImage(img, 0, 0);
     });
     pieceEl.addEventListener("dragend", () => {
       pieceEl.classList.remove("dragging");
@@ -83,15 +89,22 @@ function renderTray() {
       clearHover();
     });
 
-    trayEl.appendChild(pieceEl);
-  });
+    slot.appendChild(pieceEl);
+  }
 }
+
+
+
+
+
+
 
 boardEl.addEventListener("dragover", (e) => {
   e.preventDefault();
   const rect = boardEl.getBoundingClientRect();
-  const x = Math.floor((e.clientX - rect.left) / 51);
-  const y = Math.floor((e.clientY - rect.top) / 51);
+  const x = Math.floor((e.clientX - rect.left) / 51) - dragOffset.x;
+  const y = Math.floor((e.clientY - rect.top) / 51) - dragOffset.y;
+
   clearHover();
   if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
     highlightPlacement(tray[draggedPiece], x, y, true);
@@ -103,14 +116,26 @@ boardEl.addEventListener("dragover", (e) => {
 boardEl.addEventListener("drop", (e) => {
   e.preventDefault();
   const rect = boardEl.getBoundingClientRect();
-  const x = Math.floor((e.clientX - rect.left) / 51);
-  const y = Math.floor((e.clientY - rect.top) / 51);
+  const x = Math.floor((e.clientX - rect.left) / 51) - dragOffset.x;
+  const y = Math.floor((e.clientY - rect.top) / 51) - dragOffset.y;
+
+  
   if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
-    placePiece(tray[draggedPiece], x, y);
-    tray[draggedPiece] = null;
-    tray = tray.filter(Boolean);
-    if (tray.length === 0) generateTray();
-  }
+	  // Place the piece on the board
+	  placePiece(tray[draggedPiece], x, y);
+
+	  // Clear only that slot so others stay where they are
+	  tray[draggedPiece] = null;
+	  renderTray();
+
+	  // When all three are gone, refill the tray in the same layout
+	  if (tray.every(p => !p)) {
+		tray = Array.from({ length: 3 }, () => generatePiece());
+		renderTray();
+	  }
+	}
+	  
+  
   clearHover();
   draggedPiece = null;
 });
@@ -136,22 +161,42 @@ function placePiece(piece, baseX, baseY) {
 }
 
 function clearLines() {
-  let linesCleared = 0;
-  for (let y=0; y<BOARD_SIZE; y++) {
+  let toClear = [];
+
+  // Rows
+  for (let y = 0; y < BOARD_SIZE; y++) {
     if (board[y].every(Boolean)) {
-      board[y].fill(null);
-      linesCleared++;
+      for (let x = 0; x < BOARD_SIZE; x++) toClear.push({ x, y });
     }
   }
-  for (let x=0; x<BOARD_SIZE; x++) {
+  // Columns
+  for (let x = 0; x < BOARD_SIZE; x++) {
     if (board.every(row => row[x])) {
-      for (let y=0; y<BOARD_SIZE; y++) board[y][x] = null;
-      linesCleared++;
+      for (let y = 0; y < BOARD_SIZE; y++) toClear.push({ x, y });
     }
   }
-  if (linesCleared > 0) score += linesCleared * 10;
-  renderBoard();
+
+  if (toClear.length === 0) return;
+
+  // Apply animation classes
+  toClear.forEach((cell, i) => {
+    const el = document.querySelector(`.cell[data-x='${cell.x}'][data-y='${cell.y}']`);
+    if (el) {
+      el.style.transitionDelay = `${i * 25}ms`; // stagger delay
+      el.classList.add("fade-out");
+    }
+  });
+
+  // After animation ends, actually clear data and refresh
+  setTimeout(() => {
+    toClear.forEach(({x, y}) => board[y][x] = null);
+    renderBoard();
+    score += toClear.length + (toClear.length / BOARD_SIZE) * 10; // add bonus
+    updateScore();
+  }, 600); // slightly longer than total fade
 }
+
+
 
 function renderBoard() {
   for (const cell of boardEl.children) {
@@ -198,9 +243,15 @@ function startNewGame() {
   score = 0;
   updateScore();
   initBoard();
-  generateTray();
+  tray = Array.from({length: 3}, () => generatePiece());
+  renderTray();
 }
 
+// --- STARTUP ---
 newGameBtn.addEventListener("click", startNewGame);
 
-startNewGame();
+// Initialize once DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  startNewGame();   // sets up board + generates tray
+  renderTray();     // <- ensure tray actually draws pieces
+});
