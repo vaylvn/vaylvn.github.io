@@ -144,3 +144,10 @@ body, .piece, #board {
 html.dragging-cursor, body.dragging-cursor, #board.dragging {
   cursor: url("assets/cursor_dragging.png") 16 16, grabbing !important;
 }
+
+#board, #tray, .piece, .block {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  touch-action: none;  /* prevents browser gestures */
+}
