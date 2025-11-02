@@ -131,10 +131,16 @@ header {
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
-/* Hide the system drag cursor/ghost completely */
-.piece, #board {
-  cursor: grab;
+
+body, .piece, #board {
+  cursor: url("assets/cursor_grab.png") 16 16, grab;
 }
+
 .piece.dragging, #board.dragging {
-  cursor: grabbing;
+  cursor: url("assets/cursor_dragging.png") 16 16, grab;
+}
+
+/* while dragging */
+html.dragging-cursor, body.dragging-cursor, #board.dragging {
+  cursor: url("assets/cursor_dragging.png") 16 16, grabbing !important;
 }

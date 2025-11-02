@@ -80,43 +80,42 @@ function renderTray() {
     pieceEl.dataset.index = i;
 
     pieceEl.addEventListener("dragstart", (e) => {
-      draggedPiece = i;
-      pieceEl.classList.add("dragging");
-      const img = new Image();
-      img.src = "";
-      e.dataTransfer.setDragImage(img, 0, 0);
-    });
+	  draggedPiece = i;
+	  pieceEl.classList.add("dragging");
+	  e.dataTransfer.effectAllowed = "move"; // match 'dropEffect'
+
+	  const img = new Image();
+	  img.src = "";                          // hide ghost thumbnail
+	  e.dataTransfer.setDragImage(img, 0, 0);
+	});
+
+
+	pieceEl.addEventListener("dragend", () => {
+	  pieceEl.classList.remove("dragging");
+	  document.documentElement.classList.remove("dragging-cursor"); // <—
+	});
+
 	
 	
-	
-	
-	
-    pieceEl.addEventListener("dragend", () => {
-      pieceEl.classList.remove("dragging");
-      draggedPiece = null;
-      clearHover();
-    });
+
 
     slot.appendChild(pieceEl);
   }
 }
 
 
-boardEl.addEventListener("dragstart", () => boardEl.classList.add("dragging"));
-boardEl.addEventListener("dragend", () => boardEl.classList.remove("dragging"));
 
 
 
 
 
-let lastHoverTime = 0;
+
 
 boardEl.addEventListener("dragover", (e) => {
   const now = performance.now();
-  if (now - lastHoverTime < 33) return; // ~30fps throttle
-  lastHoverTime = now;
 
   e.preventDefault();
+	e.dataTransfer.dropEffect = "move";
   const rect = boardEl.getBoundingClientRect();
   const x = Math.floor((e.clientX - rect.left) / 51) - dragOffset.x;
   const y = Math.floor((e.clientY - rect.top) / 51) - dragOffset.y;
