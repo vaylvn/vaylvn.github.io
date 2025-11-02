@@ -105,6 +105,58 @@ function renderTray() {
 
 
 
+// Disable page scroll while interacting with the board or tray
+['touchmove'].forEach(evt => {
+  document.addEventListener(evt, e => {
+    if (e.target.closest('#board') || e.target.closest('#tray')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+});
+
+
+
+// --- touch support ---
+pieceEl.addEventListener('touchstart', (e) => {
+  draggedPiece = i;
+  pieceEl.classList.add('dragging');
+  const touch = e.touches[0];
+  dragOffset.x = 0;
+  dragOffset.y = 0; // optional offset logic later
+});
+
+pieceEl.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = boardEl.getBoundingClientRect();
+  const x = Math.floor((touch.clientX - rect.left) / 51);
+  const y = Math.floor((touch.clientY - rect.top) / 51);
+  clearHover();
+  if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
+    highlightPlacement(tray[draggedPiece], x, y, true);
+  } else {
+    highlightPlacement(tray[draggedPiece], x, y, false);
+  }
+});
+
+pieceEl.addEventListener('touchend', (e) => {
+  const touch = e.changedTouches[0];
+  const rect = boardEl.getBoundingClientRect();
+  const x = Math.floor((touch.clientX - rect.left) / 51);
+  const y = Math.floor((touch.clientY - rect.top) / 51);
+  if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
+    placePiece(tray[draggedPiece], x, y);
+    tray[draggedPiece] = null;
+    renderTray();
+    if (tray.every(p => !p)) {
+      tray = Array.from({ length: 3 }, () => generatePiece());
+      renderTray();
+    }
+  }
+  clearHover();
+  pieceEl.classList.remove('dragging');
+  draggedPiece = null;
+});
 
 
 
@@ -296,6 +348,16 @@ function startNewGame() {
 
 // --- STARTUP ---
 newGameBtn.addEventListener("click", startNewGame);
+
+
+#board, #tray, .piece, .block {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  touch-action: none;  /* prevents browser gestures */
+}
+
+
 
 // Initialize once DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
