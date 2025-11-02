@@ -58,8 +58,6 @@ header {
   display: flex;
   justify-content: center;
   align-items: center;
-  
-  
 }
 
 
@@ -112,12 +110,19 @@ header {
 .milk  { background-image: url("https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/chox/assets/chocolate_milk.png"); }
 .dark  { background-image: url("https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/chox/assets/chocolate_dark.png"); }
 
-.valid-hover {
-  outline: 3px solid #66ff66;
+.valid-hover::before,
+.invalid-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid;
+  pointer-events: none;
 }
-.invalid-hover {
-  outline: 3px solid #ff3333;
-}
+.valid-hover::before { border-color: #66ff66; }
+.invalid-hover::before { border-color: #ff3333; }
+
+.cell { position: relative; } /* ensure ::before is positioned correctly */
+
 
 
 .fade-out {
@@ -126,3 +131,10 @@ header {
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
+/* Hide the system drag cursor/ghost completely */
+.piece, #board {
+  cursor: grab;
+}
+.piece.dragging, #board.dragging {
+  cursor: grabbing;
+}

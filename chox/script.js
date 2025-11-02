@@ -86,6 +86,11 @@ function renderTray() {
       img.src = "";
       e.dataTransfer.setDragImage(img, 0, 0);
     });
+	
+	
+	
+	
+	
     pieceEl.addEventListener("dragend", () => {
       pieceEl.classList.remove("dragging");
       draggedPiece = null;
@@ -97,24 +102,34 @@ function renderTray() {
 }
 
 
+boardEl.addEventListener("dragstart", () => boardEl.classList.add("dragging"));
+boardEl.addEventListener("dragend", () => boardEl.classList.remove("dragging"));
 
 
 
 
+
+let lastHoverTime = 0;
 
 boardEl.addEventListener("dragover", (e) => {
+  const now = performance.now();
+  if (now - lastHoverTime < 33) return; // ~30fps throttle
+  lastHoverTime = now;
+
   e.preventDefault();
   const rect = boardEl.getBoundingClientRect();
   const x = Math.floor((e.clientX - rect.left) / 51) - dragOffset.x;
   const y = Math.floor((e.clientY - rect.top) / 51) - dragOffset.y;
 
   clearHover();
+
   if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
     highlightPlacement(tray[draggedPiece], x, y, true);
   } else {
     highlightPlacement(tray[draggedPiece], x, y, false);
   }
 });
+
 
 boardEl.addEventListener("drop", (e) => {
   e.preventDefault();
@@ -163,41 +178,71 @@ function placePiece(piece, baseX, baseY) {
   checkGameOver();
 }
 
+
+
+
+
+
+
+
+
 function clearLines() {
-  let toClear = [];
+  const fullRows = [];
+  const fullCols = [];
 
-  // Rows
+  // --- find all full rows ---
   for (let y = 0; y < BOARD_SIZE; y++) {
-    if (board[y].every(Boolean)) {
-      for (let x = 0; x < BOARD_SIZE; x++) toClear.push({ x, y });
-    }
+    if (board[y].every(Boolean)) fullRows.push(y);
   }
-  // Columns
+
+  // --- find all full columns ---
   for (let x = 0; x < BOARD_SIZE; x++) {
-    if (board.every(row => row[x])) {
-      for (let y = 0; y < BOARD_SIZE; y++) toClear.push({ x, y });
-    }
+    if (board.every(row => row[x])) fullCols.push(x);
   }
 
-  if (toClear.length === 0) return;
+  // --- no clears? exit early ---
+  if (fullRows.length === 0 && fullCols.length === 0) return;
 
-  // Apply animation classes
-  toClear.forEach((cell, i) => {
-    const el = document.querySelector(`.cell[data-x='${cell.x}'][data-y='${cell.y}']`);
+  // --- build fade map to avoid double-animating overlaps ---
+  const fadeMap = new Map();
+
+  // Rows: fade left → right
+  fullRows.forEach(y => {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      fadeMap.set(`${x},${y}`, { x, y, delay: x * 25 });
+    }
+  });
+
+  // Columns: fade top → bottom (merge with any existing row cells)
+  fullCols.forEach(x => {
+    for (let y = 0; y < BOARD_SIZE; y++) {
+      const key = `${x},${y}`;
+      const prev = fadeMap.get(key);
+      const delay = Math.min(y * 25, prev?.delay ?? Infinity);
+      fadeMap.set(key, { x, y, delay });
+    }
+  });
+
+  // --- trigger fade animations ---
+  fadeMap.forEach(({ x, y, delay }) => {
+    const el = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
     if (el) {
-      el.style.transitionDelay = `${i * 25}ms`; // stagger delay
+      el.style.transitionDelay = `${delay}ms`;
       el.classList.add("fade-out");
     }
   });
 
-  // After animation ends, actually clear data and refresh
+  // --- after fades finish, clear those tiles ---
   setTimeout(() => {
-    toClear.forEach(({x, y}) => board[y][x] = null);
+    fadeMap.forEach(({ x, y }) => (board[y][x] = null));
     renderBoard();
-    score += toClear.length + (toClear.length / BOARD_SIZE) * 10; // add bonus
+
+    const linesCleared = fullRows.length + fullCols.length;
+    score += linesCleared * 10;
     updateScore();
   }, 600); // slightly longer than total fade
 }
+
 
 
 
