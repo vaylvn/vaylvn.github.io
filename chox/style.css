@@ -1,0 +1,77 @@
+body {
+  background: #1b120c;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+#game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(10, 48px);
+  grid-template-rows: repeat(10, 48px);
+  gap: 3px;
+  background: #2a1a14;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.cell {
+  width: 48px;
+  height: 48px;
+  background: #1a0e09;
+  border-radius: 4px;
+}
+
+#tray {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.piece {
+  display: inline-grid;
+  gap: 3px;
+  cursor: grab;
+}
+
+.piece.dragging {
+  opacity: 0.6;
+}
+
+.block {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  background-size: cover;
+}
+
+.white { background-image: url("images/chocolate_white.fw.png"); }
+.milk  { background-image: url("images/chocolate_milk.fw.png"); }
+.dark  { background-image: url("images/chocolate_dark.fw.png"); }
+
+.valid-hover {
+  outline: 3px solid #66ff66;
+}
+.invalid-hover {
+  outline: 3px solid #ff3333;
+}

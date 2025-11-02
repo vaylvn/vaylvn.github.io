@@ -1,0 +1,206 @@
+const BOARD_SIZE = 10;
+const boardEl = document.getElementById("board");
+const trayEl = document.getElementById("tray");
+const scoreEl = document.getElementById("score");
+const newGameBtn = document.getElementById("newGameBtn");
+
+let board = [];
+let tray = [];
+let score = 0;
+let draggedPiece = null;
+
+const SHAPES = [
+  [[0,0]],                            // single
+  [[0,0],[1,0],[0,1],[1,1]],          // 2x2 square
+  [[0,0],[1,0],[2,0],[3,0]],          // line of 4
+  [[0,0],[0,1],[1,1]],                // small L
+  [[0,0],[0,1],[0,2],[1,2]],          // large L
+  [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2]], // 3x3 block
+];
+
+const COLORS = ["white","milk","dark"];
+
+function initBoard() {
+  board = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(null));
+  boardEl.innerHTML = "";
+  for (let y=0; y<BOARD_SIZE; y++) {
+    for (let x=0; x<BOARD_SIZE; x++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+      boardEl.appendChild(cell);
+    }
+  }
+}
+
+function generateTray() {
+  tray = [];
+  trayEl.innerHTML = "";
+  for (let i=0; i<3; i++) tray.push(generatePiece());
+  renderTray();
+}
+
+function generatePiece() {
+  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  return {shape, color};
+}
+
+function renderTray() {
+  trayEl.innerHTML = "";
+  tray.forEach((piece, i) => {
+    const pieceEl = document.createElement("div");
+    pieceEl.classList.add("piece");
+    const width = Math.max(...piece.shape.map(p => p[0])) + 1;
+    const height = Math.max(...piece.shape.map(p => p[1])) + 1;
+    pieceEl.style.gridTemplateColumns = `repeat(${width}, 48px)`;
+    pieceEl.style.gridTemplateRows = `repeat(${height}, 48px)`;
+
+    // Create a small 2D map for piece blocks
+    const map = Array.from({length: height}, () => Array(width).fill(0));
+    piece.shape.forEach(([x,y]) => map[y][x] = 1);
+
+    for (let y=0; y<height; y++) {
+      for (let x=0; x<width; x++) {
+        const block = document.createElement("div");
+        if (map[y][x] === 1) block.className = `block ${piece.color}`;
+        else block.className = "block empty";
+        pieceEl.appendChild(block);
+      }
+    }
+
+    pieceEl.draggable = true;
+    pieceEl.dataset.index = i;
+
+    pieceEl.addEventListener("dragstart", () => {
+      draggedPiece = i;
+      pieceEl.classList.add("dragging");
+    });
+    pieceEl.addEventListener("dragend", () => {
+      pieceEl.classList.remove("dragging");
+      draggedPiece = null;
+      clearHover();
+    });
+
+    trayEl.appendChild(pieceEl);
+  });
+}
+
+boardEl.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  const rect = boardEl.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / 51);
+  const y = Math.floor((e.clientY - rect.top) / 51);
+  clearHover();
+  if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
+    highlightPlacement(tray[draggedPiece], x, y, true);
+  } else {
+    highlightPlacement(tray[draggedPiece], x, y, false);
+  }
+});
+
+boardEl.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const rect = boardEl.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / 51);
+  const y = Math.floor((e.clientY - rect.top) / 51);
+  if (draggedPiece != null && isValidPlacement(tray[draggedPiece], x, y)) {
+    placePiece(tray[draggedPiece], x, y);
+    tray[draggedPiece] = null;
+    tray = tray.filter(Boolean);
+    if (tray.length === 0) generateTray();
+  }
+  clearHover();
+  draggedPiece = null;
+});
+
+function isValidPlacement(piece, baseX, baseY) {
+  if (!piece) return false;
+  return piece.shape.every(([dx,dy]) => {
+    const x = baseX + dx, y = baseY + dy;
+    return x >= 0 && y >= 0 && x < BOARD_SIZE && y < BOARD_SIZE && !board[y][x];
+  });
+}
+
+function placePiece(piece, baseX, baseY) {
+  piece.shape.forEach(([dx,dy]) => {
+    const x = baseX + dx, y = baseY + dy;
+    board[y][x] = piece.color;
+  });
+  renderBoard();
+  score += piece.shape.length;
+  clearLines();
+  updateScore();
+  checkGameOver();
+}
+
+function clearLines() {
+  let linesCleared = 0;
+  for (let y=0; y<BOARD_SIZE; y++) {
+    if (board[y].every(Boolean)) {
+      board[y].fill(null);
+      linesCleared++;
+    }
+  }
+  for (let x=0; x<BOARD_SIZE; x++) {
+    if (board.every(row => row[x])) {
+      for (let y=0; y<BOARD_SIZE; y++) board[y][x] = null;
+      linesCleared++;
+    }
+  }
+  if (linesCleared > 0) score += linesCleared * 10;
+  renderBoard();
+}
+
+function renderBoard() {
+  for (const cell of boardEl.children) {
+    const x = +cell.dataset.x, y = +cell.dataset.y;
+    const color = board[y][x];
+    cell.className = "cell";
+    if (color) cell.classList.add(color);
+  }
+}
+
+function updateScore() {
+  scoreEl.textContent = score;
+}
+
+function clearHover() {
+  document.querySelectorAll(".valid-hover,.invalid-hover").forEach(el => el.classList.remove("valid-hover","invalid-hover"));
+}
+
+function highlightPlacement(piece, baseX, baseY, valid) {
+  if (!piece) return;
+  piece.shape.forEach(([dx,dy]) => {
+    const x = baseX + dx, y = baseY + dy;
+    const cell = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
+    if (cell) cell.classList.add(valid ? "valid-hover" : "invalid-hover");
+  });
+}
+
+function checkGameOver() {
+  const canMove = tray.some(piece => {
+    for (let y=0; y<BOARD_SIZE; y++) {
+      for (let x=0; x<BOARD_SIZE; x++) {
+        if (isValidPlacement(piece, x, y)) return true;
+      }
+    }
+    return false;
+  });
+  if (!canMove) {
+    alert(`Game Over! Final Score: ${score}`);
+    startNewGame();
+  }
+}
+
+function startNewGame() {
+  score = 0;
+  updateScore();
+  initBoard();
+  generateTray();
+}
+
+newGameBtn.addEventListener("click", startNewGame);
+
+startNewGame();
