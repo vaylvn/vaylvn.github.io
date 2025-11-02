@@ -350,12 +350,7 @@ function startNewGame() {
 newGameBtn.addEventListener("click", startNewGame);
 
 
-#board, #tray, .piece, .block {
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  touch-action: none;  /* prevents browser gestures */
-}
+
 
 
 
