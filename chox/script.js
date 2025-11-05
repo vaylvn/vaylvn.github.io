@@ -10,6 +10,8 @@ let score = 0;
 let draggedPiece = null;
 let dragOffset = {x: 0, y: 0};
 
+let audioEnabled = true;
+
 const SHAPES = [
   [[0,0]],                            // single
   [[0,0],[1,0],[0,1],[1,1]],          // 2x2 square
@@ -23,6 +25,56 @@ const SHAPES = [
 ];
 
 const COLORS = ["white","milk","dark"];
+
+
+
+
+
+
+
+
+function playSound(name, { volume = 0.3, rate = 1.0 } = {}) {
+  if (!audioEnabled || !sounds[name]) return;
+
+  const source = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  source.buffer = sounds[name];
+  source.playbackRate.value = rate;
+  gain.gain.value = volume;
+  source.connect(gain).connect(audioCtx.destination);
+  source.start(0);
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const sounds = {};
+
+async function loadSound(name, url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  sounds[name] = await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function loadAllSounds() {
+  await Promise.all([
+    loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click2.mp3"),
+	loadSound("click2", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click.mp3")
+  ]);
+  console.log("Sounds ready");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function initBoard() {
   board = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(null));
@@ -218,6 +270,11 @@ function isValidPlacement(piece, baseX, baseY) {
 }
 
 function placePiece(piece, baseX, baseY) {
+	
+	
+  const variance = Math.floor(Math.random() * 4);
+  playSound("click", { volume: 1.0, rate: 0.8 + (0.05 * variance) });
+	
   piece.shape.forEach(([dx,dy]) => {
     const x = baseX + dx, y = baseY + dy;
     board[y][x] = piece.color;
@@ -253,6 +310,13 @@ function clearLines() {
 
   // --- no clears? exit early ---
   if (fullRows.length === 0 && fullCols.length === 0) return;
+
+  
+  for (let i = 0; i < 10; i++) {
+	  setTimeout(() => {
+		playSound("click2", { volume: 1.0, rate: 0.8 + (0.05 * i) });
+	  }, 40 * i);
+  }
 
   // --- build fade map to avoid double-animating overlaps ---
   const fadeMap = new Map();
@@ -352,7 +416,7 @@ newGameBtn.addEventListener("click", startNewGame);
 
 
 
-
+loadAllSounds();
 
 // Initialize once DOM is ready
 document.addEventListener("DOMContentLoaded", () => {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuickMath</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+
+    <!-- CONFIG SCREEN -->
+	
+	
+	
+	<div id = "config">
+	
+		<section id="configScreen">
+		  
+		
+
+		  <div class="configGroup">
+			<label for="minInput">Min</label>
+			<input type="text" id="minInput" value="1" inputmode="numeric" />
+		  </div>
+
+		  <div class="configGroup">
+			<label for="maxInput">Max</label>
+			<input type="text" id="maxInput" value="12" inputmode="numeric" />
+		  </div>
+
+		  <div class="configGroup">
+			<label for="timeInput">Timer (s)</label>
+			<input type="text" id="timeInput" value="60" inputmode="numeric" />
+		  </div>
+
+		  <button id="startBtn">Start</button>
+		</section>
+	</div>
+	
+    
+
+    <!-- GAME SCREEN -->
+    <section id="gameScreen" class="hidden">
+      <div id="hud">
+        <span id="timer">60</span>
+        <span id="score">0</span>
+      </div>
+
+      <div id="equation"></div>
+      <div id="answerArea"></div>
+      <div id="message">Press any key to start</div>
+    </section>
+
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>

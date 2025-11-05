@@ -151,3 +151,5 @@ html.dragging-cursor, body.dragging-cursor, #board.dragging {
   user-select: none;
   touch-action: none;  /* prevents browser gestures */
 }
+
+
