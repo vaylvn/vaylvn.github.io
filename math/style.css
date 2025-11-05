@@ -1,3 +1,7 @@
+/* ===============================
+   QuickMath v3.6 — Cleaned Styles
+   =============================== */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -6,95 +10,132 @@
 
 body {
   height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: #0e0e0e;
   color: #fff;
-  font-family: 'Inter', sans-serif;
-}
-
-main {
-  text-align: center;
-  width: 100%;
-  max-width: 400px;
-}
-
-/* Hidden helper */
-.hidden {
-  display: none;
-}
-
-/* CONFIG SCREEN */
-#configScreen {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 1.8rem;
-  text-align: center;
-}
-
-#configScreen h1 {
-  font-size: 2.2rem;
-  letter-spacing: 1px;
-  margin-bottom: 0.5rem;
-  opacity: 0.9;
-}
-
-.configGroup {
+  font-family: "Inter", sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
 }
 
-.configGroup label {
-  font-size: 1rem;
-  letter-spacing: 0.5px;
-  opacity: 0.7;
+/* ---------- Header Bar ---------- */
+#topBar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: rgba(20, 20, 20, 0.85);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.5rem;
+  backdrop-filter: blur(10px);
+  z-index: 10;
 }
 
-.configGroup input {
+#title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+#topBar nav button {
   background: none;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  width: 80px;
-  text-align: center;
-  font-size: 1.3rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+  margin-left: 1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+#topBar nav button.active,
+#topBar nav button:hover {
   color: #fff;
-  padding: 0.2rem 0;
-  outline: none;
-  transition: border-color 0.2s, opacity 0.2s;
 }
 
-.configGroup input:focus {
-  border-bottom: 1px solid #fff;
-  opacity: 1;
+/* ---------- Main Layout ---------- */
+main {
+  margin-top: 90px;
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
 }
 
-#startBtn {
-  background: #222;
-  color: white;
+.hidden {
+  display: none !important;
+}
+
+/* ---------- Mode Panels ---------- */
+.mode {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mode.active {
+  display: flex;
+  animation: fade 0.25s ease;
+}
+
+.optionsRow {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.modeBtn,
+#startCustom {
+  background: #fff;
+  color: #000;
   border: none;
-  padding: 0.6rem 2rem;
+  padding: 0.6rem 1.6rem;
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
-  margin-top: 0.5rem;
   transition: opacity 0.2s, transform 0.1s;
 }
 
-#startBtn:hover {
+.modeBtn:hover,
+#startCustom:hover {
   opacity: 0.85;
   transform: translateY(-1px);
 }
 
-#startBtn:active {
-  transform: translateY(0);
+.configRow {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-/* GAME SCREEN */
+.configRow label {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.configRow input {
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  width: 70px;
+  text-align: center;
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.configRow input:focus {
+  border-bottom: 1px solid #fff;
+}
+
+.desc {
+  opacity: 0.6;
+  font-size: 0.9rem;
+}
+
+/* ---------- Game Area ---------- */
 #hud {
   display: flex;
   justify-content: center;
@@ -123,9 +164,9 @@ main {
   font-size: 1.2rem;
 }
 
-/* Fade effect */
+/* ---------- Fade Animation ---------- */
 .fade {
-  animation: fade 0.2s ease-in-out;
+  animation: fade 0.25s ease-in-out;
 }
 
 @keyframes fade {
@@ -137,4 +178,79 @@ main {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* ---------- Overlays (score + leaderboard) ---------- */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.overlayBox {
+  background: rgba(25, 25, 25, 0.9);
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 300px;
+  width: 90%;
+  margin: auto;
+}
+
+#playerName {
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 2rem;
+  text-align: center;
+  width: 100px;
+  margin: 0.8rem 0 1rem;
+  outline: none;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+}
+
+.overlayBtns {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.overlayBtns button,
+#playAgain {
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.overlayBtns button:hover,
+#playAgain:hover {
+  opacity: 0.8;
+}
+
+#leaderboardList {
+  list-style: none;
+  margin: 1rem 0 1.5rem;
+  padding: 0;
+  text-align: left;
+}
+
+#leaderboardList li {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.3rem 0;
+  font-family: monospace;
 }

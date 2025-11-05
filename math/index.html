@@ -7,52 +7,103 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <header id="topBar">
+    <div id="title">QuickMath</div>
+    <nav>
+      <button id="competitiveBtn" class="active">Competitive</button>
+      <button id="customBtn">Custom</button>
+    </nav>
+  </header>
+
   <main>
+    <!-- MODE PANEL -->
+    <section id="modePanel">
+      <div id="competitivePanel" class="mode active">
+        <div class="optionsRow">
+          <button class="modeBtn" data-time="15">15s</button>
+          <button class="modeBtn" data-time="30">30s</button>
+          <button class="modeBtn" data-time="60">60s</button>
+        </div>
+        <p class="desc">Fast math sprints using 1–12 multiplication.</p>
+      </div>
 
-    <!-- CONFIG SCREEN -->
-	
-	
-	
-	<div id = "config">
-	
-		<section id="configScreen">
-		  
-		
+      <div id="customPanel" class="mode">
+        <div class="configRow">
+          <label>Min</label>
+          <input type="text" id="minInput" value="1" inputmode="numeric" />
+          <label>Max</label>
+          <input type="text" id="maxInput" value="12" inputmode="numeric" />
+          <label>Timer</label>
+          <input type="text" id="timeInput" value="45" inputmode="numeric" />
+        </div>
+        <p class="desc">Full freedom — no leaderboard.</p>
+        <button id="startCustom">Start Practice</button>
+      </div>
+    </section>
 
-		  <div class="configGroup">
-			<label for="minInput">Min</label>
-			<input type="text" id="minInput" value="1" inputmode="numeric" />
-		  </div>
-
-		  <div class="configGroup">
-			<label for="maxInput">Max</label>
-			<input type="text" id="maxInput" value="12" inputmode="numeric" />
-		  </div>
-
-		  <div class="configGroup">
-			<label for="timeInput">Timer (s)</label>
-			<input type="text" id="timeInput" value="60" inputmode="numeric" />
-		  </div>
-
-		  <button id="startBtn">Start</button>
-		</section>
-	</div>
-	
-    
-
-    <!-- GAME SCREEN -->
-    <section id="gameScreen" class="hidden">
+    <!-- GAME AREA -->
+    <section id="gameArea" class="hidden">
       <div id="hud">
         <span id="timer">60</span>
         <span id="score">0</span>
       </div>
-
       <div id="equation"></div>
       <div id="answerArea"></div>
       <div id="message">Press any key to start</div>
     </section>
 
+    <!-- SCORE SUBMISSION -->
+    <section id="scoreOverlay" class="hidden">
+      <div class="overlayBox fade">
+        <h2 id="finalScore">Score: 0</h2>
+        <div id="nameEntry">
+          <label>Enter Name (3 letters)</label>
+          <input id="playerName" maxlength="3" autocomplete="off" />
+        </div>
+        <div class="overlayBtns">
+          <button id="submitScore">Submit</button>
+          <button id="skipScore">Skip</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section id="leaderboardOverlay" class="hidden">
+      <div class="overlayBox fade">
+        <h2 id="leaderboardTitle">Leaderboard</h2>
+        <ol id="leaderboardList"></ol>
+        <button id="playAgain">Play Again</button>
+      </div>
+    </section>
   </main>
+
+  <!-- Firebase SDK (no npm required) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+	  const firebaseConfig = {
+
+		apiKey: "AIzaSyCMD2vQU6sytv_rA46MDh0R7TwF7F8ifTQ",
+
+		authDomain: "quickmath-leaderboard.firebaseapp.com",
+
+		projectId: "quickmath-leaderboard",
+
+		storageBucket: "quickmath-leaderboard.firebasestorage.app",
+
+		messagingSenderId: "514768507939",
+
+		appId: "1:514768507939:web:640e8ceace8a0476e44d96"
+
+	  };
+
+
+    const app = initializeApp(firebaseConfig);
+    window.db = getFirestore(app);
+    window.firestoreFns = { collection, addDoc, query, orderBy, limit, getDocs };
+  </script>
+
   <script src="script.js"></script>
 </body>
 </html>
