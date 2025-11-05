@@ -13,11 +13,11 @@
       <h1>QuickMath</h1>
       <p class="desc">Fast math sprints · choose a mode</p>
       <div class="mode-select">
-        <button data-time="15">15 s</button>
-        <button data-time="30">30 s</button>
-        <button data-time="60">60 s</button>
-        <button id="customBtn">Custom</button>
-      </div>
+		  <button data-time="15">15 s</button>
+		  <button data-time="30">30 s</button>
+		  <button data-time="60">60 s</button>
+		  <button id="toggleCustomBtn">Custom</button>
+		</div>
 	  <p class="smallLink">
         <button id="viewLBBtn" class="linkBtn">Leaderboards</button>
 	  </p>
@@ -34,6 +34,14 @@
       <div id="answer"></div>
       <p id="msg" class="hint">Press any key to start</p>
     </section>
+
+	
+	<div id="customPanel" class="hidden">
+	  <label>Min × <input id="minInput" type="number" value="1" min="1" max="99"></label>
+	  <label>Max × <input id="maxInput" type="number" value="12" min="1" max="99"></label>
+	  <label>Time (s) <input id="timeInput" type="number" value="30" min="5" max="300"></label>
+	  <button id="startCustomBtn">Start</button>
+	</div>
 
     <!-- Screen: Results -->
     <section id="screen-results" class="screen">

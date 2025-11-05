@@ -22,6 +22,29 @@ const modeButtons = document.querySelectorAll('.mode-tabs button');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
 
 
+
+
+const toggleCustomBtn = document.getElementById('toggleCustomBtn');
+const customPanel = document.getElementById('customPanel');
+const startCustomBtn = document.getElementById('startCustomBtn');
+const minInput = document.getElementById('minInput');
+const maxInput = document.getElementById('maxInput');
+const timeInput = document.getElementById('timeInput');
+
+
+toggleCustomBtn.onclick = () => {
+  customPanel.classList.toggle('hidden');
+};
+
+startCustomBtn.onclick = () => {
+  min = Math.max(1, parseInt(minInput.value) || 1);
+  max = Math.max(min, parseInt(maxInput.value) || 12);
+  selectedMode = Math.max(5, parseInt(timeInput.value) || 30);
+  time = selectedMode;
+  startGame();
+};
+
+
 /* ---- Screen helper ---- */
 function show(id) {
   screens.forEach(s => s.classList.remove('active'));
