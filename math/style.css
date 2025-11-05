@@ -1,256 +1,102 @@
-/* ===============================
-   QuickMath v3.6 — Cleaned Styles
-   =============================== */
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* QuickMath v4 — Minimal aesthetic */
+* { box-sizing:border-box; margin:0; padding:0; }
 
 body {
-  height: 100vh;
-  background: #0e0e0e;
-  color: #fff;
-  font-family: "Inter", sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background:#1b1b1b;
+  color:#eaeaea;
+  font-family:"JetBrains Mono", monospace;
+  display:flex; justify-content:center; align-items:center;
+  min-height:100vh;
 }
 
-/* ---------- Header Bar ---------- */
-#topBar {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  background: rgba(20, 20, 20, 0.85);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1.5rem;
-  backdrop-filter: blur(10px);
-  z-index: 10;
+main { width:100%; max-width:600px; text-align:center; }
+
+.screen {
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:2rem;
+  animation:fade 0.3s ease;
+}
+.screen.active { display:flex; }
+
+h1 { font-size:2.4rem; }
+h2 { font-size:1.6rem; }
+.desc, .hint { opacity:0.6; font-size:1rem; }
+
+.mode-select, .row {
+  display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;
 }
 
-#title {
-  font-size: 1.2rem;
-  font-weight: 600;
+button {
+  background:none;
+  border:1px solid #555;
+  color:#eaeaea;
+  padding:0.6rem 1.4rem;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+  font-family:inherit;
+  font-size:1rem;
+}
+button:hover {
+  border-color:#f5c542;
+  color:#f5c542;
+}
+button.small {
+  position:absolute;
+  left:1rem;
+  top:1rem;
+  font-size:0.9rem;
 }
 
-#topBar nav button {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1rem;
-  margin-left: 1rem;
-  cursor: pointer;
-  transition: color 0.2s;
+input {
+  background:none;
+  border:none;
+  border-bottom:1px solid #555;
+  color:#f5c542;
+  text-transform:uppercase;
+  font-family:inherit;
+  font-size:2rem;
+  text-align:center;
+  width:100px;
+  outline:none;
 }
 
-#topBar nav button.active,
-#topBar nav button:hover {
-  color: #fff;
-}
-
-/* ---------- Main Layout ---------- */
-main {
-  margin-top: 90px;
-  text-align: center;
-  width: 100%;
-  max-width: 600px;
-}
-
-.hidden {
-  display: none !important;
-}
-
-/* ---------- Mode Panels ---------- */
-.mode {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.mode.active {
-  display: flex;
-  animation: fade 0.25s ease;
-}
-
-.optionsRow {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.modeBtn,
-#startCustom {
-  background: #fff;
-  color: #000;
-  border: none;
-  padding: 0.6rem 1.6rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
-}
-
-.modeBtn:hover,
-#startCustom:hover {
-  opacity: 0.85;
-  transform: translateY(-1px);
-}
-
-.configRow {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.configRow label {
-  font-size: 1rem;
-  opacity: 0.7;
-}
-
-.configRow input {
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  width: 70px;
-  text-align: center;
-  font-size: 1.1rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.configRow input:focus {
-  border-bottom: 1px solid #fff;
-}
-
-.desc {
-  opacity: 0.6;
-  font-size: 0.9rem;
-}
-
-/* ---------- Game Area ---------- */
 #hud {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  font-size: 1.5rem;
-  opacity: 0.7;
-  margin-bottom: 2rem;
+  display:flex;
+  gap:0.6rem;
+  opacity:0.7;
+  font-size:1.4rem;
 }
 
 #equation {
-  font-size: 4rem;
-  letter-spacing: 2px;
-  margin-bottom: 1rem;
+  font-size:4rem;
+  letter-spacing:1px;
+  min-height:4rem;
 }
-
-#answerArea {
-  font-size: 3rem;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  min-width: 6ch;
-  margin: 0 auto 1.5rem;
-  height: 4rem;
-}
-
-#message {
-  opacity: 0.6;
-  font-size: 1.2rem;
-}
-
-/* ---------- Fade Animation ---------- */
-.fade {
-  animation: fade 0.25s ease-in-out;
-}
-
-@keyframes fade {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* ---------- Overlays (score + leaderboard) ---------- */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-}
-
-.overlayBox {
-  background: rgba(25, 25, 25, 0.9);
-  padding: 2rem 3rem;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 300px;
-  width: 90%;
-  margin: auto;
-}
-
-#playerName {
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  text-transform: uppercase;
-  font-size: 2rem;
-  text-align: center;
-  width: 100px;
-  margin: 0.8rem 0 1rem;
-  outline: none;
-  font-family: monospace;
-  letter-spacing: 0.1em;
-}
-
-.overlayBtns {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.overlayBtns button,
-#playAgain {
-  background: #fff;
-  color: #000;
-  border: none;
-  padding: 0.6rem 1.4rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.overlayBtns button:hover,
-#playAgain:hover {
-  opacity: 0.8;
+#answer {
+  font-size:3rem;
+  min-height:3.5rem;
+  border-bottom:2px solid rgba(255,255,255,0.2);
+  width:6ch;
+  margin:auto;
 }
 
 #leaderboardList {
-  list-style: none;
-  margin: 1rem 0 1.5rem;
-  padding: 0;
-  text-align: left;
+  list-style:none;
+  width:100%;
+  max-width:300px;
+  margin:auto;
+  padding:0;
+  text-align:left;
+}
+#leaderboardList li {
+  display:flex; justify-content:space-between;
+  margin:0.3rem 0;
 }
 
-#leaderboardList li {
-  display: flex;
-  justify-content: space-between;
-  margin: 0.3rem 0;
-  font-family: monospace;
+@keyframes fade {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
 }

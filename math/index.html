@@ -3,107 +3,74 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QuickMath</title>
+  <title>QuickMath v4</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header id="topBar">
-    <div id="title">QuickMath</div>
-    <nav>
-      <button id="competitiveBtn" class="active">Competitive</button>
-      <button id="customBtn">Custom</button>
-    </nav>
-  </header>
-
   <main>
-    <!-- MODE PANEL -->
-    <section id="modePanel">
-      <div id="competitivePanel" class="mode active">
-        <div class="optionsRow">
-          <button class="modeBtn" data-time="15">15s</button>
-          <button class="modeBtn" data-time="30">30s</button>
-          <button class="modeBtn" data-time="60">60s</button>
-        </div>
-        <p class="desc">Fast math sprints using 1–12 multiplication.</p>
-      </div>
-
-      <div id="customPanel" class="mode">
-        <div class="configRow">
-          <label>Min</label>
-          <input type="text" id="minInput" value="1" inputmode="numeric" />
-          <label>Max</label>
-          <input type="text" id="maxInput" value="12" inputmode="numeric" />
-          <label>Timer</label>
-          <input type="text" id="timeInput" value="45" inputmode="numeric" />
-        </div>
-        <p class="desc">Full freedom — no leaderboard.</p>
-        <button id="startCustom">Start Practice</button>
+    <!-- Screen: Home -->
+    <section id="screen-home" class="screen active">
+      <h1>QuickMath</h1>
+      <p class="desc">Fast math sprints · choose a mode</p>
+      <div class="mode-select">
+        <button data-time="15">15 s</button>
+        <button data-time="30">30 s</button>
+        <button data-time="60">60 s</button>
+        <button id="customBtn">Custom</button>
       </div>
     </section>
 
-    <!-- GAME AREA -->
-    <section id="gameArea" class="hidden">
+    <!-- Screen: Game -->
+    <section id="screen-game" class="screen">
       <div id="hud">
-        <span id="timer">60</span>
+        <span id="timer">–</span>
+        <span>·</span>
         <span id="score">0</span>
       </div>
       <div id="equation"></div>
-      <div id="answerArea"></div>
-      <div id="message">Press any key to start</div>
+      <div id="answer"></div>
+      <p id="msg" class="hint">Press any key to start</p>
     </section>
 
-    <!-- SCORE SUBMISSION -->
-    <section id="scoreOverlay" class="hidden">
-      <div class="overlayBox fade">
-        <h2 id="finalScore">Score: 0</h2>
-        <div id="nameEntry">
-          <label>Enter Name (3 letters)</label>
-          <input id="playerName" maxlength="3" autocomplete="off" />
-        </div>
-        <div class="overlayBtns">
-          <button id="submitScore">Submit</button>
-          <button id="skipScore">Skip</button>
-        </div>
+    <!-- Screen: Results -->
+    <section id="screen-results" class="screen">
+      <h2>Score: <span id="finalScore"></span></h2>
+      <input id="nameInput" maxlength="3" placeholder="AAA" />
+      <div class="row">
+        <button id="submitBtn">Submit</button>
+        <button id="playAgainBtn">Play Again</button>
       </div>
     </section>
 
-    <!-- LEADERBOARD -->
-    <section id="leaderboardOverlay" class="hidden">
-      <div class="overlayBox fade">
-        <h2 id="leaderboardTitle">Leaderboard</h2>
-        <ol id="leaderboardList"></ol>
-        <button id="playAgain">Play Again</button>
-      </div>
+    <!-- Screen: Leaderboard -->
+    <section id="screen-leaderboard" class="screen">
+      <button id="backBtn" class="small">← Back</button>
+      <h2 id="lbTitle">Leaderboard</h2>
+      <ol id="leaderboardList"></ol>
     </section>
   </main>
 
-  <!-- Firebase SDK (no npm required) -->
+  <!-- Firebase + Firestore setup -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-	  const firebaseConfig = {
-
-		apiKey: "AIzaSyCMD2vQU6sytv_rA46MDh0R7TwF7F8ifTQ",
-
-		authDomain: "quickmath-leaderboard.firebaseapp.com",
-
-		projectId: "quickmath-leaderboard",
-
-		storageBucket: "quickmath-leaderboard.appspot.com",
-
-		messagingSenderId: "514768507939",
-
-		appId: "1:514768507939:web:640e8ceace8a0476e44d96"
-
-	  };
-
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMD2vQU6sytv_rA46MDh0R7TwF7F8ifTQ",
+      authDomain: "quickmath-leaderboard.firebaseapp.com",
+      projectId: "quickmath-leaderboard",
+      storageBucket: "quickmath-leaderboard.appspot.com",  // ← fixed domain
+      messagingSenderId: "514768507939",
+      appId: "1:514768507939:web:640e8ceace8a0476e44d96"
+    };
 
     const app = initializeApp(firebaseConfig);
     window.db = getFirestore(app);
     window.firestoreFns = { collection, addDoc, query, orderBy, limit, getDocs };
   </script>
 
-  <script src="script.js"></script>
+  <!-- Main game logic -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
