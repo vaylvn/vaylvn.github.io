@@ -17,6 +17,9 @@ const nameInput = document.getElementById('nameInput');
 const lbList = document.getElementById('leaderboardList');
 const lbTitle = document.getElementById('lbTitle');
 
+const lbModeLabel = document.getElementById('lbModeLabel');
+const modeButtons = document.querySelectorAll('.mode-tabs button');
+
 /* ---- Screen helper ---- */
 function show(id) {
   screens.forEach(s => s.classList.remove('active'));
@@ -41,9 +44,21 @@ document.getElementById('customBtn').onclick = () => {
 
 
 document.getElementById('viewLBBtn').onclick = async () => {
-  await loadLeaderboard(15); // default mode
+  // clear all active states
+  modeButtons.forEach(b => b.classList.remove('active'));
+
+  // set 15s as default active mode
+  const defaultBtn = document.querySelector('.mode-tabs button[data-mode="15"]');
+  if (defaultBtn) defaultBtn.classList.add('active');
+
+  // update label + load data
+  lbModeLabel.textContent = 15;
+  await loadLeaderboard(15);
+
+  // show screen
   show('screen-leaderboard');
 };
+
 
 
 
