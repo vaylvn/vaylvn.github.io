@@ -50,6 +50,36 @@ button.small {
   font-size:0.9rem;
 }
 
+.mode-tabs {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  margin-top: -1rem;
+  margin-bottom: 1rem;
+}
+
+.mode-tabs button {
+  background: none;
+  border: 1px solid #555;
+  color: #eaeaea;
+  padding: 0.3rem 0.9rem;
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.mode-tabs button:hover { border-color: #f5c542; color: #f5c542; }
+
+.mode-tabs button.active {
+  background: #f5c542;
+  color: #1b1b1b;
+  border-color: #f5c542;
+  font-weight: bold;
+}
+
+
 .smallLink { opacity:0.7; font-size:0.9rem; }
 .linkBtn {
   background:none;

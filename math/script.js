@@ -133,3 +133,17 @@ async function loadLeaderboard(mode){
     lbList.append(li);
   });
 }
+
+/* ---- Leaderboard mode switching ---- */
+const lbModeLabel = document.getElementById('lbModeLabel');
+const modeButtons = document.querySelectorAll('.mode-tabs button');
+
+modeButtons.forEach(btn => {
+  btn.onclick = async () => {
+    modeButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = parseInt(btn.dataset.mode, 10);
+    lbModeLabel.textContent = mode;
+    await loadLeaderboard(mode);
+  };
+});

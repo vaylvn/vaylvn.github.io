@@ -47,10 +47,18 @@
 
     <!-- Screen: Leaderboard -->
     <section id="screen-leaderboard" class="screen">
-      <button id="backBtn" class="small">← Back</button>
-      <h2 id="lbTitle">Leaderboard</h2>
-      <ol id="leaderboardList"></ol>
-    </section>
+	  <button id="backBtn" class="small">← Back</button>
+	  <h2>Top 10 — <span id="lbModeLabel">15</span>s Mode</h2>
+
+	  <div class="mode-tabs">
+		<button data-mode="15" class="active">15 s</button>
+		<button data-mode="30">30 s</button>
+		<button data-mode="60">60 s</button>
+	  </div>
+
+	  <ol id="leaderboardList"></ol>
+	</section>
+
   </main>
 
   <!-- Firebase + Firestore setup -->
