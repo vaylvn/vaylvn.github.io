@@ -52,7 +52,7 @@ document.getElementById('viewLBBtn').onclick = async () => {
   if (defaultBtn) defaultBtn.classList.add('active');
 
   // update label + load data
-  lbModeLabel.textContent = 15;
+  lbModeLabel.textContent = mode;
   await loadLeaderboard(15);
 
   // show screen
