@@ -39,6 +39,14 @@ document.getElementById('customBtn').onclick = () => {
   startGame();
 };
 
+
+document.getElementById('viewLBBtn').onclick = async () => {
+  await loadLeaderboard(15); // default mode
+  show('screen-leaderboard');
+};
+
+
+
 /* ---- Game logic ---- */
 function startGame() {
   score = 0;
