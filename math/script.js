@@ -15,10 +15,12 @@ const scoreEl = document.getElementById('score');
 const finalScoreEl = document.getElementById('finalScore');
 const nameInput = document.getElementById('nameInput');
 const lbList = document.getElementById('leaderboardList');
-const lbTitle = document.getElementById('lbTitle');
 
 const lbModeLabel = document.getElementById('lbModeLabel');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
+
+const modeButtons = document.querySelectorAll('.mode-tabs button');
+
 
 /* ---- Screen helper ---- */
 function show(id) {
@@ -141,7 +143,7 @@ async function loadLeaderboard(mode){
   const snap=await getDocs(q);
   const data=[]; snap.forEach(d=>data.push(d.data()));
   lbList.innerHTML='';
-  lbTitle.textContent=`Top 10 — ${mode}s Mode`;
+  lbModeLabel.textContent=`Top 10 — ${mode}s Mode`;
   data.forEach((r,i)=>{
     const li=document.createElement('li');
     li.innerHTML=`<span>${String(i+1).padStart(2,'0')}. ${r.name}</span><span>${r.score}</span>`;
@@ -149,9 +151,6 @@ async function loadLeaderboard(mode){
   });
 }
 
-/* ---- Leaderboard mode switching ---- */
-const lbModeLabel = document.getElementById('lbModeLabel');
-const modeButtons = document.querySelectorAll('.mode-tabs button');
 
 modeButtons.forEach(btn => {
   btn.onclick = async () => {
