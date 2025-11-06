@@ -91,6 +91,11 @@ document.addEventListener('keydown', e=>{
   else if(/^[0-9]$/.test(e.key)) input+=e.key;
   ansEl.textContent=input;
   if(parseInt(input,10)===current.ans){
+	  
+	equationEl.style.transition = "color 0.1s ease";
+    equationEl.style.color = "#5f5"; // green flash
+    setTimeout(() => (equationEl.style.color = ""), 120);
+	  
     score++; scoreEl.textContent=score; newQ();
   }
 });
@@ -212,3 +217,41 @@ viewBtn.onclick=async()=>{
   await loadLeaderboard(15);
   show('screen-leaderboard');
 };
+
+
+
+
+// --- Zen button wiring ---
+document.getElementById('zenBtn').onclick=()=>show('screen-zen');
+document.getElementById('backZenBtn').onclick=()=>show('screen-home');
+document.getElementById('startZenBtn').onclick=()=>{
+  const minA=parseInt(document.getElementById('zenAmin').value)||1;
+  const maxA=parseInt(document.getElementById('zenAmax').value)||12;
+  const minB=parseInt(document.getElementById('zenBmin').value)||1;
+  const maxB=parseInt(document.getElementById('zenBmax').value)||12;
+  startZen(minA,maxA,minB,maxB);
+  show('screen-game');
+};
+
+// --- Zen mode logic ---
+function startZen(minA,maxA,minB,maxB){
+  running=true;
+  timerEl.style.display='none';
+  scoreEl.style.display='none';
+  msgEl.textContent='Zen Mode · press Esc to exit';
+  nextZenQ(minA,maxA,minB,maxB);
+  document.onkeydown=(e)=>{
+    if(e.key==="Escape"){ running=false; show('screen-home'); return; }
+  };
+}
+
+function nextZenQ(minA,maxA,minB,maxB){
+  const a=Math.floor(Math.random()*(maxA-minA+1))+minA;
+  const b=Math.floor(Math.random()*(maxB-minB+1))+minB;
+  current={a,b,ans:a*b};
+  equationEl.style.opacity=0;
+  setTimeout(()=>{
+    equationEl.textContent=`${a} × ${b}`;
+    equationEl.style.opacity=1;
+  },120);
+}

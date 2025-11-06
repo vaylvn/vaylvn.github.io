@@ -20,6 +20,7 @@
         <button data-time="30">30 s</button>
         <button data-time="60">60 s</button>
         <button id="toggleCustomBtn">Custom</button>
+        <button id="zenBtn">Zen</button>
       </div>
 
       <div id="customPanel" class="hidden">
@@ -28,10 +29,28 @@
         <label>Time (s) <input id="timeInput" type="number" value="30" min="5" max="300"></label>
         <button id="startCustomBtn">Start</button>
       </div>
+	  
+	  
 
       <p class="smallLink">
         <button id="viewLBBtn" class="linkBtn">Leaderboards</button>
       </p>
+    </section>
+	
+	<!-- Screen: Zen -->
+    <section id="screen-zen" class="screen">
+      <h2>Zen Mode</h2>
+      <p class="desc">Define your number ranges · no timer, no leaderboard</p>
+
+      <div class="zen-config">
+        <div>A <input id="zenAmin" type="number" value="1" min="1"> – <input id="zenAmax" type="number" value="12" min="1"></div>
+        <div>B <input id="zenBmin" type="number" value="1" min="1"> – <input id="zenBmax" type="number" value="12" min="1"></div>
+      </div>
+
+      <div class="row">
+        <button id="startZenBtn">Start Zen</button>
+        <button id="backZenBtn">← Back</button>
+      </div>
     </section>
 
     <!-- Screen: Game -->
