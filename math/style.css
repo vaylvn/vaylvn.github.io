@@ -3,7 +3,8 @@
 body {
   background:#1b1b1b;
   color:#eaeaea;
-  font-family:"JetBrains Mono", monospace;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.03em;
   display:flex; justify-content:center; align-items:center;
   min-height:100vh;
 }
