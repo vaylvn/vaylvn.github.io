@@ -194,8 +194,10 @@ document.getElementById('submitBtn').onclick = async () => {
 
   // basic rude-word filter
   const banned = [
-    "NIG", "NGR", "POC", "FAG", "KKK", "SEX", "GAY"
+	  "NIG", "NGR", "POC", "KKK", "FAG", "FGT"
   ];
+  
+  
   if (banned.includes(name)) {
     alert("Invalid tag.");
     return;
