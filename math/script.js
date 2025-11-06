@@ -94,14 +94,41 @@ document.addEventListener('keydown', e=>{
   }
 });
 
-function endGame(){
-  if(!running) return;
-  running=false; clearInterval(timerInt);
-  finalScoreEl.textContent=score;
+function endGame() {
+  if (!running) return;
+  running = false;
+  clearInterval(timerInt);
+  finalScoreEl.textContent = score;
+
+  // Hide submit if this was a custom mode
+  const submit = document.getElementById('submitBtn');
+  const playAgain = document.getElementById('playAgainBtn');
+
+  if ([15, 30, 60].includes(selectedMode)) {
+    submit.style.display = 'inline-block';
+    playAgain.textContent = 'Skip';
+  } else {
+    submit.style.display = 'none';
+    playAgain.textContent = 'Main Menu';
+  }
+
   show('screen-results');
 }
 
+
 /* ---- Leaderboards ---- */
+
+function isOffensiveTag(tag) {
+  if (!tag) return false;
+  const banned = [
+    "nig", "ngr", "poc", "fag", "gay", "kkk", "cum", "sex"
+  ];
+  const t = tag.toLowerCase();
+  return banned.includes(t);
+}
+
+
+
 async function loadLeaderboard(mode){
   if(!window.db) return;
   const {collection,query,orderBy,limit,getDocs}=window.firestoreFns;
@@ -135,17 +162,42 @@ modeButtons.forEach(btn=>{
 });
 
 /* Results → Leaderboard + Home */
-document.getElementById('submitBtn').onclick=async()=>{
-  const name=nameInput.value.trim().toUpperCase();
-  if(!/^[A-Z]{3}$/.test(name)) return alert("3 letters please");
-  if(window.db){
-    const {collection,addDoc}=window.firestoreFns;
-    await addDoc(collection(window.db,`leaderboards/${selectedMode}/scores`),
-      {name,score,time:Date.now()});
+document.getElementById('submitBtn').onclick = async () => {
+  const name = nameInput.value.trim().toUpperCase();
+
+  // must be exactly three letters
+  if (!/^[A-Z]{3}$/.test(name)) {
+    alert("3 letters please");
+    return;
   }
+
+  // basic rude-word filter
+  const banned = [
+    "NIG", "NGR", "POC", "FAG", "KKK", "SEX", "GAY"
+  ];
+  if (banned.includes(name)) {
+    alert("Invalid tag.");
+    return;
+  }
+
+  // write score
+  if (window.db) {
+    const { collection, addDoc } = window.firestoreFns;
+    await addDoc(
+      collection(window.db, `leaderboards/${selectedMode}/scores`),
+      { name, score, time: Date.now() }
+    );
+  }
+
   await loadLeaderboard(selectedMode);
-  show('screen-leaderboard');
+  show("screen-leaderboard");
 };
+
+
+
+
+
+
 document.getElementById('playAgainBtn').onclick=()=>show('screen-home');
 document.getElementById('backBtn').onclick=()=>show('screen-home');
 
