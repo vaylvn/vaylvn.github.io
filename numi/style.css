@@ -188,33 +188,3 @@ button.small {
 
 
 
-
-/* Zen Mode */
-#screen-zen {
-  text-align:center;
-  gap:1.4rem;
-}
-
-.zen-config {
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:0.8rem;
-  margin:1rem 0;
-}
-
-.zen-config input[type=number] {
-  width:3rem;
-  text-align:center;
-  background:none;
-  border:none;
-  border-bottom:2px solid #555;
-  color:#f5c542;
-  font-family:inherit;
-  font-size:1.2rem;
-  outline:none;
-  transition:border-color 0.2s ease;
-}
-.zen-config input[type=number]:focus {
-  border-color:#f5c542;
-}
