@@ -28,7 +28,7 @@ document.querySelectorAll(".modeBtn").forEach(b => {
   };
 });
 
-document.getElementById("customBtn").onclick = async () => {
+document.getElementById("toggleCustomBtn").onclick = async () => {
   show("screen-custom");
 };
 
@@ -170,7 +170,7 @@ async function loadLeaderboard(mode) {
 let zenMode = false;
 const zenRange = { Amin: 1, Amax: 12, Bmin: 1, Bmax: 12 };
 
-document.getElementById("zenBtn").onclick = () => {
+document.getElementById("toggleZenBtn").onclick = () => {
   document.getElementById("zenPanel").classList.toggle("hidden");
 };
 
