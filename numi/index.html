@@ -20,6 +20,7 @@
         <button data-time="30">30 s</button>
         <button data-time="60">60 s</button>
         <button id="toggleCustomBtn">Custom</button>
+		<button id="toggleZenBtn">Zen</button>
       </div>
 
       <div id="customPanel" class="hidden">
@@ -29,7 +30,12 @@
         <button id="startCustomBtn">Start</button>
       </div>
 	  
-
+		<div id="zenPanel" class="hidden">
+		  <p>Zen mode — no timer, just flow</p>
+		  <label>A <input id="zenAmin" type="number" value="1" min="1"> – <input id="zenAmax" type="number" value="12" min="1"></label>
+		  <label>B <input id="zenBmin" type="number" value="1" min="1"> – <input id="zenBmax" type="number" value="12" min="1"></label>
+		  <button id="startZenBtn">Start Zen</button>
+		</div>
 
       <p class="smallLink">
         <button id="viewLBBtn" class="linkBtn">Leaderboards</button>
