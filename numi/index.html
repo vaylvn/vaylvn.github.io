@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Numi</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <!-- Screen: Home -->
+    <section id="screen-home" class="screen active">
+      <h1>Numi</h1>
+      <p class="desc">Fast math sprints · choose a mode</p>
+
+      <div class="mode-select">
+        <button data-time="15">15 s</button>
+        <button data-time="30">30 s</button>
+        <button data-time="60">60 s</button>
+        <button id="toggleCustomBtn">Custom</button>
+      </div>
+
+      <div id="customPanel" class="hidden">
+        <label>Min × <input id="minInput" type="number" value="1" min="1" max="99"></label>
+        <label>Max × <input id="maxInput" type="number" value="12" min="1" max="99"></label>
+        <label>Time (s) <input id="timeInput" type="number" value="30" min="5" max="300"></label>
+        <button id="startCustomBtn">Start</button>
+      </div>
+
+      <p class="smallLink">
+        <button id="viewLBBtn" class="linkBtn">Leaderboards</button>
+      </p>
+    </section>
+
+    <!-- Screen: Game -->
+    <section id="screen-game" class="screen">
+	
+	  <button id="backBtnGame" class="small">← Back</button>
+	
+      <div id="hud">
+        <span id="timer">–</span>
+        <span>·</span>
+        <span id="score">0</span>
+      </div>
+      <div id="equation"></div>
+      <div id="answer"></div>
+      <p id="msg" class="hint">Press any key to start</p>
+    </section>
+
+    <!-- Screen: Results -->
+    <section id="screen-results" class="screen">
+      <h2>Score: <span id="finalScore"></span></h2>
+      <input id="nameInput" maxlength="3" placeholder="AAA" />
+      <div class="row">
+        <button id="submitBtn">Submit</button>
+        <button id="playAgainBtn">Play Again</button>
+      </div>
+    </section>
+
+    <!-- Screen: Leaderboard -->
+    <section id="screen-leaderboard" class="screen">
+      <button id="backBtn" class="small">← Back</button>
+      <h2>Top 10 — <span id="lbModeLabel">15</span>s Mode</h2>
+
+      <div class="mode-tabs">
+        <button data-mode="15" class="active">15 s</button>
+        <button data-mode="30">30 s</button>
+        <button data-mode="60">60 s</button>
+      </div>
+
+      <ol id="leaderboardList"></ol>
+    </section>
+  </main>
+
+  <!-- Firebase + Firestore setup -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs }
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMD2vQU6sytv_rA46MDh0R7TwF7F8ifTQ",
+      authDomain: "quickmath-leaderboard.firebaseapp.com",
+      projectId: "quickmath-leaderboard",
+      storageBucket: "quickmath-leaderboard.appspot.com",
+      messagingSenderId: "514768507939",
+      appId: "1:514768507939:web:640e8ceace8a0476e44d96"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.db = getFirestore(app);
+    window.firestoreFns = { collection, addDoc, query, orderBy, limit, getDocs };
+  </script>
+
+  <!-- Main logic -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
