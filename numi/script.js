@@ -53,64 +53,6 @@ startCustomBtn.onclick = () => {
 
 
 
-// --- ZEN MODE ---
-
-const toggleZenBtn = document.getElementById('toggleZenBtn');
-const zenPanel = document.getElementById('zenPanel');
-const startZenBtn = document.getElementById('startZenBtn');
-
-let zenMode = false;
-
-toggleZenBtn.onclick = () => {
-  zenPanel.classList.toggle('hidden');
-  document.getElementById('customPanel').classList.add('hidden');
-};
-
-startZenBtn.onclick = () => {
-  const Amin = parseInt(document.getElementById('zenAmin').value) || 1;
-  const Amax = parseInt(document.getElementById('zenAmax').value) || 12;
-  const Bmin = parseInt(document.getElementById('zenBmin').value) || 1;
-  const Bmax = parseInt(document.getElementById('zenBmax').value) || 12;
-
-  zenMode = true;
-  startZen(Amin, Amax, Bmin, Bmax);
-};
-
-// Zen loop
-function startZen(Amin, Amax, Bmin, Bmax) {
-  show('screen-game');
-  running = true;
-  timerEl.style.display = 'none';
-  scoreEl.style.display = 'none';
-  msgEl.textContent = 'Zen mode · press Esc to exit';
-  newZenQ(Amin, Amax, Bmin, Bmax);
-  document.addEventListener('keydown', exitZen);
-}
-
-function newZenQ(Amin, Amax, Bmin, Bmax) {
-  const a = Math.floor(Math.random() * (Amax - Amin + 1)) + Amin;
-  const b = Math.floor(Math.random() * (Bmax - Bmin + 1)) + Bmin;
-  current = { a, b, ans: a * b };
-  document.getElementById('equation').textContent = `${a} × ${b}`;
-  document.getElementById('answer').textContent = '';
-  input = '';
-}
-
-function exitZen(e) {
-  if (e.key === 'Escape') {
-    zenMode = false;
-    running = false;
-    timerEl.style.display = 'inline';
-    scoreEl.style.display = 'inline';
-    document.removeEventListener('keydown', exitZen);
-    show('screen-home');
-  }
-}
-
-
-
-
-
 
 
 /* ---- Game Logic ---- */
@@ -168,8 +110,8 @@ document.addEventListener('keydown', e => {
     setTimeout(() => (q.style.color = ''), 50);
 
     input = '';
-    if (zenMode) newZenQ(Amin, Amax, Bmin, Bmax);
-    else newQ();
+
+    newQ();
   }
 });
 
