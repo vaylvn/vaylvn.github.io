@@ -28,7 +28,7 @@ document.querySelectorAll(".modeBtn").forEach(b => {
   };
 });
 
-document.getElementById("customBtn").onclick = () => {
+document.getElementById("customBtn").onclick = async () => {
   show("screen-custom");
 };
 
