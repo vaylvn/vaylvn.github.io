@@ -171,3 +171,16 @@ input {
   from { opacity:0; transform:translateY(10px); }
   to   { opacity:1; transform:translateY(0); }
 }
+
+
+.screen {
+  position: relative; /* establish containing block for absolute children */
+}
+
+button.small {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  font-size: 0.9rem;
+  transform: translateZ(0); /* optional: force GPU compositing, smooths reflow */
+}
