@@ -92,7 +92,11 @@ document.addEventListener('keydown', e=>{
   ansEl.textContent=input;
   if(parseInt(input,10)===current.ans){
 	  
-
+    eqEl.style.transition="color 0.1s ease";
+    eqEl.style.color="#5f5";
+    setTimeout(()=>eqEl.style.color="",150);
+	  
+	
 	  
     score++; scoreEl.textContent=score; newQ();
   }
