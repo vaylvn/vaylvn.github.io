@@ -1,5 +1,3 @@
-/* QuickMath v4 Minimal — core logic */
-
 let min = 1, max = 12;
 let time = 15, running = false, timerInt;
 let score = 0, current = {}, input = '';
@@ -15,15 +13,24 @@ const scoreEl = document.getElementById('score');
 const finalScoreEl = document.getElementById('finalScore');
 const nameInput = document.getElementById('nameInput');
 const lbList = document.getElementById('leaderboardList');
-
 const lbModeLabel = document.getElementById('lbModeLabel');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
 
-const modeButtons = document.querySelectorAll('.mode-tabs button');
+function show(id) {
+  screens.forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
 
+/* ---- Competitive ---- */
+document.querySelectorAll('.mode-select button[data-time]').forEach(btn => {
+  btn.onclick = () => {
+    selectedMode = parseInt(btn.dataset.time,10);
+    time = selectedMode;
+    startGame();
+  };
+});
 
-
-
+/* ---- Custom ---- */
 const toggleCustomBtn = document.getElementById('toggleCustomBtn');
 const customPanel = document.getElementById('customPanel');
 const startCustomBtn = document.getElementById('startCustomBtn');
@@ -31,10 +38,7 @@ const minInput = document.getElementById('minInput');
 const maxInput = document.getElementById('maxInput');
 const timeInput = document.getElementById('timeInput');
 
-
-toggleCustomBtn.onclick = () => {
-  customPanel.classList.toggle('hidden');
-};
+toggleCustomBtn.onclick = () => customPanel.classList.toggle('hidden');
 
 startCustomBtn.onclick = () => {
   min = Math.max(1, parseInt(minInput.value) || 1);
@@ -44,50 +48,7 @@ startCustomBtn.onclick = () => {
   startGame();
 };
 
-
-/* ---- Screen helper ---- */
-function show(id) {
-  screens.forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-/* ---- Menu → Game ---- */
-document.querySelectorAll('.mode-select button[data-time]').forEach(btn => {
-  btn.onclick = () => {
-    selectedMode = parseInt(btn.dataset.time,10);
-    time = selectedMode;
-    startGame();
-  };
-});
-document.getElementById('customBtn').onclick = () => {
-  min = parseInt(prompt("Min ×", "1")) || 1;
-  max = parseInt(prompt("Max ×", "12")) || 12;
-  selectedMode = parseInt(prompt("Seconds", "30")) || 30;
-  time = selectedMode;
-  startGame();
-};
-
-
-document.getElementById('viewLBBtn').onclick = async () => {
-  // clear all active states
-  modeButtons.forEach(b => b.classList.remove('active'));
-
-  // set 15s as default active mode
-  const defaultBtn = document.querySelector('.mode-tabs button[data-mode="15"]');
-  if (defaultBtn) defaultBtn.classList.add('active');
-
-  // update label + load data
-  lbModeLabel.textContent = mode;
-  await loadLeaderboard(15);
-
-  // show screen
-  show('screen-leaderboard');
-};
-
-
-
-
-/* ---- Game logic ---- */
+/* ---- Game Logic ---- */
 function startGame() {
   score = 0;
   running = false;
@@ -140,24 +101,7 @@ function endGame(){
   show('screen-results');
 }
 
-/* ---- Results / Leaderboard ---- */
-document.getElementById('playAgainBtn').onclick=()=>show('screen-home');
-
-document.getElementById('submitBtn').onclick=async()=>{
-  const name=nameInput.value.trim().toUpperCase();
-  if(!/^[A-Z]{3}$/.test(name)) return alert("3 letters please");
-  // Save to Firestore if configured
-  if(window.db){
-    const {collection,addDoc}=window.firestoreFns;
-    await addDoc(collection(window.db,`leaderboards/${selectedMode}/scores`),
-      {name,score,time:Date.now()});
-  }
-  await loadLeaderboard(selectedMode);
-  show('screen-leaderboard');
-};
-
-document.getElementById('backBtn').onclick=()=>show('screen-home');
-
+/* ---- Leaderboards ---- */
 async function loadLeaderboard(mode){
   if(!window.db) return;
   const {collection,query,orderBy,limit,getDocs}=window.firestoreFns;
@@ -166,21 +110,50 @@ async function loadLeaderboard(mode){
   const snap=await getDocs(q);
   const data=[]; snap.forEach(d=>data.push(d.data()));
   lbList.innerHTML='';
-  lbModeLabel.textContent=`Top 10 — ${mode}s Mode`;
-  data.forEach((r,i)=>{
+  lbModeLabel.textContent = mode;
+  if(data.length===0){
     const li=document.createElement('li');
-    li.innerHTML=`<span>${String(i+1).padStart(2,'0')}. ${r.name}</span><span>${r.score}</span>`;
+    li.innerHTML='<span>No scores yet</span>';
     lbList.append(li);
-  });
+  } else {
+    data.forEach((r,i)=>{
+      const li=document.createElement('li');
+      li.innerHTML=`<span>${String(i+1).padStart(2,'0')}. ${r.name}</span><span>${r.score}</span>`;
+      lbList.append(li);
+    });
+  }
 }
 
-
-modeButtons.forEach(btn => {
-  btn.onclick = async () => {
-    modeButtons.forEach(b => b.classList.remove('active'));
+/* Leaderboard mode tabs */
+modeButtons.forEach(btn=>{
+  btn.onclick=async()=>{
+    modeButtons.forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    const mode = parseInt(btn.dataset.mode, 10);
-    lbModeLabel.textContent = mode;
+    const mode=parseInt(btn.dataset.mode,10);
     await loadLeaderboard(mode);
   };
 });
+
+/* Results → Leaderboard + Home */
+document.getElementById('submitBtn').onclick=async()=>{
+  const name=nameInput.value.trim().toUpperCase();
+  if(!/^[A-Z]{3}$/.test(name)) return alert("3 letters please");
+  if(window.db){
+    const {collection,addDoc}=window.firestoreFns;
+    await addDoc(collection(window.db,`leaderboards/${selectedMode}/scores`),
+      {name,score,time:Date.now()});
+  }
+  await loadLeaderboard(selectedMode);
+  show('screen-leaderboard');
+};
+document.getElementById('playAgainBtn').onclick=()=>show('screen-home');
+document.getElementById('backBtn').onclick=()=>show('screen-home');
+
+/* View Leaderboard from home */
+const viewBtn=document.getElementById('viewLBBtn');
+viewBtn.onclick=async()=>{
+  modeButtons.forEach(b=>b.classList.remove('active'));
+  document.querySelector('.mode-tabs button[data-mode="15"]').classList.add('active');
+  await loadLeaderboard(15);
+  show('screen-leaderboard');
+};
