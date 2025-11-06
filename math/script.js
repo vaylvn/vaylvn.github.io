@@ -16,6 +16,7 @@ const lbList = document.getElementById('leaderboardList');
 const lbModeLabel = document.getElementById('lbModeLabel');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
 
+
 function show(id) {
   screens.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -194,7 +195,9 @@ document.getElementById('submitBtn').onclick = async () => {
 };
 
 
-
+document.getElementById('backBtnGame').onclick = () => {
+  if (!running) show('screen-home'); // only works if round hasn’t started
+};
 
 
 
