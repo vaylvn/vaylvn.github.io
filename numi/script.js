@@ -126,7 +126,7 @@ document.addEventListener('keydown', e => {
     const q = document.getElementById('equation');
     q.style.transition = 'color 0.1s ease';
     q.style.color = '#5f5';
-    setTimeout(() => (q.style.color = ''), 150);
+    setTimeout(() => (q.style.color = ''), 50);
 
     input = '';
     if (zenMode) newZenQ(Amin, Amax, Bmin, Bmax);
