@@ -15,7 +15,7 @@ const nameInput = document.getElementById('nameInput');
 const lbList = document.getElementById('leaderboardList');
 const lbModeLabel = document.getElementById('lbModeLabel');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
-
+const equationEl=document.getElementById('equation');
 
 function show(id) {
   screens.forEach(s => s.classList.remove('active'));
