@@ -73,9 +73,11 @@ input {
   letter-spacing:1px;
   min-height:4rem;
 }
+
 #answer {
   font-size:3rem;
   min-height:3.5rem;
+  line-height: 3.5rem; 
   border-bottom:2px solid rgba(255,255,255,0.2);
   width:6ch;
   margin:auto;

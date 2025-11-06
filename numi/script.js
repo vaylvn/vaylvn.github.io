@@ -146,23 +146,30 @@ function startRun(){
   },1000);
 }
 
-document.addEventListener('keydown', e=>{
-  if(document.activeElement===nameInput) return;
+// Modify your keydown logic minimally:
+document.addEventListener('keydown', e => {
+  if (document.activeElement === nameInput) return;
   const gameVisible = document.getElementById('screen-game').classList.contains('active');
-  if(!gameVisible) return;
-  if(!running) return startRun();
-  if(e.key==="Backspace") input=input.slice(0,-1);
-  else if(/^[0-9]$/.test(e.key)) input+=e.key;
-  ansEl.textContent=input;
-  if(parseInt(input,10)===current.ans){
-	  
-    eqEl.style.transition="color 0.1s ease";
-    eqEl.style.color="#5f5";
-    setTimeout(()=>eqEl.style.color="",150);
-	  
-	
-	  
-    score++; scoreEl.textContent=score; newQ();
+  if (!gameVisible) return;
+  if (!running) return startRun();
+
+  if (e.key === 'Backspace') input = input.slice(0, -1);
+  else if (/^[0-9]$/.test(e.key)) input += e.key;
+  ansEl.textContent = input;
+
+  if (parseInt(input, 10) === current.ans) {
+    score++;
+    scoreEl.textContent = score;
+
+    // visual flash (same as before)
+    const q = document.getElementById('equation');
+    q.style.transition = 'color 0.1s ease';
+    q.style.color = '#5f5';
+    setTimeout(() => (q.style.color = ''), 50);
+
+    input = '';
+    if (zenMode) newZenQ(Amin, Amax, Bmin, Bmax);
+    else newQ();
   }
 });
 
