@@ -1,133 +1,265 @@
-// ===== Core globals =====
-let running = false;
-let timer, timeLeft, score = 0, input = "";
-let current = {}, selectedMode = null;
+let min = 1, max = 12;
+let time = 15, running = false, timerInt;
+let score = 0, current = {}, input = '';
+let selectedMode = 15;
 
-// UI refs
-const timerEl = document.getElementById("timer");
-const scoreEl = document.getElementById("score");
-const equationEl = document.getElementById("equation");
-const ansEl = document.getElementById("answer");
-const msgEl = document.getElementById("msg");
-const nameInput = document.getElementById("nameInput");
+/* Elements */
+const screens = document.querySelectorAll('.screen');
+const eqEl = document.getElementById('equation');
+const ansEl = document.getElementById('answer');
+const msgEl = document.getElementById('msg');
+const timerEl = document.getElementById('timer');
+const scoreEl = document.getElementById('score');
+const finalScoreEl = document.getElementById('finalScore');
+const nameInput = document.getElementById('nameInput');
+const lbList = document.getElementById('leaderboardList');
+const lbModeLabel = document.getElementById('lbModeLabel');
+const modeButtons = document.querySelectorAll('.mode-tabs button');
 
-// ===== Utility =====
+
 function show(id) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  input = "";
-  ansEl.textContent = "";
+  screens.forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
-// ===== Mode buttons =====
-document.querySelectorAll(".modeBtn").forEach(b => {
-  b.onclick = () => {
-    selectedMode = parseInt(b.dataset.time);
-    show("screen-game");
-    startRun();
+/* ---- Competitive ---- */
+document.querySelectorAll('.mode-select button[data-time]').forEach(btn => {
+  btn.onclick = () => {
+    selectedMode = parseInt(btn.dataset.time,10);
+    time = selectedMode;
+    startGame();
   };
 });
 
-document.getElementById("toggleCustomBtn").onclick = async () => {
-  show("screen-custom");
+/* ---- Custom ---- */
+const toggleCustomBtn = document.getElementById('toggleCustomBtn');
+const customPanel = document.getElementById('customPanel');
+const startCustomBtn = document.getElementById('startCustomBtn');
+const minInput = document.getElementById('minInput');
+const maxInput = document.getElementById('maxInput');
+const timeInput = document.getElementById('timeInput');
+
+toggleCustomBtn.onclick = () => customPanel.classList.toggle('hidden');
+
+startCustomBtn.onclick = () => {
+  min = Math.max(1, parseInt(minInput.value) || 1);
+  max = Math.max(min, parseInt(maxInput.value) || 12);
+  selectedMode = Math.max(5, parseInt(timeInput.value) || 30);
+  time = selectedMode;
+  startGame();
 };
 
-document.getElementById("viewLBBtn").onclick = async () => {
-  await loadLeaderboard(15);
-  show("screen-leaderboard");
+
+
+
+
+// --- ZEN MODE ---
+
+const toggleZenBtn = document.getElementById('toggleZenBtn');
+const zenPanel = document.getElementById('zenPanel');
+const startZenBtn = document.getElementById('startZenBtn');
+
+let zenMode = false;
+
+toggleZenBtn.onclick = () => {
+  zenPanel.classList.toggle('hidden');
+  document.getElementById('customPanel').classList.add('hidden');
 };
 
-document.getElementById("backBtn").onclick = () => show("screen-home");
+startZenBtn.onclick = () => {
+  const Amin = parseInt(document.getElementById('zenAmin').value) || 1;
+  const Amax = parseInt(document.getElementById('zenAmax').value) || 12;
+  const Bmin = parseInt(document.getElementById('zenBmin').value) || 1;
+  const Bmax = parseInt(document.getElementById('zenBmax').value) || 12;
 
-// ===== Custom mode start =====
-document.getElementById("startCustomBtn").onclick = () => {
-  const Amin = parseInt(document.getElementById("Amin").value);
-  const Amax = parseInt(document.getElementById("Amax").value);
-  const Bmin = parseInt(document.getElementById("Bmin").value);
-  const Bmax = parseInt(document.getElementById("Bmax").value);
-  const secs = parseInt(document.getElementById("customTime").value);
-  selectedMode = null;
-  show("screen-game");
-  startRun(Amin, Amax, Bmin, Bmax, secs);
+  zenMode = true;
+  startZen(Amin, Amax, Bmin, Bmax);
 };
 
-// ===== Game logic =====
-function newQ(Amin = 1, Amax = 12, Bmin = 1, Bmax = 12) {
+// Zen loop
+function startZen(Amin, Amax, Bmin, Bmax) {
+  show('screen-game');
+  running = true;
+  timerEl.style.display = 'none';
+  scoreEl.style.display = 'none';
+  msgEl.textContent = 'Zen mode · press Esc to exit';
+  newZenQ(Amin, Amax, Bmin, Bmax);
+  document.addEventListener('keydown', exitZen);
+}
+
+function newZenQ(Amin, Amax, Bmin, Bmax) {
   const a = Math.floor(Math.random() * (Amax - Amin + 1)) + Amin;
   const b = Math.floor(Math.random() * (Bmax - Bmin + 1)) + Bmin;
   current = { a, b, ans: a * b };
-  equationEl.textContent = `${a} × ${b}`;
-  ansEl.textContent = "";
-  input = "";
+  document.getElementById('equation').textContent = `${a} × ${b}`;
+  document.getElementById('answer').textContent = '';
+  input = '';
 }
 
-function startRun(Amin = 1, Amax = 12, Bmin = 1, Bmax = 12, secs = selectedMode || 15) {
-  running = true;
+function exitZen(e) {
+  if (e.key === 'Escape') {
+    zenMode = false;
+    running = false;
+    timerEl.style.display = 'inline';
+    scoreEl.style.display = 'inline';
+    document.removeEventListener('keydown', exitZen);
+    show('screen-home');
+  }
+}
+
+
+
+
+
+
+
+/* ---- Game Logic ---- */
+function startGame() {
   score = 0;
-  timeLeft = secs;
+  running = false;
+  show('screen-game');
+  eqEl.textContent = '';
+  ansEl.textContent = '';
+  msgEl.textContent = 'Press any key to start';
+  timerEl.textContent = time;
   scoreEl.textContent = 0;
-  timerEl.textContent = timeLeft;
-  msgEl.textContent = "";
-  newQ(Amin, Amax, Bmin, Bmax);
-
-  clearInterval(timer);
-  timer = setInterval(() => {
-    if (--timeLeft <= 0) {
-      clearInterval(timer);
-      endRun();
-    }
-    timerEl.textContent = timeLeft;
-  }, 1000);
 }
 
-// ===== Input handler =====
-document.addEventListener("keydown", e => {
-  if (document.activeElement === nameInput) return;
+function rand(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function newQ(){
+  const a = rand(min,max), b = rand(min,max);
+  current = {a,b,ans:a*b};
+  eqEl.textContent = `${a}×${b}=`;
+  ansEl.textContent = '';
+  input = '';
+}
 
-  const gameVisible = document.getElementById("screen-game").classList.contains("active");
+function startRun(){
+  if(running) return;
+  running = true;
+  msgEl.textContent = '';
+  newQ();
+  timerInt = setInterval(()=>{
+    time--;
+    timerEl.textContent = time;
+    if(time<=0) endGame();
+  },1000);
+}
+
+// Modify your keydown logic minimally:
+document.addEventListener('keydown', e => {
+  if (document.activeElement === nameInput) return;
+  const gameVisible = document.getElementById('screen-game').classList.contains('active');
   if (!gameVisible) return;
   if (!running) return startRun();
 
-  if (e.key === "Backspace") input = input.slice(0, -1);
+  if (e.key === 'Backspace') input = input.slice(0, -1);
   else if (/^[0-9]$/.test(e.key)) input += e.key;
   ansEl.textContent = input;
 
   if (parseInt(input, 10) === current.ans) {
-	  score++;
-	  scoreEl.textContent = score;
+    score++;
+    scoreEl.textContent = score;
 
-	  // visual feedback
-	  equationEl.style.transition = "color 0.1s ease";
-	  equationEl.style.color = "#5f5";
-	  setTimeout(() => (equationEl.style.color = ""), 150);
+    // visual flash (same as before)
+    const q = document.getElementById('equation');
+    q.style.transition = 'color 0.1s ease';
+    q.style.color = '#5f5';
+    setTimeout(() => (q.style.color = ''), 50);
 
-	  input = "";
-
-	  if (zenMode) {
-		nextZenQ(); // Zen-only logic, uses stored zenRange
-	  } else {
-		// normal mode — reuse whatever your latest custom or default range was
-		newQ(1, 12, 1, 12);
-	  }
-	}
-
+    input = '';
+    if (zenMode) newZenQ(Amin, Amax, Bmin, Bmax);
+    else newQ();
+  }
 });
 
-// ===== End game =====
-function endRun() {
+function endGame() {
+  if (!running) return;
   running = false;
-  msgEl.textContent = `Time! Score: ${score}`;
-  show("screen-submit");
+  clearInterval(timerInt);
+  finalScoreEl.textContent = score;
+
+  // Hide submit if this was a custom mode
+  const submit = document.getElementById('submitBtn');
+  const playAgain = document.getElementById('playAgainBtn');
+
+  if ([15, 30, 60].includes(selectedMode)) {
+    submit.style.display = 'inline-block';
+    playAgain.textContent = 'Skip';
+  } else {
+    submit.style.display = 'none';
+    playAgain.textContent = 'Main Menu';
+  }
+
+  show('screen-results');
 }
 
-// ===== Leaderboard =====
-document.getElementById("submitBtn").onclick = async () => {
+
+/* ---- Leaderboards ---- */
+
+function isOffensiveTag(tag) {
+  if (!tag) return false;
+  const banned = [
+    "nig", "ngr", "poc", "fag", "gay", "kkk", "cum", "sex"
+  ];
+  const t = tag.toLowerCase();
+  return banned.includes(t);
+}
+
+
+
+async function loadLeaderboard(mode){
+  if(!window.db) return;
+  const {collection,query,orderBy,limit,getDocs}=window.firestoreFns;
+  const q=query(collection(window.db,`leaderboards/${mode}/scores`),
+               orderBy("score","desc"),limit(10));
+  const snap=await getDocs(q);
+  const data=[]; snap.forEach(d=>data.push(d.data()));
+  lbList.innerHTML='';
+  lbModeLabel.textContent = mode;
+  if(data.length===0){
+    const li=document.createElement('li');
+    li.innerHTML='<span>No scores yet</span>';
+    lbList.append(li);
+  } else {
+    data.forEach((r,i)=>{
+      const li=document.createElement('li');
+      li.innerHTML=`<span>${String(i+1).padStart(2,'0')}. ${r.name}</span><span>${r.score}</span>`;
+      lbList.append(li);
+    });
+  }
+}
+
+/* Leaderboard mode tabs */
+modeButtons.forEach(btn=>{
+  btn.onclick=async()=>{
+    modeButtons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode=parseInt(btn.dataset.mode,10);
+    await loadLeaderboard(mode);
+  };
+});
+
+/* Results → Leaderboard + Home */
+document.getElementById('submitBtn').onclick = async () => {
   const name = nameInput.value.trim().toUpperCase();
-  if (!/^[A-Z]{3}$/.test(name)) return alert("3 letters please");
 
-  const banned = ["NIG", "NGR", "POC", "FAG", "KKK", "SEX", "GAY"];
-  if (banned.includes(name)) return alert("Invalid tag.");
+  // must be exactly three letters
+  if (!/^[A-Z]{3}$/.test(name)) {
+    alert("3 letters please");
+    return;
+  }
 
+  // basic rude-word filter
+  const banned = [
+    "NIG", "NGR", "POC", "FAG", "KKK", "SEX", "GAY"
+  ];
+  if (banned.includes(name)) {
+    alert("Invalid tag.");
+    return;
+  }
+
+  // write score
   if (window.db) {
     const { collection, addDoc } = window.firestoreFns;
     await addDoc(
@@ -140,75 +272,21 @@ document.getElementById("submitBtn").onclick = async () => {
   show("screen-leaderboard");
 };
 
-// ===== Firebase read leaderboard =====
-async function loadLeaderboard(mode) {
-  const lbTitle = document.getElementById("lbTitle");
-  const lbList = document.getElementById("lbList");
-  if (!lbTitle || !lbList) return;
 
-  lbTitle.textContent = `Top 10 (${mode}s)`;
-  lbList.innerHTML = "";
-
-  if (!window.db) return;
-
-  const { collection, query, orderBy, limit, getDocs } = window.firestoreFns;
-  const q = query(
-    collection(window.db, `leaderboards/${mode}/scores`),
-    orderBy("score", "desc"),
-    limit(10)
-  );
-  const snap = await getDocs(q);
-  snap.forEach(doc => {
-    const d = doc.data();
-    const li = document.createElement("li");
-    li.textContent = `${d.name} — ${d.score}`;
-    lbList.appendChild(li);
-  });
-}
-
-// ===== Zen mode =====
-let zenMode = false;
-const zenRange = { Amin: 1, Amax: 12, Bmin: 1, Bmax: 12 };
-
-document.getElementById("toggleZenBtn").onclick = () => {
-  document.getElementById("zenPanel").classList.toggle("hidden");
+document.getElementById('backBtnGame').onclick = () => {
+  if (!running) show('screen-home'); // only works if round hasn’t started
 };
 
-document.getElementById("startZenBtn").onclick = () => {
-  zenRange.Amin = parseInt(document.getElementById("zenAmin").value) || 1;
-  zenRange.Amax = parseInt(document.getElementById("zenAmax").value) || 12;
-  zenRange.Bmin = parseInt(document.getElementById("zenBmin").value) || 1;
-  zenRange.Bmax = parseInt(document.getElementById("zenBmax").value) || 12;
-  startZen();
+
+
+document.getElementById('playAgainBtn').onclick=()=>show('screen-home');
+document.getElementById('backBtn').onclick=()=>show('screen-home');
+
+/* View Leaderboard from home */
+const viewBtn=document.getElementById('viewLBBtn');
+viewBtn.onclick=async()=>{
+  modeButtons.forEach(b=>b.classList.remove('active'));
+  document.querySelector('.mode-tabs button[data-mode="15"]').classList.add('active');
+  await loadLeaderboard(15);
+  show('screen-leaderboard');
 };
-
-function startZen() {
-  show("screen-game");
-  running = true;
-  zenMode = true;
-  msgEl.textContent = "Zen mode · press Esc to exit";
-  timerEl.style.display = "none";
-  scoreEl.style.display = "none";
-  nextZenQ();
-  document.addEventListener("keydown", handleZenEscape);
-}
-
-function handleZenEscape(e) {
-  if (e.key === "Escape") {
-    running = false;
-    zenMode = false;
-    timerEl.style.display = "inline";
-    scoreEl.style.display = "inline";
-    document.removeEventListener("keydown", handleZenEscape);
-    show("screen-home");
-  }
-}
-
-function nextZenQ() {
-  const a = Math.floor(Math.random() * (zenRange.Amax - zenRange.Amin + 1)) + zenRange.Amin;
-  const b = Math.floor(Math.random() * (zenRange.Bmax - zenRange.Bmin + 1)) + zenRange.Bmin;
-  current = { a, b, ans: a * b };
-  equationEl.textContent = `${a} × ${b}`;
-  ansEl.textContent = "";
-  input = "";
-}

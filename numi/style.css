@@ -188,38 +188,3 @@ button.small {
   font-size: 0.9rem;
   transform: translateZ(0); /* optional: force GPU compositing, smooths reflow */
 }
-
-
-
-#zenPanel {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  align-items: center;
-  animation: fade 0.25s ease;
-}
-
-#zenPanel label {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-  font-size: 1rem;
-  opacity: 0.8;
-}
-
-#zenPanel input {
-  background: none;
-  border: 1px solid #555;
-  color: #f5c542;
-  width: 3.5rem;
-  text-align: center;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 1rem;
-  padding: 0.2rem 0.4rem;
-}
-
-#zenPanel button {
-  margin-top: 0.5rem;
-}
