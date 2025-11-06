@@ -93,19 +93,24 @@ document.addEventListener("keydown", e => {
   ansEl.textContent = input;
 
   if (parseInt(input, 10) === current.ans) {
-    score++;
-    scoreEl.textContent = score;
+	  score++;
+	  scoreEl.textContent = score;
 
-    // brief flash feedback
-    equationEl.style.transition = "color 0.1s ease";
-    equationEl.style.color = "#5f5";
-    setTimeout(() => (equationEl.style.color = ""), 150);
+	  // visual feedback
+	  equationEl.style.transition = "color 0.1s ease";
+	  equationEl.style.color = "#5f5";
+	  setTimeout(() => (equationEl.style.color = ""), 150);
 
-    input = "";
+	  input = "";
 
-    if (zenMode) nextZenQ(); 
-    else newQ();
-  }
+	  if (zenMode) {
+		nextZenQ(); // Zen-only logic, uses stored zenRange
+	  } else {
+		// normal mode — reuse whatever your latest custom or default range was
+		newQ(1, 12, 1, 12);
+	  }
+	}
+
 });
 
 // ===== End game =====
