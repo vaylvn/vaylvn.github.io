@@ -160,51 +160,60 @@ function isOffensiveTag(tag) {
 async function loadLeaderboard(mode) {
   if (!window.db) return;
   const { collection, query, orderBy, limit, getDocs } = window.firestoreFns;
-  const q = query(
-    collection(window.db, `leaderboards/${mode}/scores`),
-    orderBy("score", "desc"),
-    limit(10)
-  );
-
-  const snap = await getDocs(q);
-  const docs = snap.docs; // convert snapshot to array
   const lastId = localStorage.getItem("lastScoreId");
 
-  lbList.innerHTML = "";
+  // fetch both sets at once
+  const [pcSnap, mobileSnap] = await Promise.all([
+    getDocs(query(collection(window.db, `leaderboards/${mode}/pc`), orderBy("score","desc"), limit(10))),
+    getDocs(query(collection(window.db, `leaderboards/${mode}/mobile`), orderBy("score","desc"), limit(10)))
+  ]);
+
+  const pc = pcSnap.docs.map(d => ({ id: d.id, ...d.data(), device: "pc" }));
+  const mobile = mobileSnap.docs.map(d => ({ id: d.id, ...d.data(), device: "mobile" }));
+  const combined = [...pc, ...mobile].sort((a, b) => b.score - a.score).slice(0, 10);
+
   lbModeLabel.textContent = mode;
 
-  if (docs.length === 0) {
-    const li = document.createElement("li");
-    li.innerHTML = "<span>No scores yet</span>";
-    lbList.append(li);
-    return;
+  // helper to fill each list
+  function populate(listEl, data) {
+    listEl.innerHTML = "";
+    if (data.length === 0) {
+      listEl.innerHTML = "<li><span>No scores yet</span></li>";
+      return;
+    }
+    data.forEach((r, i) => {
+      let name = r.name;
+      if (name.startsWith("AGL")) name += "🍪";
+      if (name.startsWith("MLZ")) name += "🪸";
+
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span>${String(i + 1).padStart(2,"0")}. ${name}</span>
+        <span>${r.score}</span>
+      `;
+      if (r.id === lastId) li.classList.add("highlight");
+      listEl.append(li);
+    });
   }
 
-  docs.forEach((doc, i) => {
-    const r = doc.data();
-    const docId = doc.id;
-    let displayName = r.name;
-
-    // --- Easter egg examples ---
-    if (displayName.startsWith("AGL")) displayName += "🍪";
-    if (displayName.startsWith("MLZ")) displayName += "🪸";
-
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span>${String(i + 1).padStart(2, "0")}. ${displayName}</span>
-      <span>${r.score}</span>
-    `;
-
-    // Highlight the most recently submitted score
-    if (docId === lastId) {
-      li.classList.add("highlight");
-      // localStorage.removeItem("lastScoreId");
-      // localStorage.removeItem("lastScoreMode");
-    }
-
-    lbList.append(li);
-  });
+  populate(document.getElementById("lbCombined"), combined);
+  populate(document.getElementById("lbPC"), pc);
+  populate(document.getElementById("lbMobile"), mobile);
 }
+
+// simple tab toggles
+document.querySelectorAll(".device-tabs button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".device-tabs button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const type = btn.dataset.type;
+    document.getElementById("lbCombined").classList.toggle("hidden", type !== "combined");
+    document.getElementById("lbPC").classList.toggle("hidden", type !== "pc");
+    document.getElementById("lbMobile").classList.toggle("hidden", type !== "mobile");
+  };
+});
+
 
 
 

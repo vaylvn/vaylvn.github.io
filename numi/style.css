@@ -146,7 +146,8 @@ input {
   font-weight:bold;
 }
 
-#leaderboardList {
+
+/* #leaderboardList {
   list-style:none;
   width:100%;
   max-width:300px;
@@ -158,6 +159,7 @@ input {
   display:flex; justify-content:space-between;
   margin:0.3rem 0;
 }
+*/
 
 .smallLink { opacity:0.7; font-size:0.9rem; margin-top:1rem; }
 .linkBtn {
@@ -223,4 +225,18 @@ button.small {
 #leaderboardList li.highlight span {
   color: #f5c542 !important;
   font-weight: 600 !important;
+}
+
+
+.hidden { display: none; }
+.device-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.device-tabs button.active {
+  background: #f5c542;
+  color: #111;
+  font-weight: 600;
 }
