@@ -199,8 +199,8 @@ async function loadLeaderboard(mode) {
     // Highlight the most recently submitted score
     if (docId === lastId && mode === lastMode) {
       li.classList.add("highlight");
-      localStorage.removeItem("lastScoreId");
-      localStorage.removeItem("lastScoreMode");
+      // localStorage.removeItem("lastScoreId");
+      // localStorage.removeItem("lastScoreMode");
     }
 
     lbList.append(li);
@@ -247,6 +247,8 @@ document.getElementById('submitBtn').onclick = async () => {
     localStorage.setItem("lastScoreId", ref.id);
     localStorage.setItem("lastScoreMode", selectedMode);
   }
+  
+	await new Promise(r => setTimeout(r, 300));
 
   await loadLeaderboard(selectedMode);
   show("screen-leaderboard");
