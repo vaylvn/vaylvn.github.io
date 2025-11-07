@@ -219,7 +219,8 @@ button.small {
 }
 
 
-.highlight {
+#leaderboardList li.highlight,
+#leaderboardList li.highlight span {
   color: #f5c542 !important;
   font-weight: 600 !important;
 }
