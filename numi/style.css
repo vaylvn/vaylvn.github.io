@@ -240,3 +240,33 @@ button.small {
   color: #111;
   font-weight: 600;
 }
+
+#lbCombined,
+#lbPC,
+#lbMobile {
+  list-style: none;
+  width: 100%;
+  max-width: 300px;
+  margin: auto;
+  padding: 0;
+  text-align: left;
+}
+
+#lbCombined li,
+#lbPC li,
+#lbMobile li {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.3rem 0;
+}
+
+
+#lbCombined li.highlight,
+#lbPC li.highlight,
+#lbMobile li.highlight,
+#lbCombined li.highlight span,
+#lbPC li.highlight span,
+#lbMobile li.highlight span {
+  color: #f5c542 !important;
+  font-weight: 600 !important;
+}
