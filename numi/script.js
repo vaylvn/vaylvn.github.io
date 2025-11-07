@@ -226,6 +226,41 @@ document.getElementById('backBtnGame').onclick = () => {
 document.getElementById('playAgainBtn').onclick=()=>show('screen-home');
 document.getElementById('backBtn').onclick=()=>show('screen-home');
 
+
+
+
+
+
+
+// --- Mobile keypad integration ---
+const keypad = document.getElementById('mobileKeypad');
+
+// detect mobile
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+if (isMobile) keypad.classList.remove('hidden');
+
+// replicate keyboard presses
+keypad.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const key = btn.dataset.key;
+
+  // Create a synthetic keydown event and dispatch it
+  document.dispatchEvent(new KeyboardEvent('keydown', { key }));
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* View Leaderboard from home */
 const viewBtn=document.getElementById('viewLBBtn');
 viewBtn.onclick=async()=>{

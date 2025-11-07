@@ -188,3 +188,32 @@ button.small {
   font-size: 0.9rem;
   transform: translateZ(0); /* optional: force GPU compositing, smooths reflow */
 }
+
+
+
+#mobileKeypad {
+  margin-top: 1.2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 70px);
+  gap: 0.6rem;
+}
+
+.keypad-grid button {
+  height: 70px;
+  background: #222;
+  border: 1px solid #555;
+  border-radius: 8px;
+  color: #f5c542;
+  font-size: 1.4rem;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.keypad-grid button:active {
+  background: #444;
+}
