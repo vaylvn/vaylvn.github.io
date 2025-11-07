@@ -186,6 +186,8 @@ async function loadLeaderboard(mode) {
       if (name.startsWith("AGL")) name += "🍪";
       if (name.startsWith("MLZ")) name += "🪸";
 
+		if (i === 0) name = "🏆 " + name;
+
       const li = document.createElement("li");
       li.innerHTML = `
         <span>${String(i + 1).padStart(2,"0")}. ${name}</span>
