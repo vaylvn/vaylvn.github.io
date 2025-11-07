@@ -199,13 +199,12 @@ button.small {
 
 .keypad-grid {
   display: grid;
-  grid-template-columns: repeat(3, 70px);
+  grid-template-columns: repeat(3, 140px);
   gap: 0.6rem;
 }
 
 .keypad-grid button {
   height: 70px;
-  width: 140px;
   background: #222;
   border: 1px solid #555;
   border-radius: 8px;
