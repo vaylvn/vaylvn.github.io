@@ -169,7 +169,6 @@ async function loadLeaderboard(mode) {
   const snap = await getDocs(q);
   const docs = snap.docs; // convert snapshot to array
   const lastId = localStorage.getItem("lastScoreId");
-  const lastMode = localStorage.getItem("lastScoreMode");
 
   lbList.innerHTML = "";
   lbModeLabel.textContent = mode;
@@ -197,7 +196,7 @@ async function loadLeaderboard(mode) {
     `;
 
     // Highlight the most recently submitted score
-    if (docId === lastId && mode === lastMode) {
+    if (docId === lastId) {
       li.classList.add("highlight");
       // localStorage.removeItem("lastScoreId");
       // localStorage.removeItem("lastScoreMode");
@@ -245,7 +244,9 @@ document.getElementById('submitBtn').onclick = async () => {
 
     // save the last submission ID and mode locally
     localStorage.setItem("lastScoreId", ref.id);
-    localStorage.setItem("lastScoreMode", selectedMode);
+	
+	console.log(ref.id);
+	
   }
   
 	await new Promise(r => setTimeout(r, 300));
