@@ -151,28 +151,57 @@ function isOffensiveTag(tag) {
 }
 
 
+// if (name === "AGL") name += "🍪";
+	// if (name === "MLZ") name += "🪸";
 
-async function loadLeaderboard(mode){
-  if(!window.db) return;
-  const {collection,query,orderBy,limit,getDocs}=window.firestoreFns;
-  const q=query(collection(window.db,`leaderboards/${mode}/scores`),
-               orderBy("score","desc"),limit(10));
-  const snap=await getDocs(q);
-  const data=[]; snap.forEach(d=>data.push(d.data()));
-  lbList.innerHTML='';
+
+
+
+async function loadLeaderboard(mode) {
+  if (!window.db) return;
+  const { collection, query, orderBy, limit, getDocs } = window.firestoreFns;
+  const q = query(
+    collection(window.db, `leaderboards/${mode}/scores`),
+    orderBy("score", "desc"),
+    limit(10)
+  );
+
+  const snap = await getDocs(q);
+  const data = [];
+  snap.forEach(d => data.push(d.data()));
+
+  lbList.innerHTML = "";
   lbModeLabel.textContent = mode;
-  if(data.length===0){
-    const li=document.createElement('li');
-    li.innerHTML='<span>No scores yet</span>';
+
+  if (data.length === 0) {
+    const li = document.createElement("li");
+    li.innerHTML = "<span>No scores yet</span>";
     lbList.append(li);
-  } else {
-    data.forEach((r,i)=>{
-      const li=document.createElement('li');
-      li.innerHTML=`<span>${String(i+1).padStart(2,'0')}. ${r.name}</span><span>${r.score}</span>`;
-      lbList.append(li);
-    });
+    return;
   }
+
+  data.forEach((r, i) => {
+    let displayName = r.name;
+
+    // --- Easter egg examples ---
+	
+	if (displayName.startsWith("AGL")) displayName += "🍪";
+	if (displayName.startsWith("MLZ")) displayName += "🪸";
+
+    // --- Optional: ensure mobile marker shows last ---
+    if (displayName.endsWith("ᵐ")) {
+      // already present, do nothing — kept as DB source of truth
+    }
+
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span>${String(i + 1).padStart(2, "0")}. ${displayName}</span>
+      <span>${r.score}</span>
+    `;
+    lbList.append(li);
+  });
 }
+
 
 /* Leaderboard mode tabs */
 modeButtons.forEach(btn=>{
@@ -203,8 +232,8 @@ document.getElementById('submitBtn').onclick = async () => {
 
   // add mobile indicator if applicable
   
-	if (name === "AGL") name += "🍪";
-	if (name === "MLZ") name += "🪸";
+	// if (name === "AGL") name += "🍪";
+	// if (name === "MLZ") name += "🪸";
 	if (isMobile) name += "ᵐ";
 
 
