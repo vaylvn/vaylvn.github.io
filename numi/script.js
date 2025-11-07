@@ -245,8 +245,6 @@ document.getElementById('submitBtn').onclick = async () => {
     // save the last submission ID and mode locally
     localStorage.setItem("lastScoreId", ref.id);
 	
-	console.log(ref.id);
-	
   }
   
 	await new Promise(r => setTimeout(r, 300));
