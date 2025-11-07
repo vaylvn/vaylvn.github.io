@@ -205,6 +205,7 @@ button.small {
 
 .keypad-grid button {
   height: 70px;
+  width: 140px;
   background: #222;
   border: 1px solid #555;
   border-radius: 8px;
