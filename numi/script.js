@@ -244,23 +244,25 @@ document.getElementById('submitBtn').onclick = async () => {
 
   if (isMobile) name += "ᵐ";
 
+  const deviceType = isMobile ? "mobile" : "pc";
+
   if (window.db) {
     const { collection, addDoc } = window.firestoreFns;
     const ref = await addDoc(
-      collection(window.db, `leaderboards/${selectedMode}/scores`),
+      collection(window.db, `leaderboards/${selectedMode}/${deviceType}`),
       { name, score, time: Date.now() }
     );
 
-    // save the last submission ID and mode locally
     localStorage.setItem("lastScoreId", ref.id);
-	
   }
-  
-	await new Promise(r => setTimeout(r, 300));
+
+  // small delay to let Firestore index
+  await new Promise(r => setTimeout(r, 300));
 
   await loadLeaderboard(selectedMode);
   show("screen-leaderboard");
 };
+
 
 
 
