@@ -17,6 +17,8 @@ const lbModeLabel = document.getElementById('lbModeLabel');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
 
 
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
 function show(id) {
   screens.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -184,7 +186,7 @@ modeButtons.forEach(btn=>{
 
 /* Results → Leaderboard + Home */
 document.getElementById('submitBtn').onclick = async () => {
-  const name = nameInput.value.trim().toUpperCase();
+  let name = nameInput.value.trim().toUpperCase();
 
   // must be exactly three letters
   if (!/^[A-Z]{3}$/.test(name)) {
@@ -193,15 +195,14 @@ document.getElementById('submitBtn').onclick = async () => {
   }
 
   // basic rude-word filter
-  const banned = [
-	  "NIG", "NGR", "POC", "KKK", "FAG", "FGT"
-  ];
-  
-  
+  const banned = ["NIG", "NGR", "POC", "KKK", "FAG", "FGT"];
   if (banned.includes(name)) {
     alert("Invalid tag.");
     return;
   }
+
+  // add mobile indicator if applicable
+  if (isMobile) name += "ᵐ";
 
   // write score
   if (window.db) {
@@ -215,6 +216,7 @@ document.getElementById('submitBtn').onclick = async () => {
   await loadLeaderboard(selectedMode);
   show("screen-leaderboard");
 };
+
 
 
 document.getElementById('backBtnGame').onclick = () => {
@@ -236,7 +238,7 @@ document.getElementById('backBtn').onclick=()=>show('screen-home');
 const keypad = document.getElementById('mobileKeypad');
 
 // detect mobile
-const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
 if (isMobile) keypad.classList.remove('hidden');
 
 // replicate keyboard presses
