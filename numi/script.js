@@ -167,20 +167,21 @@ async function loadLeaderboard(mode) {
   );
 
   const snap = await getDocs(q);
+  const docs = snap.docs; // convert snapshot to array
   const lastId = localStorage.getItem("lastScoreId");
   const lastMode = localStorage.getItem("lastScoreMode");
 
   lbList.innerHTML = "";
   lbModeLabel.textContent = mode;
 
-  if (snap.empty) {
+  if (docs.length === 0) {
     const li = document.createElement("li");
     li.innerHTML = "<span>No scores yet</span>";
     lbList.append(li);
     return;
   }
 
-  snap.forEach((doc, i) => {
+  docs.forEach((doc, i) => {
     const r = doc.data();
     const docId = doc.id;
     let displayName = r.name;
@@ -188,11 +189,6 @@ async function loadLeaderboard(mode) {
     // --- Easter egg examples ---
     if (displayName.startsWith("AGL")) displayName += "🍪";
     if (displayName.startsWith("MLZ")) displayName += "🪸";
-
-    // --- Optional: ensure mobile marker shows last ---
-    if (displayName.endsWith("ᵐ")) {
-      // already present, do nothing — kept as DB source of truth
-    }
 
     const li = document.createElement("li");
     li.innerHTML = `
@@ -203,7 +199,6 @@ async function loadLeaderboard(mode) {
     // Highlight the most recently submitted score
     if (docId === lastId && mode === lastMode) {
       li.classList.add("highlight");
-      // Optionally clear highlight tracking after showing once:
       localStorage.removeItem("lastScoreId");
       localStorage.removeItem("lastScoreMode");
     }
@@ -211,6 +206,7 @@ async function loadLeaderboard(mode) {
     lbList.append(li);
   });
 }
+
 
 
 
