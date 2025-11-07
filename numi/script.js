@@ -202,8 +202,11 @@ document.getElementById('submitBtn').onclick = async () => {
   }
 
   // add mobile indicator if applicable
-  if (isMobile) name += "ᵐ";
-  if (name === "AGL") name += "🍪";
+  
+	if (name === "AGL") name += "🍪";
+	if (name === "MLZ") name += "🪸";
+	if (isMobile) name += "ᵐ";
+
 
   // write score
   if (window.db) {
