@@ -220,5 +220,6 @@ button.small {
 
 
 .highlight {
-  color: #f5c542;
+  color: #f5c542 !important;
+  font-weight: 600 !important;
 }
