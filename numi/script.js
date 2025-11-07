@@ -167,26 +167,27 @@ async function loadLeaderboard(mode) {
   );
 
   const snap = await getDocs(q);
-  const data = [];
-  snap.forEach(d => data.push(d.data()));
+  const lastId = localStorage.getItem("lastScoreId");
+  const lastMode = localStorage.getItem("lastScoreMode");
 
   lbList.innerHTML = "";
   lbModeLabel.textContent = mode;
 
-  if (data.length === 0) {
+  if (snap.empty) {
     const li = document.createElement("li");
     li.innerHTML = "<span>No scores yet</span>";
     lbList.append(li);
     return;
   }
 
-  data.forEach((r, i) => {
+  snap.forEach((doc, i) => {
+    const r = doc.data();
+    const docId = doc.id;
     let displayName = r.name;
 
     // --- Easter egg examples ---
-	
-	if (displayName.startsWith("AGL")) displayName += "🍪";
-	if (displayName.startsWith("MLZ")) displayName += "🪸";
+    if (displayName.startsWith("AGL")) displayName += "🍪";
+    if (displayName.startsWith("MLZ")) displayName += "🪸";
 
     // --- Optional: ensure mobile marker shows last ---
     if (displayName.endsWith("ᵐ")) {
@@ -198,9 +199,19 @@ async function loadLeaderboard(mode) {
       <span>${String(i + 1).padStart(2, "0")}. ${displayName}</span>
       <span>${r.score}</span>
     `;
+
+    // Highlight the most recently submitted score
+    if (docId === lastId && mode === lastMode) {
+      li.classList.add("highlight");
+      // Optionally clear highlight tracking after showing once:
+      localStorage.removeItem("lastScoreId");
+      localStorage.removeItem("lastScoreMode");
+    }
+
     lbList.append(li);
   });
 }
+
 
 
 /* Leaderboard mode tabs */
@@ -216,39 +227,35 @@ modeButtons.forEach(btn=>{
 /* Results → Leaderboard + Home */
 document.getElementById('submitBtn').onclick = async () => {
   let name = nameInput.value.trim().toUpperCase();
-
-  // must be exactly three letters
   if (!/^[A-Z]{3}$/.test(name)) {
     alert("3 letters please");
     return;
   }
 
-  // basic rude-word filter
   const banned = ["NIG", "NGR", "POC", "KKK", "FAG", "FGT"];
   if (banned.includes(name)) {
     alert("Invalid tag.");
     return;
   }
 
-  // add mobile indicator if applicable
-  
-	// if (name === "AGL") name += "🍪";
-	// if (name === "MLZ") name += "🪸";
-	if (isMobile) name += "ᵐ";
+  if (isMobile) name += "ᵐ";
 
-
-  // write score
   if (window.db) {
     const { collection, addDoc } = window.firestoreFns;
-    await addDoc(
+    const ref = await addDoc(
       collection(window.db, `leaderboards/${selectedMode}/scores`),
       { name, score, time: Date.now() }
     );
+
+    // save the last submission ID and mode locally
+    localStorage.setItem("lastScoreId", ref.id);
+    localStorage.setItem("lastScoreMode", selectedMode);
   }
 
   await loadLeaderboard(selectedMode);
   show("screen-leaderboard");
 };
+
 
 
 
