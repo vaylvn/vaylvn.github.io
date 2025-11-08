@@ -97,25 +97,41 @@ document.addEventListener('keydown', e => {
   if (!gameVisible) return;
   if (!running) return startRun();
 
-  if (e.key === 'Backspace') input = input.slice(0, -1);
-  else if (/^[0-9]$/.test(e.key)) input += e.key;
+  if (e.key === 'Backspace') {
+    input = input.slice(0, -1);
+  } else if (/^[0-9]$/.test(e.key)) {
+    input += e.key;
+  }
+
   ansEl.textContent = input;
 
+  const q = document.getElementById('equation');
+
+  // ✅ Correct answer
   if (parseInt(input, 10) === current.ans) {
     score++;
     scoreEl.textContent = score;
 
-    // visual flash (same as before)
-    const q = document.getElementById('equation');
     q.style.transition = 'color 0.1s ease';
-    q.style.color = '#5f5';
-    setTimeout(() => (q.style.color = ''), 50);
+    q.style.color = '#5f5'; // green flash
+    setTimeout(() => (q.style.color = ''), 100);
 
     input = '';
-
     newQ();
+    return;
+  }
+
+  // ✅ Incorrect full-length answer
+  if (input.length >= String(current.ans).length) {
+    q.style.transition = 'color 0.1s ease';
+    q.style.color = '#f55'; // red flash
+    setTimeout(() => (q.style.color = ''), 100);
+
+    input = '';
+    ansEl.textContent = '';
   }
 });
+
 
 function endGame() {
   if (!running) return;
