@@ -354,7 +354,7 @@ document.getElementById("keypadSwitch").addEventListener("click", () => {
   keys.forEach((btn, i) => {
     const val = newLayout[i];
     btn.dataset.key = val;
-    btn.textContent = val === "Backspace" ? "←" : val;
+    btn.textContent = val === "Backspace" ? "⫷" : val;
   });
 });
 
