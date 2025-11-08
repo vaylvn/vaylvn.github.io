@@ -269,8 +269,27 @@ document.getElementById('submitBtn').onclick = async () => {
 
 
 
+// document.getElementById('backBtnGame').onclick = () => {
+//  if (!running) show('screen-home'); // only works if round hasn’t started
+//};
+
 document.getElementById('backBtnGame').onclick = () => {
-  if (!running) show('screen-home'); // only works if round hasn’t started
+  if (running) {
+
+    running = false;
+    clearInterval(timerInt); // stop the countdown
+    input = '';
+    score = 0;
+    time = selectedMode; // reset the timer display
+    timerEl.textContent = time;
+    scoreEl.textContent = '0';
+    ansEl.textContent = '';
+    document.getElementById('equation').textContent = '';
+
+    show('screen-home'); // back to menu
+  } else {
+    show('screen-home');
+  }
 };
 
 
