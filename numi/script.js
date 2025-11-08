@@ -184,7 +184,7 @@ async function loadLeaderboard(mode) {
     data.forEach((r, i) => {
       let name = r.name;
       if (name.startsWith("AGL")) name += "🍪";
-      if (name.startsWith("MLZ")) name += "🪸";
+      if (name.startsWith("MEL")) name += "🪸";
 
 		if (i === 0) name = "🏆 " + name;
 
