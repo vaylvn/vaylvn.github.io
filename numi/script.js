@@ -295,14 +295,33 @@ if (isMobile) keypad.classList.remove('hidden');
 keypad.addEventListener('click', e => {
   const btn = e.target.closest('button');
   if (!btn) return;
-  const key = btn.dataset.key;
 
-  // Create a synthetic keydown event and dispatch it
+  // Ignore the layout switch button entirely
+  if (btn.classList.contains('switch')) return;
+
+  const key = btn.dataset.key;
   document.dispatchEvent(new KeyboardEvent('keydown', { key }));
 });
 
 
 
+let keypadLayout = "t9"; // default layout
+
+const t9Layout = ["1","2","3","4","5","6","7","8","9","Backspace","0"];
+const numpadLayout = ["7","8","9","4","5","6","1","2","3","Backspace","0"];
+
+document.getElementById("keypadSwitch").addEventListener("click", () => {
+  keypadLayout = keypadLayout === "t9" ? "numpad" : "t9";
+
+  const keys = document.querySelectorAll("#mobileKeypad .keypad-grid button:not(.switch)");
+  const newLayout = keypadLayout === "t9" ? t9Layout : numpadLayout;
+
+  keys.forEach((btn, i) => {
+    const val = newLayout[i];
+    btn.dataset.key = val;
+    btn.textContent = val === "Backspace" ? "←" : val;
+  });
+});
 
 
 
