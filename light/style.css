@@ -96,3 +96,13 @@ header {
   transform: scale(0.7);
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
+
+.cell.ghost {
+  background: rgba(255, 212, 59, 0.25);
+  outline: 2px solid rgba(255, 212, 59, 0.5);
+}
+
+.cell.ghost.invalid {
+  background: rgba(255, 59, 59, 0.25);
+  outline: 2px solid rgba(255, 59, 59, 0.5);
+}

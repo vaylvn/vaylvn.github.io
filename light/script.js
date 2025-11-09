@@ -8,6 +8,7 @@ let board = [];
 let score = 0;
 let dragging = null;
 let ghostCells = [];
+let grabOffset = { r: 0, c: 0 };
 
 function init() {
   board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
@@ -59,6 +60,19 @@ function startDrag(e, shape, pieceEl) {
   if (dragging) return;
   dragging = { shape, pieceEl };
 
+  e.preventDefault();
+  pieceEl.setPointerCapture(e.pointerId);
+
+  // find grab offset relative to shape grid
+  const rect = pieceEl.getBoundingClientRect();
+  const cellSize = 48 + 4; // approximate size including gap
+  const relX = e.clientX - rect.left;
+  const relY = e.clientY - rect.top;
+  grabOffset = {
+    r: Math.floor(relY / cellSize),
+    c: Math.floor(relX / cellSize)
+  };
+
   const clone = pieceEl.cloneNode(true);
   clone.style.position = 'absolute';
   clone.style.pointerEvents = 'none';
@@ -70,7 +84,7 @@ function startDrag(e, shape, pieceEl) {
   pieceEl.style.opacity = '0.3';
 
   const move = ev => moveDrag(ev, shape);
-  const up = ev => endDrag(ev, shape, pieceEl, clone, move, up);
+  const up = ev => endDrag(ev, shape, pieceEl, clone, move, up, e.pointerId);
 
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up, { once: true });
@@ -85,8 +99,8 @@ function moveDrag(e, shape) {
 
   const rect = boardEl.getBoundingClientRect();
   const cellSize = rect.width / BOARD_SIZE;
-  const col = Math.floor((e.clientX - rect.left) / cellSize);
-  const row = Math.floor((e.clientY - rect.top) / cellSize);
+  const col = Math.floor((e.clientX - rect.left) / cellSize) - grabOffset.c;
+  const row = Math.floor((e.clientY - rect.top) / cellSize) - grabOffset.r;
 
   clearGhosts();
 
@@ -96,14 +110,15 @@ function moveDrag(e, shape) {
   }
 }
 
-function endDrag(e, shape, pieceEl, clone, move, up) {
+function endDrag(e, shape, pieceEl, clone, move, up, pointerId) {
   window.removeEventListener('pointermove', move);
+  pieceEl.releasePointerCapture(pointerId);
   clearGhosts();
 
   const rect = boardEl.getBoundingClientRect();
   const cellSize = rect.width / BOARD_SIZE;
-  const col = Math.floor((e.clientX - rect.left) / cellSize);
-  const row = Math.floor((e.clientY - rect.top) / cellSize);
+  const col = Math.floor((e.clientX - rect.left) / cellSize) - grabOffset.c;
+  const row = Math.floor((e.clientY - rect.top) / cellSize) - grabOffset.r;
 
   if (placePiece(row, col, shape)) {
     clearLines();
@@ -122,7 +137,7 @@ function highlightGhost(row, col, shape, valid) {
       if (shape[r][c]) {
         const rr = row + r;
         const cc = col + c;
-        if (rr < BOARD_SIZE && cc < BOARD_SIZE) {
+        if (rr < BOARD_SIZE && cc < BOARD_SIZE && rr >= 0 && cc >= 0) {
           const cellIndex = rr * BOARD_SIZE + cc;
           const cell = cells[cellIndex];
           if (cell) {
