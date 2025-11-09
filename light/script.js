@@ -241,7 +241,6 @@ function clearLines() {
       cell.style.transition = `background ${fadeDuration}ms ease, opacity ${fadeDuration}ms ease`;
       setTimeout(() => {
         cell.style.background = '#444';
-        cell.style.opacity = '0';
       }, delay);
     }
   };
