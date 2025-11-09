@@ -117,3 +117,9 @@ html, body {
 #game, #board, #tray, .piece, .block {
   touch-action: none;
 }
+
+.cell.clearing {
+  background: #444;
+  transition: background 0.4s ease, opacity 0.4s ease;
+  opacity: 0.6;
+}

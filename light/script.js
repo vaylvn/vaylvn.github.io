@@ -215,24 +215,47 @@ function placePiece(row, col, shape) {
 
 function clearLines() {
   let linesCleared = 0;
+  const cells = Array.from(boardEl.children);
+
+  // Collect rows and columns to clear
+  const fullRows = [];
+  const fullCols = [];
+
   for (let r = 0; r < BOARD_SIZE; r++) {
-    if (board[r].every(v => v)) {
-      board[r] = Array(BOARD_SIZE).fill(0);
-      linesCleared++;
-    }
+    if (board[r].every(v => v)) fullRows.push(r);
   }
   for (let c = 0; c < BOARD_SIZE; c++) {
-    if (board.every(row => row[c])) {
-      board.forEach(row => (row[c] = 0));
-      linesCleared++;
-    }
+    if (board.every(row => row[c])) fullCols.push(c);
   }
-  if (linesCleared > 0) {
-    score += linesCleared * 10;
-    scoreEl.textContent = score;
-    renderBoard();
+
+  if (fullRows.length || fullCols.length) {
+    linesCleared = fullRows.length + fullCols.length;
+
+    // Apply fading effect
+    fullRows.forEach(r => {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const idx = r * BOARD_SIZE + c;
+        cells[idx].classList.add('clearing');
+      }
+    });
+    fullCols.forEach(c => {
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        const idx = r * BOARD_SIZE + c;
+        cells[idx].classList.add('clearing');
+      }
+    });
+
+    // Wait for animation, then clear data
+    setTimeout(() => {
+      fullRows.forEach(r => (board[r] = Array(BOARD_SIZE).fill(0)));
+      fullCols.forEach(c => board.forEach(row => (row[c] = 0)));
+      score += linesCleared * 10;
+      scoreEl.textContent = score;
+      renderBoard();
+    }, 400); // match CSS transition duration
   }
 }
+
 
 function randomPiece() {
   const shapes = [
