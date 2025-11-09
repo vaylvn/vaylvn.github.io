@@ -1,4 +1,3 @@
-// script.js
 const boardEl = document.getElementById('board');
 const scoreEl = document.getElementById('score');
 const newGameBtn = document.getElementById('newGameBtn');
@@ -7,6 +6,8 @@ const traySlots = document.querySelectorAll('.tray-slot');
 const BOARD_SIZE = 10;
 let board = [];
 let score = 0;
+let dragging = null;
+let ghostCells = [];
 
 function init() {
   board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
@@ -32,7 +33,8 @@ function generateTray() {
   traySlots.forEach(slot => {
     slot.innerHTML = '';
     const piece = randomPiece();
-    slot.appendChild(renderPiece(piece));
+    const el = renderPiece(piece);
+    slot.appendChild(el);
     slot.dataset.piece = JSON.stringify(piece);
   });
 }
@@ -40,9 +42,7 @@ function generateTray() {
 function renderPiece(shape) {
   const pieceEl = document.createElement('div');
   pieceEl.classList.add('piece');
-  const maxR = shape.length;
-  const maxC = shape[0].length;
-  pieceEl.style.gridTemplateColumns = `repeat(${maxC}, 48px)`;
+  pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 48px)`;
   shape.forEach(row => {
     row.forEach(cell => {
       const block = document.createElement('div');
@@ -50,39 +50,100 @@ function renderPiece(shape) {
       pieceEl.appendChild(block);
     });
   });
-  pieceEl.draggable = true;
-  pieceEl.addEventListener('dragstart', handleDragStart);
+
+  pieceEl.addEventListener('pointerdown', e => startDrag(e, shape, pieceEl));
   return pieceEl;
 }
 
-function handleDragStart(e) {
-  const piece = e.target.parentElement.dataset.piece;
-  e.dataTransfer.setData('piece', piece);
+function startDrag(e, shape, pieceEl) {
+  if (dragging) return;
+  dragging = { shape, pieceEl };
+
+  const clone = pieceEl.cloneNode(true);
+  clone.style.position = 'absolute';
+  clone.style.pointerEvents = 'none';
+  clone.style.opacity = '0.5';
+  clone.style.transform = 'translate(-50%, -50%) scale(0.8)';
+  clone.id = 'dragClone';
+  document.body.appendChild(clone);
+
+  pieceEl.style.opacity = '0.3';
+
+  const move = ev => moveDrag(ev, shape);
+  const up = ev => endDrag(ev, shape, pieceEl, clone, move, up);
+
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up, { once: true });
 }
 
-boardEl.addEventListener('dragover', e => e.preventDefault());
-boardEl.addEventListener('drop', handleDrop);
+function moveDrag(e, shape) {
+  const clone = document.getElementById('dragClone');
+  if (clone) {
+    clone.style.left = `${e.pageX}px`;
+    clone.style.top = `${e.pageY}px`;
+  }
 
-function handleDrop(e) {
   const rect = boardEl.getBoundingClientRect();
   const cellSize = rect.width / BOARD_SIZE;
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  const col = Math.floor(x / cellSize);
-  const row = Math.floor(y / cellSize);
-  const piece = JSON.parse(e.dataTransfer.getData('piece'));
-  if (placePiece(row, col, piece)) {
-    clearLines();
-    generateTray();
+  const col = Math.floor((e.clientX - rect.left) / cellSize);
+  const row = Math.floor((e.clientY - rect.top) / cellSize);
+
+  clearGhosts();
+
+  if (row >= 0 && col >= 0 && row < BOARD_SIZE && col < BOARD_SIZE) {
+    const valid = canPlace(row, col, shape);
+    highlightGhost(row, col, shape, valid);
   }
 }
 
-function placePiece(row, col, shape) {
-  const rows = shape.length;
-  const cols = shape[0].length;
-  // check valid placement
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
+function endDrag(e, shape, pieceEl, clone, move, up) {
+  window.removeEventListener('pointermove', move);
+  clearGhosts();
+
+  const rect = boardEl.getBoundingClientRect();
+  const cellSize = rect.width / BOARD_SIZE;
+  const col = Math.floor((e.clientX - rect.left) / cellSize);
+  const row = Math.floor((e.clientY - rect.top) / cellSize);
+
+  if (placePiece(row, col, shape)) {
+    clearLines();
+    generateTray();
+  }
+
+  pieceEl.style.opacity = '1';
+  clone.remove();
+  dragging = null;
+}
+
+function highlightGhost(row, col, shape, valid) {
+  const cells = Array.from(boardEl.children);
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[0].length; c++) {
+      if (shape[r][c]) {
+        const rr = row + r;
+        const cc = col + c;
+        if (rr < BOARD_SIZE && cc < BOARD_SIZE) {
+          const cellIndex = rr * BOARD_SIZE + cc;
+          const cell = cells[cellIndex];
+          if (cell) {
+            cell.classList.add('ghost');
+            if (!valid) cell.classList.add('invalid');
+            ghostCells.push(cell);
+          }
+        }
+      }
+    }
+  }
+}
+
+function clearGhosts() {
+  ghostCells.forEach(cell => cell.classList.remove('ghost', 'invalid'));
+  ghostCells = [];
+}
+
+function canPlace(row, col, shape) {
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[0].length; c++) {
       if (shape[r][c]) {
         if (row + r >= BOARD_SIZE || col + c >= BOARD_SIZE || board[row + r][col + c]) {
           return false;
@@ -90,9 +151,13 @@ function placePiece(row, col, shape) {
       }
     }
   }
-  // apply piece
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
+  return true;
+}
+
+function placePiece(row, col, shape) {
+  if (!canPlace(row, col, shape)) return false;
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[0].length; c++) {
       if (shape[r][c]) board[row + r][col + c] = 1;
     }
   }
