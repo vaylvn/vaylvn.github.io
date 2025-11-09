@@ -44,7 +44,7 @@ header {
 
 .cell.filled {
   background: #f5c542;
-  box-shadow: 0 0 6px #ffd43b33;
+  /* box-shadow: 0 0 6px #ffd43b33; */
 }
 
 #tray {
