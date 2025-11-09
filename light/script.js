@@ -3,6 +3,8 @@ const scoreEl = document.getElementById('score');
 const newGameBtn = document.getElementById('newGameBtn');
 const trayEl = document.getElementById('tray');
 
+document.body.style.touchAction = 'none';
+
 const BOARD_SIZE = 10;
 let board = [];
 let score = 0;
@@ -28,6 +30,7 @@ function renderBoard() {
       const cell = document.createElement('div');
       cell.classList.add('cell');
       if (board[r][c]) cell.classList.add('filled');
+      cell.style.touchAction = 'none';
       boardEl.appendChild(cell);
     }
   }
@@ -50,6 +53,7 @@ function renderTray() {
     const pieceEl = renderPiece(piece, scales[i], i > 0);
     pieceEl.classList.add('tray-piece');
     pieceEl.style.opacity = opacities[i];
+    pieceEl.style.touchAction = 'none';
     trayEl.appendChild(pieceEl);
   });
 }
@@ -60,11 +64,13 @@ function renderPiece(shape, scale = 1, faded = false) {
   pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 48px)`;
   pieceEl.style.transform = `scale(${scale})`;
   pieceEl.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s';
+  pieceEl.style.touchAction = 'none';
 
   shape.forEach(row => {
     row.forEach(cell => {
       const block = document.createElement('div');
       if (cell) block.classList.add('block');
+      block.style.touchAction = 'none';
       pieceEl.appendChild(block);
     });
   });
@@ -78,7 +84,6 @@ function startDrag(e, shape, pieceEl) {
   dragging = { shape, pieceEl };
 
   e.preventDefault();
-  pieceEl.setPointerCapture(e.pointerId);
 
   const rect = pieceEl.getBoundingClientRect();
   const cellSize = 48 + 4;
@@ -89,24 +94,28 @@ function startDrag(e, shape, pieceEl) {
     c: Math.floor(relX / cellSize)
   };
 
-  const clone = pieceEl.cloneNode(true);
-  clone.style.position = 'absolute';
-  clone.style.pointerEvents = 'none';
-  clone.style.opacity = '0.5';
-  clone.style.transform = 'translate(-50%, -50%) scale(0.8)';
-  clone.id = 'dragClone';
-  document.body.appendChild(clone);
+  requestAnimationFrame(() => {
+    const clone = pieceEl.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.pointerEvents = 'none';
+    clone.style.opacity = '0.5';
+    clone.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    clone.style.touchAction = 'none';
+    clone.id = 'dragClone';
+    document.body.appendChild(clone);
 
-  pieceEl.style.opacity = '0.3';
+    pieceEl.style.opacity = '0.3';
 
-  const move = ev => moveDrag(ev, shape);
-  const up = ev => endDrag(ev, shape, pieceEl, clone, move, up, e.pointerId);
+    const move = ev => moveDrag(ev, shape);
+    const up = ev => endDrag(ev, shape, pieceEl, clone, move, up);
 
-  window.addEventListener('pointermove', move);
-  window.addEventListener('pointerup', up, { once: true });
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', up, { once: true, passive: false });
+  });
 }
 
 function moveDrag(e, shape) {
+  e.preventDefault();
   const clone = document.getElementById('dragClone');
   if (clone) {
     clone.style.left = `${e.pageX}px`;
@@ -126,9 +135,9 @@ function moveDrag(e, shape) {
   }
 }
 
-function endDrag(e, shape, pieceEl, clone, move, up, pointerId) {
+function endDrag(e, shape, pieceEl, clone, move, up) {
+  e.preventDefault();
   window.removeEventListener('pointermove', move);
-  pieceEl.releasePointerCapture(pointerId);
   clearGhosts();
 
   const rect = boardEl.getBoundingClientRect();
@@ -147,17 +156,9 @@ function endDrag(e, shape, pieceEl, clone, move, up, pointerId) {
 }
 
 function cyclePieces() {
-  const trayPieces = Array.from(trayEl.children);
-  trayPieces[0].style.transform = 'scale(0.5)';
-  trayPieces[0].style.opacity = '0';
-
   nextPieces.shift();
   nextPieces.push(randomPiece());
-
-  // Smooth transition delay before re-render
-  setTimeout(() => {
-    renderTray();
-  }, 300);
+  setTimeout(() => renderTray(), 300);
 }
 
 function highlightGhost(row, col, shape, valid) {
