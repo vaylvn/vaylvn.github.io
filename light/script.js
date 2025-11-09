@@ -238,7 +238,7 @@ function clearLines() {
     const idx = r * BOARD_SIZE + c;
     const cell = cells[idx];
     if (cell && cell.classList.contains('filled')) {
-      cell.style.transition = `background ${fadeDuration}ms ease, opacity ${fadeDuration}ms ease`;
+      cell.style.transition = `background ${fadeDuration}ms ease`;
       setTimeout(() => {
         cell.style.background = '#444';
       }, delay);
