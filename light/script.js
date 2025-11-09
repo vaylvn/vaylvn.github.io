@@ -19,7 +19,7 @@ function init() {
   scoreEl.textContent = score;
 
   nextPieces = [randomPiece(), randomPiece()];
-  loadNextPiece();
+  loadNextPiece(true);
 }
 
 function renderBoard() {
@@ -34,18 +34,31 @@ function renderBoard() {
   }
 }
 
-function loadNextPiece() {
-  trayEl.innerHTML = '';
+function loadNextPiece(initial = false) {
+  const oldActive = document.querySelector('.active-piece');
+  if (oldActive && !initial) {
+    oldActive.classList.add('fade-out');
+    setTimeout(() => oldActive.remove(), 250);
+  }
+
+  const activeContainer = document.createElement('div');
+  activeContainer.classList.add('tray-container');
+
   activePiece = nextPieces.shift();
   nextPieces.push(randomPiece());
 
   const activeEl = renderPiece(activePiece, 1);
   activeEl.classList.add('active-piece');
-  trayEl.appendChild(activeEl);
+  activeEl.classList.add('fade-in');
+  trayEl.innerHTML = '';
+  activeContainer.appendChild(activeEl);
 
   const previewEl = renderPiece(nextPieces[0], 0.6, true);
   previewEl.classList.add('preview-piece');
-  trayEl.appendChild(previewEl);
+  previewEl.classList.add('slide-in');
+  activeContainer.appendChild(previewEl);
+
+  trayEl.appendChild(activeContainer);
 }
 
 function renderPiece(shape, scale = 1, faded = false) {
