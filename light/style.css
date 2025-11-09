@@ -107,3 +107,13 @@ header {
   background: rgba(255, 59, 59, 0.25);
   outline: 2px solid rgba(255, 59, 59, 0.5);
 }
+
+
+html, body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+#game, #board, #tray, .piece, .block {
+  touch-action: none;
+}

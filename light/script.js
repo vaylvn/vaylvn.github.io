@@ -111,6 +111,8 @@ function startDrag(e, shape, pieceEl) {
 
     window.addEventListener('pointermove', move, { passive: false });
     window.addEventListener('pointerup', up, { once: true, passive: false });
+	pieceEl.addEventListener('pointerdown', e => startDrag(e, shape, pieceEl), { passive: false });
+	
   });
 }
 
