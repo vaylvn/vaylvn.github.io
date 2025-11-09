@@ -1,7 +1,7 @@
 const boardEl = document.getElementById('board');
 const scoreEl = document.getElementById('score');
 const newGameBtn = document.getElementById('newGameBtn');
-const traySlots = document.querySelectorAll('.tray-slot');
+const trayEl = document.getElementById('tray');
 
 const BOARD_SIZE = 10;
 let board = [];
@@ -9,13 +9,17 @@ let score = 0;
 let dragging = null;
 let ghostCells = [];
 let grabOffset = { r: 0, c: 0 };
+let activePiece = null;
+let nextPieces = [];
 
 function init() {
   board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
   renderBoard();
-  generateTray();
   score = 0;
   scoreEl.textContent = score;
+
+  nextPieces = [randomPiece(), randomPiece()];
+  loadNextPiece();
 }
 
 function renderBoard() {
@@ -30,20 +34,27 @@ function renderBoard() {
   }
 }
 
-function generateTray() {
-  traySlots.forEach(slot => {
-    slot.innerHTML = '';
-    const piece = randomPiece();
-    const el = renderPiece(piece);
-    slot.appendChild(el);
-    slot.dataset.piece = JSON.stringify(piece);
-  });
+function loadNextPiece() {
+  trayEl.innerHTML = '';
+  activePiece = nextPieces.shift();
+  nextPieces.push(randomPiece());
+
+  const activeEl = renderPiece(activePiece, 1);
+  activeEl.classList.add('active-piece');
+  trayEl.appendChild(activeEl);
+
+  const previewEl = renderPiece(nextPieces[0], 0.6, true);
+  previewEl.classList.add('preview-piece');
+  trayEl.appendChild(previewEl);
 }
 
-function renderPiece(shape) {
+function renderPiece(shape, scale = 1, faded = false) {
   const pieceEl = document.createElement('div');
   pieceEl.classList.add('piece');
   pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 48px)`;
+  pieceEl.style.transform = `scale(${scale})`;
+  pieceEl.style.opacity = faded ? '0.4' : '1';
+
   shape.forEach(row => {
     row.forEach(cell => {
       const block = document.createElement('div');
@@ -52,7 +63,7 @@ function renderPiece(shape) {
     });
   });
 
-  pieceEl.addEventListener('pointerdown', e => startDrag(e, shape, pieceEl));
+  if (!faded) pieceEl.addEventListener('pointerdown', e => startDrag(e, shape, pieceEl));
   return pieceEl;
 }
 
@@ -63,9 +74,8 @@ function startDrag(e, shape, pieceEl) {
   e.preventDefault();
   pieceEl.setPointerCapture(e.pointerId);
 
-  // find grab offset relative to shape grid
   const rect = pieceEl.getBoundingClientRect();
-  const cellSize = 48 + 4; // approximate size including gap
+  const cellSize = 48 + 4;
   const relX = e.clientX - rect.left;
   const relY = e.clientY - rect.top;
   grabOffset = {
@@ -122,7 +132,7 @@ function endDrag(e, shape, pieceEl, clone, move, up, pointerId) {
 
   if (placePiece(row, col, shape)) {
     clearLines();
-    generateTray();
+    loadNextPiece();
   }
 
   pieceEl.style.opacity = '1';
