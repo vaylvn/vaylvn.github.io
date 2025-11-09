@@ -214,13 +214,12 @@ function placePiece(row, col, shape) {
 }
 
 function clearLines() {
-  let linesCleared = 0;
   const cells = Array.from(boardEl.children);
-
-  // Collect rows and columns to clear
+  let linesCleared = 0;
   const fullRows = [];
   const fullCols = [];
 
+  // detect complete rows/columns
   for (let r = 0; r < BOARD_SIZE; r++) {
     if (board[r].every(v => v)) fullRows.push(r);
   }
@@ -228,33 +227,46 @@ function clearLines() {
     if (board.every(row => row[c])) fullCols.push(c);
   }
 
-  if (fullRows.length || fullCols.length) {
-    linesCleared = fullRows.length + fullCols.length;
+  if (!fullRows.length && !fullCols.length) return;
 
-    // Apply fading effect
-    fullRows.forEach(r => {
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        const idx = r * BOARD_SIZE + c;
-        cells[idx].classList.add('clearing');
-      }
-    });
-    fullCols.forEach(c => {
-      for (let r = 0; r < BOARD_SIZE; r++) {
-        const idx = r * BOARD_SIZE + c;
-        cells[idx].classList.add('clearing');
-      }
-    });
+  linesCleared = fullRows.length + fullCols.length;
 
-    // Wait for animation, then clear data
-    setTimeout(() => {
-      fullRows.forEach(r => (board[r] = Array(BOARD_SIZE).fill(0)));
-      fullCols.forEach(c => board.forEach(row => (row[c] = 0)));
-      score += linesCleared * 10;
-      scoreEl.textContent = score;
-      renderBoard();
-    }, 400); // match CSS transition duration
-  }
+  // mark and animate each filled cell in sequence
+  const delayStep = 35; // ms between cells for wave
+  let delay = 0;
+
+  fullRows.forEach(r => {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const idx = r * BOARD_SIZE + c;
+      const cell = cells[idx];
+      if (cell.classList.contains('filled')) {
+        setTimeout(() => cell.classList.add('clearing'), delay);
+        delay += delayStep;
+      }
+    }
+  });
+
+  fullCols.forEach(c => {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      const idx = r * BOARD_SIZE + c;
+      const cell = cells[idx];
+      if (cell.classList.contains('filled')) {
+        setTimeout(() => cell.classList.add('clearing'), delay);
+        delay += delayStep;
+      }
+    }
+  });
+
+  // after animation, actually clear data and re-render
+  setTimeout(() => {
+    fullRows.forEach(r => (board[r] = Array(BOARD_SIZE).fill(0)));
+    fullCols.forEach(c => board.forEach(row => (row[c] = 0)));
+    score += linesCleared * 10;
+    scoreEl.textContent = score;
+    renderBoard();
+  }, delay + 400); // wait for final fade to finish
 }
+
 
 
 function randomPiece() {
