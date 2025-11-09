@@ -9,7 +9,6 @@ let score = 0;
 let dragging = null;
 let ghostCells = [];
 let grabOffset = { r: 0, c: 0 };
-let activePiece = null;
 let nextPieces = [];
 
 function init() {
@@ -18,8 +17,8 @@ function init() {
   score = 0;
   scoreEl.textContent = score;
 
-  nextPieces = [randomPiece(), randomPiece()];
-  loadNextPiece(true);
+  nextPieces = [randomPiece(), randomPiece(), randomPiece()];
+  renderTray();
 }
 
 function renderBoard() {
@@ -34,31 +33,25 @@ function renderBoard() {
   }
 }
 
-function loadNextPiece(initial = false) {
-  const oldActive = document.querySelector('.active-piece');
-  if (oldActive && !initial) {
-    oldActive.classList.add('fade-out');
-    setTimeout(() => oldActive.remove(), 250);
-  }
-
-  const activeContainer = document.createElement('div');
-  activeContainer.classList.add('tray-container');
-
-  activePiece = nextPieces.shift();
-  nextPieces.push(randomPiece());
-
-  const activeEl = renderPiece(activePiece, 1);
-  activeEl.classList.add('active-piece');
-  activeEl.classList.add('fade-in');
+function renderTray() {
   trayEl.innerHTML = '';
-  activeContainer.appendChild(activeEl);
+  trayEl.style.display = 'flex';
+  trayEl.style.justifyContent = 'center';
+  trayEl.style.alignItems = 'center';
+  trayEl.style.gap = '60px';
+  trayEl.style.width = '600px';
+  trayEl.style.height = '200px';
+  trayEl.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 
-  const previewEl = renderPiece(nextPieces[0], 0.6, true);
-  previewEl.classList.add('preview-piece');
-  previewEl.classList.add('slide-in');
-  activeContainer.appendChild(previewEl);
+  const scales = [1.0, 0.7, 0.5];
+  const opacities = [1.0, 0.6, 0.3];
 
-  trayEl.appendChild(activeContainer);
+  nextPieces.forEach((piece, i) => {
+    const pieceEl = renderPiece(piece, scales[i], i > 0);
+    pieceEl.classList.add('tray-piece');
+    pieceEl.style.opacity = opacities[i];
+    trayEl.appendChild(pieceEl);
+  });
 }
 
 function renderPiece(shape, scale = 1, faded = false) {
@@ -66,7 +59,7 @@ function renderPiece(shape, scale = 1, faded = false) {
   pieceEl.classList.add('piece');
   pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 48px)`;
   pieceEl.style.transform = `scale(${scale})`;
-  pieceEl.style.opacity = faded ? '0.4' : '1';
+  pieceEl.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s';
 
   shape.forEach(row => {
     row.forEach(cell => {
@@ -76,7 +69,7 @@ function renderPiece(shape, scale = 1, faded = false) {
     });
   });
 
-  if (!faded) pieceEl.addEventListener('pointerdown', e => startDrag(e, shape, pieceEl));
+  if (!faded && scale === 1) pieceEl.addEventListener('pointerdown', e => startDrag(e, shape, pieceEl));
   return pieceEl;
 }
 
@@ -145,12 +138,26 @@ function endDrag(e, shape, pieceEl, clone, move, up, pointerId) {
 
   if (placePiece(row, col, shape)) {
     clearLines();
-    loadNextPiece();
+    cyclePieces();
   }
 
   pieceEl.style.opacity = '1';
   clone.remove();
   dragging = null;
+}
+
+function cyclePieces() {
+  const trayPieces = Array.from(trayEl.children);
+  trayPieces[0].style.transform = 'scale(0.5)';
+  trayPieces[0].style.opacity = '0';
+
+  nextPieces.shift();
+  nextPieces.push(randomPiece());
+
+  // Smooth transition delay before re-render
+  setTimeout(() => {
+    renderTray();
+  }, 300);
 }
 
 function highlightGhost(row, col, shape, valid) {
