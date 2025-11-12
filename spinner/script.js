@@ -108,10 +108,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
 		  // --- 🧩 New code: determine result + send it outward ---
 		  const finalRotation = (startRot + (targetRot - startRot)) % (2 * Math.PI);
-		  const normalized = (2 * Math.PI - finalRotation + Math.PI / config.segments.length) % (2 * Math.PI);
-		  const index = Math.floor((normalized / (2 * Math.PI)) * config.segments.length);
-		  const landedSegment = config.segments[index];
-		  const result = landedSegment?.label || "Unknown";
+			const offset = Math.PI / 2;
+			const normalized = (2 * Math.PI - ((finalRotation + offset) % (2 * Math.PI))) % (2 * Math.PI);
+			const index = Math.floor((normalized / (2 * Math.PI)) * config.segments.length);
+			const landedSegment = config.segments[index];
+			const result = landedSegment?.label || "Unknown";
+
 
 		  // Send result to local Flask listener
 		  fetch("http://127.0.0.1:5000/spinresult", {
