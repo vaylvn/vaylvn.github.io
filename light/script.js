@@ -13,6 +13,51 @@ let ghostCells = [];
 let grabOffset = { r: 0, c: 0 };
 let nextPieces = [];
 
+
+
+
+
+let audioEnabled = true;
+
+function playSound(name, { volume = 0.3, rate = 1.0 } = {}) {
+  if (!audioEnabled || !sounds[name]) return;
+
+  const source = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  source.buffer = sounds[name];
+  source.playbackRate.value = rate;
+  gain.gain.value = volume;
+  source.connect(gain).connect(audioCtx.destination);
+  source.start(0);
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const sounds = {};
+
+async function loadSound(name, url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  sounds[name] = await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function loadAllSounds() {
+  await Promise.all([
+    loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/light/assets/audio/click2.mp3")
+  ]);
+  console.log("Sounds ready");
+}
+
+
+
+
+
+
+
+
+
+
+
+
 function init() {
   board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
   renderBoard();

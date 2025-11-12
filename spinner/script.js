@@ -81,27 +81,52 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function startSpin(){
-    if(spinning||!config.segments.length)return;
-    spinning=true;
-    const duration=config.spinDuration,startTime=performance.now();
-    const startRot=currentRotation,targetRot=startRot+10*Math.PI+Math.random()*Math.PI;
-    const sounds={click:"sounds/click.mp3",tick:"sounds/tick.mp3",boop:"sounds/boop.mp3"};
-    const chosen=config.customSound||sounds[config.sound];
-    const totalTicks=config.tickDensity;let lastTick=-1;
-    requestAnimationFrame(function anim(now){
-      const p=Math.min((now-startTime)/duration,1);
-      const eased=1-Math.pow(1-p,3);
-      drawSpinner(config,startRot+eased*(targetRot-startRot));
-      const tickIndex=Math.floor(eased*totalTicks);
-      if(tickIndex>lastTick){lastTick=tickIndex;
-        if(config.sound!=="none"&&chosen)playSoundOnce(chosen,0.35);
-      }
-      if(p<1)requestAnimationFrame(anim);
-      else{spinning=false;
-        if(config.sound!=="none"&&chosen)playSoundOnce(chosen,0.5);
-      }
-    });
-  }
+	  if (spinning || !config.segments.length) return;
+	  spinning = true;
+	  const duration = config.spinDuration, startTime = performance.now();
+	  const startRot = currentRotation, targetRot = startRot + 10 * Math.PI + Math.random() * Math.PI;
+	  const sounds = { click:"sounds/click.mp3", tick:"sounds/tick.mp3", boop:"sounds/boop.mp3" };
+	  const chosen = config.customSound || sounds[config.sound];
+	  const totalTicks = config.tickDensity; let lastTick = -1;
+
+	  requestAnimationFrame(function anim(now) {
+		const p = Math.min((now - startTime) / duration, 1);
+		const eased = 1 - Math.pow(1 - p, 3);
+		drawSpinner(config, startRot + eased * (targetRot - startRot));
+		const tickIndex = Math.floor(eased * totalTicks);
+
+		if (tickIndex > lastTick) {
+		  lastTick = tickIndex;
+		  if (config.sound !== "none" && chosen) playSoundOnce(chosen, 0.35);
+		}
+
+		if (p < 1) {
+		  requestAnimationFrame(anim);
+		} else {
+		  spinning = false;
+		  if (config.sound !== "none" && chosen) playSoundOnce(chosen, 0.5);
+
+		  // --- 🧩 New code: determine result + send it outward ---
+		  const finalRotation = (startRot + (targetRot - startRot)) % (2 * Math.PI);
+		  const normalized = (2 * Math.PI - finalRotation + Math.PI / config.segments.length) % (2 * Math.PI);
+		  const index = Math.floor((normalized / (2 * Math.PI)) * config.segments.length);
+		  const landedSegment = config.segments[index];
+		  const result = landedSegment?.label || "Unknown";
+
+		  // Send result to local Flask listener
+		  fetch("http://127.0.0.1:5000/spinresult", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ result })
+		  }).catch(err => console.warn("Failed to send spin result:", err));
+
+		  console.log("Spinner result:", result);
+		  // --- End new code ---
+		}
+	  });
+	}
+
+
 
   /* Editor Logic */
   if(!dataParam){
