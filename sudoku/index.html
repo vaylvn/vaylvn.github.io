@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Numi – Sudoku</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="top-bar">
+      <button class="back-btn" type="button">&larr; Back</button>
+      <h1 class="title">Numi – Sudoku</h1>
+    </header>
+
+    <main class="main">
+      <section class="panel panel-top">
+        <div class="segment-group" id="difficulty-group">
+          <button class="segment active" data-diff="easy">Easy</button>
+          <button class="segment" data-diff="medium">Medium</button>
+          <button class="segment" data-diff="hard">Hard</button>
+          <button class="segment" data-diff="expert">Expert</button>
+        </div>
+
+        <div class="toggle-group">
+          <button id="auto-check-toggle" class="toggle toggle-on" type="button">
+            Auto-check: ON
+          </button>
+        </div>
+      </section>
+
+      <section class="grid-wrapper">
+        <div id="sudoku-grid" class="sudoku-grid" aria-label="Sudoku grid"></div>
+      </section>
+
+      <section class="panel panel-bottom">
+        <div class="bottom-buttons">
+          <button id="new-game-btn" class="btn" type="button">New Game</button>
+          <button id="clear-btn" class="btn btn-secondary" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="mobile-keypad" id="mobile-keypad" aria-label="Number keypad">
+        <button type="button" data-num="1">1</button>
+        <button type="button" data-num="2">2</button>
+        <button type="button" data-num="3">3</button>
+        <button type="button" data-num="4">4</button>
+        <button type="button" data-num="5">5</button>
+        <button type="button" data-num="6">6</button>
+        <button type="button" data-num="7">7</button>
+        <button type="button" data-num="8">8</button>
+        <button type="button" data-num="9">9</button>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="sudoku.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
