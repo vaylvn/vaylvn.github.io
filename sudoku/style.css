@@ -232,6 +232,7 @@ body {
 
 .cell-same-number {
   background: rgba(255, 255, 255, 0.04);
+  outline: 1px solid var(--text-main);
 }
 
 .cell-error {
