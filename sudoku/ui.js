@@ -111,38 +111,97 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedCell = null;
   }
 
-  function writeToCell(cell, num) {
-    if (!cell || cell.classList.contains("cell-given")) return;
+	function writeToCell(cell, num) {
+	  if (!cell || cell.classList.contains("cell-given")) return;
 
-    cell.textContent = num ? String(num) : "";
-    cell.classList.remove("cell-error");
+	  // Always clear previous state before writing a new value
+	  cell.classList.remove("cell-error", "cell-same-number", "cell-complete-number");
 
-    // Auto-check
-    if (autoCheckEnabled && num) {
-      const r = parseInt(cell.dataset.row, 10);
-      const c = parseInt(cell.dataset.col, 10);
-      if (solution && solution[r][c] !== num) {
-        cell.classList.add("cell-error");
-      }
-    }
+	  // Apply content
+	  if (num) {
+		cell.textContent = String(num);
+	  } else {
+		cell.textContent = "";
+	  }
 
-    highlightSameNumbers(cell.textContent || null);
-  }
+	  // Auto-check mismatch
+	  if (autoCheckEnabled && num) {
+		const r = parseInt(cell.dataset.row, 10);
+		const c = parseInt(cell.dataset.col, 10);
+		if (solution[r][c] !== num) {
+		  cell.classList.add("cell-error");
+		}
+	  }
+
+	  // Local highlight logic (same number highlight)
+	  highlightSameNumbers(cell.textContent || null);
+
+	  // Completed-number logic
+	  updateCompletedNumbers();
+	}
+
 
   function clearEditableCells() {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (cell.classList.contains("cell-editable")) {
-          cell.textContent = "";
-          cell.classList.remove("cell-error", "cell-same-number");
-        }
-      }
-    }
-    if (selectedCell) {
-      highlightSameNumbers(selectedCell.textContent || null);
-    }
-  }
+	  for (let r = 0; r < 9; r++) {
+		for (let c = 0; c < 9; c++) {
+		  const cell = cells[r][c];
+
+		  if (cell.classList.contains("cell-editable")) {
+			writeToCell(cell, null); // unified clearing, includes updateCompletedNumbers()
+		  }
+		}
+	  }
+
+	  // Re-run same-number highlight based on the currently selected cell
+	  if (selectedCell) {
+		highlightSameNumbers(selectedCell.textContent || null);
+	  }
+	}
+
+  
+  function updateCompletedNumbers() {
+	  // Clear existing completion classes
+	  for (const row of cells) {
+		for (const cell of row) {
+		  cell.classList.remove("cell-complete-number");
+		}
+	  }
+
+	  // For each number 1–9, check if it's fully and correctly placed
+	  for (let num = 1; num <= 9; num++) {
+		const positions = [];
+
+		// Find all cells containing num
+		for (let r = 0; r < 9; r++) {
+		  for (let c = 0; c < 9; c++) {
+			const cell = cells[r][c];
+			if (cell.textContent === String(num)) {
+			  positions.push({ r, c });
+			}
+		  }
+		}
+
+		// If not all 9 are present, skip
+		if (positions.length !== 9) continue;
+
+		// Verify correctness
+		let correct = true;
+		for (const pos of positions) {
+		  if (solution[pos.r][pos.c] !== num) {
+			correct = false;
+			break;
+		  }
+		}
+
+		// If all 9 are correct → mark cells
+		if (correct) {
+		  for (const pos of positions) {
+			cells[pos.r][pos.c].classList.add("cell-complete-number");
+		  }
+		}
+	  }
+	}
+
 
   // Keyboard input (desktop)
   document.addEventListener("keydown", (e) => {

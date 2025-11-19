@@ -234,6 +234,10 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.cell-complete-number {
+  background: rgba(90, 200, 90, 0.12); /* subtle green */
+}
+
 .cell-error {
   outline: 2px solid var(--error);
   outline-offset: -2px;
