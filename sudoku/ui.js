@@ -91,12 +91,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = puzzle[r][c];
 
         cell.classList.remove(
-          "cell-given",
-          "cell-editable",
-          "cell-error",
-          "cell-selected",
-          "cell-same-number"
-        );
+		  "cell-given",
+		  "cell-editable",
+		  "cell-error",
+		  "cell-selected",
+		  "cell-same-number",
+		  "cell-complete-number"   // <-- FIX
+		);
+
 
         if (val !== 0) {
           cell.textContent = String(val);
