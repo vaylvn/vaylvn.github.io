@@ -67,17 +67,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function highlightSameNumbers(value) {
-    clearSameNumberHighlights();
-    if (!value) return;
-    for (const row of cells) {
-      for (const cell of row) {
-        if (cell.textContent === value) {
-          cell.classList.add("cell-same-number");
-        }
-      }
-    }
-  }
+	function highlightSameNumbers(value) {
+	  clearSameNumberHighlights();
+
+	  // NEW: apply green only if selected number is complete
+	  updateCompletedNumbers(value);
+
+	  if (!value) return;
+
+	  for (const row of cells) {
+		for (const cell of row) {
+		  if (cell.textContent === value) {
+			cell.classList.add("cell-same-number");
+		  }
+		}
+	  }
+	}
+
 
   function loadGame(diff) {
     currentDifficulty = diff;
@@ -138,8 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	  // Local highlight logic (same number highlight)
 	  highlightSameNumbers(cell.textContent || null);
 
-	  // Completed-number logic
-	  updateCompletedNumbers();
 	}
 
 
@@ -161,48 +165,42 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
   
-  function updateCompletedNumbers() {
-	  // Clear existing completion classes
+	function updateCompletedNumbers(value) {
+	  // Clear old green states
 	  for (const row of cells) {
 		for (const cell of row) {
 		  cell.classList.remove("cell-complete-number");
 		}
 	  }
 
-	  // For each number 1–9, check if it's fully and correctly placed
-	  for (let num = 1; num <= 9; num++) {
-		const positions = [];
+	  if (!value) return;
 
-		// Find all cells containing num
-		for (let r = 0; r < 9; r++) {
-		  for (let c = 0; c < 9; c++) {
-			const cell = cells[r][c];
-			if (cell.textContent === String(num)) {
-			  positions.push({ r, c });
-			}
-		  }
-		}
-
-		// If not all 9 are present, skip
-		if (positions.length !== 9) continue;
-
-		// Verify correctness
-		let correct = true;
-		for (const pos of positions) {
-		  if (solution[pos.r][pos.c] !== num) {
-			correct = false;
-			break;
-		  }
-		}
-
-		// If all 9 are correct → mark cells
-		if (correct) {
-		  for (const pos of positions) {
-			cells[pos.r][pos.c].classList.add("cell-complete-number");
+	  // Collect positions of this number
+	  const positions = [];
+	  for (let r = 0; r < 9; r++) {
+		for (let c = 0; c < 9; c++) {
+		  const cell = cells[r][c];
+		  if (cell.textContent === value) {
+			positions.push({ r, c });
 		  }
 		}
 	  }
+
+	  // If exactly 9 present, check correctness
+	  if (positions.length !== 9) return;
+
+	  const correct = positions.every(
+		pos => solution[pos.r][pos.c] === Number(value)
+	  );
+
+	  if (!correct) return;
+
+	  // Mark green ONLY for this number
+	  for (const pos of positions) {
+		cells[pos.r][pos.c].classList.add("cell-complete-number");
+	  }
 	}
+
 
 
   // Keyboard input (desktop)
