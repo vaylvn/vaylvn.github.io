@@ -39,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function handleCellClick(cell) {
-    if (cell.classList.contains("cell-given")) return;
     setSelectedCell(cell);
   }
 
