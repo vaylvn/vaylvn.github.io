@@ -85,7 +85,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	  spinning = true;
 	  const duration = config.spinDuration, startTime = performance.now();
 	  const startRot = currentRotation, targetRot = startRot + 10 * Math.PI + Math.random() * Math.PI;
-	  const sounds = { click:"sounds/click.mp3", tick:"sounds/tick.mp3", boop:"sounds/boop.mp3" };
+	  const sounds = { click:"sounds/click.mp3", tick:"sounds/tick.mp3", boop:"sounds/boop.mp3", beep:"sounds/beep.mp3" };
 	  const chosen = config.customSound || sounds[config.sound];
 	  const totalTicks = config.tickDensity; let lastTick = -1;
 
@@ -210,7 +210,7 @@ window.addEventListener("DOMContentLoaded", () => {
       config.customSound=document.getElementById("customSoundUrl").value.trim();
       config.tickDensity=parseFloat(document.getElementById("tickDensity").value)||30;
       drawSpinner(config);
-      const sounds={click:"sounds/click.mp3",tick:"sounds/tick.mp3",boop:"sounds/boop.mp3"};
+      const sounds={click:"sounds/click.mp3",tick:"sounds/tick.mp3",boop:"sounds/boop.mp3",beep:"sounds/beep.mp3"};
       const chosen=config.customSound||sounds[config.sound];
       if(config.sound!=="none"&&chosen)preloadAudio(chosen);
       const encoded=btoa(JSON.stringify(config));
