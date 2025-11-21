@@ -31,12 +31,64 @@ window.addEventListener("DOMContentLoaded", () => {
     }catch{}
   }
 
+
+
+
   function drawSpinner(cfg,rotation=0){
     currentRotation=rotation;
     const total=cfg.segments.reduce((a,b)=>a+b.weight,0)||1;
     ctx.clearRect(0,0,400,400);
     const radius=200-cfg.rimWidth/2;
     let start=rotation;
+	
+	
+	
+	cfg.segments.forEach(seg=>{
+		  const ang = (seg.weight / total) * 2 * Math.PI;
+
+		  ctx.beginPath();
+		  ctx.moveTo(200, 200);
+		  ctx.arc(200, 200, radius, start, start + ang);
+		  ctx.closePath();
+		  ctx.fillStyle = seg.color || "#888";
+		  ctx.fill();
+
+		  const mid = start + ang / 2;
+
+		  ctx.save();
+		  ctx.translate(200, 200);
+		  ctx.rotate(mid);
+
+		  ctx.textAlign = "right";
+		  ctx.textBaseline = "middle";   // <-- key fix
+
+		  const weight = (seg.bold ? "bold " : "") + (seg.italic ? "italic " : "");
+		  ctx.font = `${weight}${seg.size || 16}px '${seg.font || "sans-serif"}', sans-serif`;
+		  ctx.fillStyle = "#000";
+
+		  // Vertical centering offset — 5% of font size
+		  const verticalAdjust = (seg.size || 16) * 0.05;
+
+		  ctx.fillText(seg.label, radius - 20, verticalAdjust);
+
+		  if (seg.underline) {
+			const w = ctx.measureText(seg.label).width;
+			ctx.beginPath();
+			ctx.moveTo(radius - 20 - w, verticalAdjust + 3);
+			ctx.lineTo(radius - 20,     verticalAdjust + 3);
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = "#000";
+			ctx.stroke();
+		  }
+
+		  ctx.restore();
+		  start += ang;
+		});
+
+			
+	
+	
+	/*
     cfg.segments.forEach(seg=>{
       const ang=(seg.weight/total)*2*Math.PI;
       ctx.beginPath();ctx.moveTo(200,200);
@@ -54,6 +106,9 @@ window.addEventListener("DOMContentLoaded", () => {
       }
       ctx.restore();start+=ang;
     });
+	*/
+	
+	
     start=rotation;
     cfg.segments.forEach(seg=>{
       const ang=(seg.weight/total)*2*Math.PI,angle=start+ang;
