@@ -20,11 +20,13 @@
 	  </h2>
 
       <section>
-        <h3>General</h3>
-        <label>Auto-spin delay <input type="number" id="spinDelay" min="0" value="0">s</label>
-        <label>Auto-spin <input type="checkbox" id="autoSpin"></label><br>
-        <label>Spin duration <input type="range" id="spinDuration" min="1000" max="10000" step="250" value="4000">
-          <span id="spinDurationVal">4000</span> ms</label>
+        <h3>AutoSpin</h3>
+        <label>Enabled: <input type="checkbox" id="autoSpin"></label>
+		|
+		<label>Delay <input type="number" id="spinDelay" min="0" value="0">s</label>
+        |
+		<label>Duration <input type="range" id="spinDuration" min="1000" max="10000" step="250" value="4000">
+        <span id="spinDurationVal">4000</span> ms</label>
       </section>
 
       <section class="appearance">
@@ -84,8 +86,27 @@
       <section>
         <h3>Segments</h3>
         <table>
-          <thead><tr><th>Label</th><th>Color</th><th>Weight</th><th>Font</th><th>Size</th><th>B</th><th>I</th><th>U</th><th></th></tr></thead>
-          <tbody id="segments"></tbody>
+          <thead>
+			<tr>
+				<th>Label</th>
+				<th>Color</th>
+				<th>Weight</th>
+				<th>Font</th>
+				<th>Size</th>
+				<th>B</th>
+				<th>I</th>
+				<th>U</th>
+				<th>Outline</th>
+				<th>Thickness</th>
+				
+				<th></th>
+			</tr>
+		</thead>
+        
+
+
+
+		<tbody id="segments"></tbody>
         </table>
         <button id="addSegment">+ Add Segment</button>
       </section>
@@ -93,7 +114,7 @@
       <section>
         <h3>Export / Import</h3>
         <input id="shareUrl" readonly>
-        <button id="copyUrl">Copy</button><br>
+        <button id="copyUrl">Copy</button>
         <input id="urlImport" placeholder="Paste spinner URL">
         <button id="importUrl">Load</button>
       </section>

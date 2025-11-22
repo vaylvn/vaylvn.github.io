@@ -71,6 +71,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
 		  ctx.fillText(seg.label, radius - 20, verticalAdjust);
 
+	
+			if (seg.outlineWidth > 0) {
+				ctx.lineWidth = seg.outlineWidth;
+				ctx.strokeStyle = seg.outlineColor || "#000";
+				ctx.strokeText(seg.label, radius - 20, verticalAdjust);
+			}
+
+
 		  if (seg.underline) {
 			const w = ctx.measureText(seg.label).width;
 			ctx.beginPath();
@@ -198,7 +206,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function fontSelect(v="Roboto"){return `<select class="font">${GOOGLE_FONTS.map(f=>`<option${f===v?" selected":""}>${f}</option>`).join("")}</select>`;}
     function styleBtn(n,a){return `<span class="styleBtn${a?" active":""}" data-style="${n}">${n[0].toUpperCase()}</span>`;}
-    function addRow(seg){
+    
+	function addRow(seg){
       const r=document.createElement("tr");
       r.innerHTML=`<td><input class="label" value="${seg.label}"></td>
         <td><input type="color" class="color" value="${seg.color}"></td>
@@ -208,7 +217,11 @@ window.addEventListener("DOMContentLoaded", () => {
         <td>${styleBtn("bold",seg.bold)}</td>
         <td>${styleBtn("italic",seg.italic)}</td>
         <td>${styleBtn("underline",seg.underline)}</td>
-        <td><button class="remove">✕</button></td>`;
+		
+		<td><input type="color" class="outlineColor" value="${seg.outlineColor || "#000000"}"></td>
+		<td><input type="number" class="outlineWidth" min="0" max="10" value="${seg.outlineWidth || 2}"></td>
+        
+		<td><button class="remove">✕</button></td>`;
       tb.appendChild(r);
       r.querySelector(".remove").onclick=()=>{r.remove();update();};
       r.querySelectorAll("input,select").forEach(e=>e.oninput=update);
@@ -247,9 +260,14 @@ window.addEventListener("DOMContentLoaded", () => {
         ensureFontLoaded(r.querySelector(".font").value);
         const st={};r.querySelectorAll(".styleBtn").forEach(b=>st[b.dataset.style]=b.classList.contains("active"));
         return{
-          label:r.querySelector(".label").value,color:r.querySelector(".color").value,
+          label:r.querySelector(".label").value,
+		  color:r.querySelector(".color").value,
           weight:parseFloat(r.querySelector(".weight").value)||1,
-          font:r.querySelector(".font").value,size:parseFloat(r.querySelector(".size").value)||16,...st
+          font:r.querySelector(".font").value,
+		  size:parseFloat(r.querySelector(".size").value)||16,
+		  outlineColor: r.querySelector(".outlineColor").value || "#000000",
+		  outlineWidth: parseFloat(r.querySelector(".outlineWidth").value) || 0,
+		  ...st
         };
       });
       config.spinDelay=parseFloat(document.getElementById("spinDelay").value)||0;
