@@ -1,210 +1,204 @@
-/* ============================================================================
-   DICE CONFIG SCRIPT
-   Runs ONLY in config mode (index without ?data=)
-   ============================================================================ */
+// =====================
+// Dice Configuration UI
+// =====================
 
-/* ---------------------------------------------------------------------------
-   STATE
---------------------------------------------------------------------------- */
-
-let config = {
-  dice: [
-    { faces: 6, color: "#ffffff", pips: "#000000" }
-  ],
-  rollDuration: 2000,
-  stagger: 150,
-  autoRoll: false
-};
-
-
-/* ---------------------------------------------------------------------------
-   DOM REFERENCES
---------------------------------------------------------------------------- */
-
-const diceTableBody = document.getElementById("diceRows");
+const diceRowsEl = document.getElementById("diceRows");
 const addDieBtn = document.getElementById("addDie");
-
-const rollDurationInput = document.getElementById("rollDuration");
-const rollDurationVal = document.getElementById("rollDurationVal");
-
-const staggerInput = document.getElementById("stagger");
-const autoRollInput = document.getElementById("autoRoll");
-
+const shareUrlEl = document.getElementById("shareUrl");
 const copyUrlBtn = document.getElementById("copyUrl");
-const shareUrlInput = document.getElementById("shareUrl");
-const importUrlInput = document.getElementById("urlImport");
-const importUrlBtn = document.getElementById("importUrl");
+const importInput = document.getElementById("urlImport");
+const importBtn = document.getElementById("importUrl");
 
-
-/* ---------------------------------------------------------------------------
-   BUILD DICE TABLE
---------------------------------------------------------------------------- */
-
-function buildDiceTable() {
-  diceTableBody.innerHTML = "";
-
-  config.dice.forEach((die, index) => {
-    const row = document.createElement("tr");
-
-    // Faces selector
-    const facesCell = document.createElement("td");
-    const facesSelect = document.createElement("select");
-    [4, 6, 8, 10, 12, 20].forEach(f => {
-      const opt = document.createElement("option");
-      opt.value = f;
-      opt.textContent = f;
-      if (die.faces === f) opt.selected = true;
-      facesSelect.appendChild(opt);
-    });
-    facesSelect.addEventListener("change", () => {
-      die.faces = parseInt(facesSelect.value);
-      updateShareURL();
-    });
-    facesCell.appendChild(facesSelect);
-
-
-    // Dice colour
-    const colorCell = document.createElement("td");
-    const colorInput = document.createElement("input");
-    colorInput.type = "color";
-    colorInput.value = die.color;
-    colorInput.addEventListener("input", () => {
-      die.color = colorInput.value;
-      updateShareURL();
-    });
-    colorCell.appendChild(colorInput);
-
-
-    // Pip colour
-    const pipCell = document.createElement("td");
-    const pipInput = document.createElement("input");
-    pipInput.type = "color";
-    pipInput.value = die.pips;
-    pipInput.addEventListener("input", () => {
-      die.pips = pipInput.value;
-      updateShareURL();
-    });
-    pipCell.appendChild(pipInput);
-
-
-    // Remove button
-    const removeCell = document.createElement("td");
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "✕";
-    removeBtn.style.background = "#a33";
-    removeBtn.style.color = "#fff";
-    removeBtn.addEventListener("click", () => {
-      config.dice.splice(index, 1);
-      if (config.dice.length === 0) {
-        config.dice.push({ faces: 6, color: "#ffffff", pips: "#000000" });
-      }
-      buildDiceTable();
-      updateShareURL();
-    });
-    removeCell.appendChild(removeBtn);
-
-
-    row.appendChild(facesCell);
-    row.appendChild(colorCell);
-    row.appendChild(pipCell);
-    row.appendChild(removeCell);
-
-    diceTableBody.appendChild(row);
-  });
+// Listeners for widget rebuild
+let configListeners = [];
+export function onConfigChanged(fn) {
+  configListeners.push(fn);
 }
 
+// Available dice: no d10
+const DICE_TYPES = [4, 6, 8, 12, 20];
 
-/* ---------------------------------------------------------------------------
-   ADD NEW DIE
---------------------------------------------------------------------------- */
+
+// =====================
+// ADD DIE
+// =====================
 
 addDieBtn.addEventListener("click", () => {
-  config.dice.push({
+  addDieRow({
     faces: 6,
-    color: "#ffffff",
-    pips: "#000000"
+    dieColor: "#ffffff",
+    numberColor: "#000000"
   });
-  buildDiceTable();
-  updateShareURL();
+
+  updateUrl();
+  notifyListeners();
 });
 
 
-/* ---------------------------------------------------------------------------
-   GLOBAL SETTINGS
---------------------------------------------------------------------------- */
+// =====================
+// CREATE ROW
+// =====================
 
-rollDurationInput.addEventListener("input", () => {
-  config.rollDuration = parseInt(rollDurationInput.value);
-  rollDurationVal.textContent = rollDurationInput.value;
-  updateShareURL();
-});
+function addDieRow(cfg) {
+  const tr = document.createElement("tr");
 
-staggerInput.addEventListener("input", () => {
-  config.stagger = parseInt(staggerInput.value);
-  updateShareURL();
-});
+  // Face count dropdown
+  const faceTD = document.createElement("td");
+  const select = document.createElement("select");
 
-autoRollInput.addEventListener("change", () => {
-  config.autoRoll = autoRollInput.checked;
-  updateShareURL();
-});
+  DICE_TYPES.forEach(f => {
+    const opt = document.createElement("option");
+    opt.value = f;
+    opt.textContent = f;
+    if (f === cfg.faces) opt.selected = true;
+    select.appendChild(opt);
+  });
 
+  faceTD.appendChild(select);
+  tr.appendChild(faceTD);
 
-/* ---------------------------------------------------------------------------
-   IMPORT / EXPORT (BASE64 ENCODED JSON)
---------------------------------------------------------------------------- */
+  // Die colour
+  const dieColorTD = document.createElement("td");
+  const dieColorInput = document.createElement("input");
+  dieColorInput.type = "color";
+  dieColorInput.value = cfg.dieColor;
+  dieColorTD.appendChild(dieColorInput);
+  tr.appendChild(dieColorTD);
 
-function encodeConfig(obj) {
-  return btoa(JSON.stringify(obj));
+  // Number colour
+  const numberColorTD = document.createElement("td");
+  const numberColorInput = document.createElement("input");
+  numberColorInput.type = "color";
+  numberColorInput.value = cfg.numberColor;
+  numberColorTD.appendChild(numberColorInput);
+  tr.appendChild(numberColorTD);
+
+  // Remove button
+  const removeTD = document.createElement("td");
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "removeDieBtn";
+  removeBtn.textContent = "X";
+  removeTD.appendChild(removeBtn);
+  tr.appendChild(removeTD);
+
+  // Append row
+  diceRowsEl.appendChild(tr);
+
+  // Handlers
+  select.addEventListener("change", () => {
+    updateUrl();
+    notifyListeners();
+  });
+  dieColorInput.addEventListener("input", () => {
+    updateUrl();
+    notifyListeners();
+  });
+  numberColorInput.addEventListener("input", () => {
+    updateUrl();
+    notifyListeners();
+  });
+  removeBtn.addEventListener("click", () => {
+    tr.remove();
+    updateUrl();
+    notifyListeners();
+  });
 }
 
-function decodeConfig(str) {
-  try {
-    return JSON.parse(atob(str));
-  } catch (err) {
-    return null;
+
+// =====================
+// GET CONFIG OBJECT
+// =====================
+
+export function getDiceConfig() {
+  const dice = [];
+
+  for (const tr of diceRowsEl.querySelectorAll("tr")) {
+    const tds = tr.querySelectorAll("td");
+
+    dice.push({
+      faces: parseInt(tds[0].querySelector("select").value),
+      dieColor: tds[1].querySelector("input").value,
+      numberColor: tds[2].querySelector("input").value
+    });
   }
+
+  return { dice };
 }
 
-function updateShareURL() {
-  const encoded = encodeConfig(config);
+
+// =====================
+// UPDATE SHARE URL
+// =====================
+
+function updateUrl() {
+  const cfg = getDiceConfig();
+  const encoded = btoa(JSON.stringify(cfg));
   const url = `${location.origin}${location.pathname}?data=${encoded}`;
-  shareUrlInput.value = url;
+  shareUrlEl.value = url;
 }
+
+
+// =====================
+// NOTIFY WIDGET
+// =====================
+
+function notifyListeners() {
+  configListeners.forEach(fn => fn());
+}
+
+
+// =====================
+// COPY URL
+// =====================
 
 copyUrlBtn.addEventListener("click", () => {
-  shareUrlInput.select();
-  navigator.clipboard.writeText(shareUrlInput.value);
+  shareUrlEl.select();
+  document.execCommand("copy");
 });
 
 
-importUrlBtn.addEventListener("click", () => {
-  const url = importUrlInput.value.trim();
-  if (!url.includes("?data=")) return;
+// =====================
+// IMPORT URL
+// =====================
 
-  const encoded = url.split("?data=")[1].trim();
-  const decoded = decodeConfig(encoded);
-  if (decoded) {
-    config = decoded;
-    applyConfigToUI();
-    buildDiceTable();
-    updateShareURL();
-  }
+importBtn.addEventListener("click", () => {
+  const raw = importInput.value.trim();
+  if (!raw.includes("?data=")) return;
+
+  const encoded = raw.split("?data=")[1];
+  const json = JSON.parse(atob(encoded));
+
+  loadConfig(json);
+  updateUrl();
+  notifyListeners();
 });
 
 
-/* ---------------------------------------------------------------------------
-   UI INITIALIZATION
---------------------------------------------------------------------------- */
+// =====================
+// LOAD CONFIG -> UI
+// =====================
 
-function applyConfigToUI() {
-  rollDurationInput.value = config.rollDuration;
-  rollDurationVal.textContent = config.rollDuration;
+export function loadConfig(cfg) {
+  diceRowsEl.innerHTML = "";
 
-  staggerInput.value = config.stagger;
-  autoRollInput.checked = config.autoRoll;
+  cfg.dice.forEach(die => addDieRow(die));
 }
 
-buildDiceTable();
-applyConfigToUI();
-updateShareURL();
+
+// =====================
+// AUTO-LOAD FROM URL
+// =====================
+
+(function() {
+  const params = new URLSearchParams(location.search);
+  const data = params.get("data");
+
+  if (data) {
+    try {
+      const cfg = JSON.parse(atob(data));
+      loadConfig(cfg);
+    } catch (e) {
+      console.warn("Invalid config in URL");
+    }
+  }
+})();

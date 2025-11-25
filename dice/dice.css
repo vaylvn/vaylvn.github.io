@@ -1,226 +1,167 @@
-/* GENERAL LAYOUT ---------------------------------------------------------- */
+/* ================================
+   GENERAL LAYOUT
+   ================================ */
 
 body {
   margin: 0;
+  padding: 0;
   font-family: "Inter", sans-serif;
-  background: #1a1a1a;
-  color: #e0e0e0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background: #f5f5f5;
+  color: #222;
+  overflow: hidden;
 }
 
 #layout {
   display: flex;
-  flex: 1;
-  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
 }
 
+/* ================================
+   SIDEBAR PANEL
+   ================================ */
 
-/* SIDEBAR (CONFIG MODE) -------------------------------------------------- */
-
-#editor {
-  background: #242424;
-  color: #e0e0e0;
-  width: 42%;
-  min-width: 350px;
-  border-right: 1px solid #333;
-  padding: 20px 24px;
+#configPanel {
+  width: 340px;
+  background: #ffffff;
+  border-right: 1px solid #ddd;
+  padding: 20px;
   overflow-y: auto;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+  box-sizing: border-box;
 }
 
-h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #fff;
+#configPanel h2 {
+  margin-top: 0;
+  font-size: 22px;
   font-weight: 600;
-  font-size: 20px;
-  margin: 0 0 20px 0;
 }
 
-h3 {
+#configPanel h3 {
+  margin-top: 26px;
+  margin-bottom: 6px;
+  font-size: 16px;
   font-weight: 600;
-  font-size: 15px;
-  margin: 22px 0 10px 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #333;
 }
-
-
-/* TABLE (DICE CONFIG) ---------------------------------------------------- */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 6px;
-  background: #2b2b2b;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-th, td {
-  text-align: center;
-  padding: 6px 4px;
-  border-bottom: 1px solid #333;
-}
-
-th {
-  background: #333;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-td input[type="color"] {
-  width: 34px;
-  height: 26px;
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-td select {
-  background: #333;
-  color: #e0e0e0;
-  border: 1px solid #444;
-  border-radius: 6px;
-  padding: 4px 6px;
-}
-
-tr:last-child td {
-  border-bottom: none;
-}
-
-
-/* INPUTS & BUTTONS ------------------------------------------------------- */
 
 label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 10px 0;
-  font-size: 13px;
+  font-size: 14px;
+  display: block;
+  margin: 10px 0 4px;
 }
 
-input[type="number"],
-input[type="text"],
-select {
-  background: #333;
-  color: #e0e0e0;
-  border: 1px solid #444;
-  border-radius: 6px;
-  padding: 4px 6px;
-}
+/* ================================
+   BUTTONS
+   ================================ */
 
-input[type="number"] {
-  width: 60px;
-}
-
-input[type="range"] {
-  width: 140px;
-  accent-color: #888;
-}
-
-button {
-  background: #333;
-  color: #e0e0e0;
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.2s, border 0.2s;
-}
-
-button:hover {
-  background: #3a3a3a;
-  border-color: #666;
-}
-
-button:active {
-  background: #2e2e2e;
-}
-
-#addDie {
-  background: #1f6feb;
-  border: none;
+.button {
+  padding: 6px 12px;
+  background: #1f76ff;
   color: white;
-  margin-top: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
 }
 
-#addDie:hover {
-  background: #398bff;
+.button:hover {
+  background: #0f5fe0;
 }
 
+/* ================================
+   DICE TABLE
+   ================================ */
 
-/* CANVAS AREA ------------------------------------------------------------ */
+#diceTable {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+}
 
-#widgetPanel {
+#diceTable th,
+#diceTable td {
+  text-align: left;
+  padding: 6px 4px;
+  font-size: 14px;
+}
+
+#diceTable th {
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+}
+
+#diceTable td input[type="color"] {
+  border: none;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+}
+
+/* Remove button (X) */
+.removeDieBtn {
+  background: #e53935;
+  color: white;
+  border: none;
+  font-size: 14px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.removeDieBtn:hover {
+  background: #c62828;
+}
+
+/* ================================
+   CANVAS PANEL
+   ================================ */
+
+#canvasPanel {
   flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #1a1a1a;
+  background: #111;
   position: relative;
-}
-
-body[data-mode="live"] #widgetPanel {
-  background: transparent !important;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #diceCanvas {
-  display: block;
-  margin: auto;
-  outline: none;
-  background: transparent;
-  cursor: pointer;
   width: 100%;
   height: 100%;
+  display: block;
 }
 
+/* ================================
+   INPUTS & FIELDS
+   ================================ */
 
-
-
-
-/* HIDE CONFIG ELEMENTS IN LIVE MODE -------------------------------------- */
-
-body[data-mode="live"] #editor {
-  display: none !important;
+input[type="text"],
+input[type="number"],
+input[type="url"],
+input[type="color"] {
+  font-size: 14px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-body[data-mode="live"] #version {
-  display: none !important;
+input[readonly] {
+  background: #f0f0f0;
 }
 
+/* ================================
+   SCROLLBAR
+   ================================ */
 
-/* VERSION NUMBER ---------------------------------------------------------- */
-
-#version {
-  font-size: 12px;
-  color: #777;
-  position: fixed;
-  bottom: 6px;
-  right: 10px;
-  pointer-events: none;
+#configPanel::-webkit-scrollbar {
+  width: 6px;
 }
 
+#configPanel::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 3px;
+}
 
-/* RESPONSIVE -------------------------------------------------------------- */
-
-@media (max-width: 900px) {
-  #layout {
-    flex-direction: column;
-  }
-  #editor {
-    width: 100%;
-    min-width: unset;
-    border-right: none;
-    border-bottom: 1px solid #333;
-    box-shadow: none;
-  }
-  #widgetPanel {
-    padding: 20px 0;
-  }
+#configPanel::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }

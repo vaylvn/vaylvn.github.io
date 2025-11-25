@@ -1,127 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Vayl Dice</title>
+  <meta charset="UTF-8" />
+  <title>Vayl Dice Roller</title>
 
-  <!-- Fonts -->
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <link rel="stylesheet" href="dice.css" />
 
-  <!-- Dice Widget CSS -->
-  <link rel="stylesheet" href="dice.css">
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+  />
 </head>
 
 <body>
 
-  <!-- PAGE LAYOUT -->
   <div id="layout">
+    <!-- =======================
+         SIDEBAR: CONFIG PANEL
+         ======================= -->
+    <aside id="configPanel">
 
-    <!-- === SIDEBAR (CONFIG MODE ONLY) === -->
-    <aside id="editor">
-      <h2>
-        <img src="https://vaylvn.github.io/spinner/assets/logo.png"
-             alt="Logo"
-             style="height:40px; width:40px; margin-right:6px;">
-        Dice Roller
-      </h2>
+      <h2>Dice Configuration</h2>
 
-      <!-- DICE LIST -->
-      <section>
-        <h3>Dice</h3>
-        <table id="diceTable">
-          <thead>
-            <tr>
-              <th>Faces</th>
-              <th>Color</th>
-              <th>Number</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="diceRows"></tbody>
-        </table>
-        <button id="addDie">+ Add Die</button>
-      </section>
+      <button id="addDie" class="button">+ Add Die</button>
 
-      <!-- ANIMATION -->
-      <section>
-        <h3>Animation</h3>
-        <label>
-          Roll Duration
-          <input type="range" id="rollDuration" min="1000" max="5000" step="100" value="2000">
-          <span id="rollDurationVal">2000</span> ms
-        </label>
+      <table id="diceTable">
+        <thead>
+          <tr>
+            <th>Faces</th>
+            <th>Die Colour</th>
+            <th>Number Colour</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="diceRows"></tbody>
+      </table>
 
-        <br>
-
-        <label>
-          Stagger (per die)
-          <input type="number" id="stagger" min="0" max="2000" value="150">
-          ms
-        </label>
-      </section>
-
-      <!-- BEHAVIOUR -->
-      <section>
-        <h3>Behaviour</h3>
-        <label>
-          Auto-Roll
-          <input type="checkbox" id="autoRoll">
-        </label>
-      </section>
-
-      <!-- IMPORT / EXPORT -->
       <section>
         <h3>Export / Import</h3>
-
         <label>Share URL</label>
-        <input id="shareUrl" readonly>
-        <button id="copyUrl">Copy</button>
+        <input id="shareUrl" readonly />
 
-        <br><br>
+        <button id="copyUrl" class="button">Copy</button>
 
         <label>Load Config</label>
-        <input id="urlImport" placeholder="Paste dice URL…">
-        <button id="importUrl">Load</button>
+        <input id="urlImport" placeholder="Paste config URL…" />
+
+        <button id="importUrl" class="button">Load</button>
       </section>
 
     </aside>
 
-    <!-- === MAIN CANVAS === -->
-    <main id="widgetPanel">
-      <canvas id="diceCanvas" width="600" height="400"></canvas>
+    <!-- =======================
+         MAIN CANVAS PANEL
+         ======================= -->
+    <main id="canvasPanel">
+      <canvas id="diceCanvas"></canvas>
     </main>
-
   </div>
 
-  <p id="version">v1.4</p>
-
-
-  <!-- === MODE DETECTION === -->
-  <script>
-    const isLive = window.location.search.includes("data=");
-    document.body.dataset.mode = isLive ? "live" : "config";
-
-    if (isLive) {
-      document.body.style.background = "transparent";
-      document.documentElement.style.background = "transparent";
-    }
-  </script>
-
-  <!-- === TWEEN (still needed for config animations) === -->
+  <!-- TWEEN FOR ANIMATION -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 
+  <!-- CONFIG SCRIPT -->
+  <script type="module" src="dice-config.js"></script>
 
-  <!-- === CONFIG OR WIDGET SCRIPT === -->
+  <!-- WIDGET SCRIPT -->
   <script type="module">
     import { initDiceWidget } from "./dice-widget.js";
-    const canvas = document.getElementById("diceCanvas");
-    const widget = initDiceWidget(canvas);
-    canvas.addEventListener("click", widget.rollDice);
-  </script>
+    import { getDiceConfig, onConfigChanged } from "./dice-config.js";
 
-  <!-- === ALWAYS LOAD CONFIG SCRIPT (same as spinner) === -->
-  <script src="dice-config.js"></script>
+    const canvas = document.getElementById("diceCanvas");
+
+    // Initial launch
+    let widget = initDiceWidget(canvas, getDiceConfig());
+
+    // When config changes → rebuild the widget cleanly
+    onConfigChanged(() => {
+      widget = initDiceWidget(canvas, getDiceConfig());
+    });
+
+    // Roll dice on click
+    canvas.addEventListener("click", () => {
+      widget.rollAll();
+    });
+  </script>
 
 </body>
 </html>
