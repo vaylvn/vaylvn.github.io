@@ -125,17 +125,18 @@
 	  const script = document.createElement("script");
 	  script.type = "module";
 	  script.src = "dice-widget.js";
-	  script.onload = () => {
-		import("./dice-widget.js").then(mod => {
-		  const canvas = document.getElementById("diceCanvas");
-		  const widget = mod.initDiceWidget(canvas);
+	  script.onload = async () => {
+		const { initDiceWidget } = await import("./dice-widget.js");
+		const canvas = document.getElementById("diceCanvas");
 
-		  // Optional: click-to-roll support
-		  canvas.addEventListener("click", widget.rollDice);
-		});
+		const widget = initDiceWidget(canvas);
+
+		// click = roll
+		canvas.addEventListener("click", widget.rollDice);
 	  };
 	  document.body.appendChild(script);
 	}
+
 
   </script>
 
