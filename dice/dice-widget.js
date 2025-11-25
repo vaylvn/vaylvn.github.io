@@ -12,9 +12,12 @@ export function initDiceWidget(canvas, config) {
   const diceConfig = config.dice;
   const diceCount = diceConfig.length;
 
-  //
+
+
+  // ==============================
   // SCENE SETUP
-  //
+  // ==============================
+
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
@@ -25,7 +28,6 @@ export function initDiceWidget(canvas, config) {
 
   const scene = new THREE.Scene();
 
-  // CAMERA
   const camera = new THREE.PerspectiveCamera(
     45,
     canvas.clientWidth / canvas.clientHeight,
@@ -35,7 +37,6 @@ export function initDiceWidget(canvas, config) {
   camera.position.set(0, 5, 9);
   camera.lookAt(0, 0, 0);
 
-  // LIGHTS
   scene.add(new THREE.AmbientLight(0xffffff, 0.65));
 
   const dir = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -47,7 +48,7 @@ export function initDiceWidget(canvas, config) {
 
 
   // ==============================
-  // SMOOTH GEOMETRY HELPERS
+  // GEOMETRY HELPERS
   // ==============================
 
   function smoothGeometry(geo) {
@@ -64,8 +65,9 @@ export function initDiceWidget(canvas, config) {
   };
 
 
+
   // ==============================
-  // FACE TEXTURE (ENGRAVED LOOK)
+  // ENGRAVED FACE TEXTURE
   // ==============================
 
   function makeEngravedFace(number, dieColor, numberColor) {
@@ -75,25 +77,26 @@ export function initDiceWidget(canvas, config) {
     c.height = size;
     const ctx = c.getContext("2d");
 
-    // Base colour
+    // Base
     ctx.fillStyle = dieColor;
     ctx.fillRect(0, 0, size, size);
 
-    // Engraving shadow
     ctx.font = `bold 160px Inter`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
+    // Shadow engrave
     ctx.fillStyle = "#00000055";
     ctx.fillText(number, size/2 + 4, size/2 + 4);
 
     ctx.fillStyle = numberColor;
     ctx.fillText(number, size/2, size/2);
 
-    const texture = new THREE.CanvasTexture(c);
-    texture.needsUpdate = true;
-    return texture;
+    const tex = new THREE.CanvasTexture(c);
+    tex.needsUpdate = true;
+    return tex;
   }
+
 
 
   // ==============================
@@ -109,6 +112,7 @@ export function initDiceWidget(canvas, config) {
   }
 
 
+
   // ==============================
   // CREATE DIE MESH
   // ==============================
@@ -116,34 +120,57 @@ export function initDiceWidget(canvas, config) {
   function buildDie(dcfg, index, total) {
     const { faces, dieColor, numberColor } = dcfg;
 
-    const geo = DIE_GEOMETRIES[faces]();
+    //
+    // CREATE GEOMETRY
+    //
+    let geo = DIE_GEOMETRIES[faces]();
 
+    // ------------ IMPORTANT FIX ------------
+    // Ensure geometry has an index buffer.
+    if (!geo.index) {
+      const nonIdx = geo.toNonIndexed();
+
+      const idx = [];
+      for (let i = 0; i < nonIdx.attributes.position.count; i++) {
+        idx.push(i);
+      }
+      nonIdx.setIndex(idx);
+
+      geo = nonIdx;
+    }
+    geo.computeVertexNormals();
+    // ----------------------------------------
+
+
+    //
+    // CREATE FACE TEXTURES
+    //
     const numGeoFaces = geo.groups.length;
     const faceTextures = [];
 
     for (let i = 0; i < numGeoFaces; i++) {
       const num = (i % faces) + 1;
-      faceTextures.push(
-        makeEngravedFace(num, dieColor, numberColor)
-      );
+      faceTextures.push(makeEngravedFace(num, dieColor, numberColor));
     }
 
     const mats = buildDieMaterial(faceTextures);
     const mesh = new THREE.Mesh(geo, mats);
 
-    // HORIZONTAL LAYOUT
+    // Layout position
     mesh.position.x = (index - (total - 1) / 2) * 2.4;
     mesh.position.y = 0;
     mesh.position.z = 0;
 
-    // Save movement velocities
+    // Movement
     mesh.userData.velocity = new THREE.Vector3();
     mesh.userData.angularVelocity = new THREE.Vector3();
+
 
     //
     // STORE FACE NORMALS FOR TOP DETECTION
     //
     mesh.userData.faceNormals = [];
+
     const pos = geo.attributes.position.array;
     const indices = geo.index.array;
 
@@ -171,6 +198,7 @@ export function initDiceWidget(canvas, config) {
   }
 
 
+
   // ==============================
   // BUILD ALL DICE
   // ==============================
@@ -178,8 +206,8 @@ export function initDiceWidget(canvas, config) {
   const diceMeshes = diceConfig.map((cfg, i) =>
     buildDie(cfg, i, diceCount)
   );
+  diceMeshes.forEach(m => scene.add(m));
 
-  diceMeshes.forEach(d => scene.add(d));
 
 
   // ==============================
@@ -189,22 +217,23 @@ export function initDiceWidget(canvas, config) {
   function getTopFace(die) {
     let best = null;
     let bestDot = -999;
-    const up = new THREE.Vector3(0, 1, 0);
+
+    const up = new THREE.Vector3(0,1,0);
     const matrix = die.matrixWorld;
 
     for (const f of die.userData.faceNormals) {
       const worldNormal = f.normal.clone().applyMatrix4(matrix).normalize();
       const dot = worldNormal.dot(up);
       if (dot > bestDot) {
-        best = f;
         bestDot = dot;
+        best = f;
       }
     }
 
     if (!best) return 1;
-  
     return (best.faceIndex % 20) + 1;
   }
+
 
 
   // ==============================
@@ -215,7 +244,7 @@ export function initDiceWidget(canvas, config) {
     diceMeshes.forEach(die => {
       die.userData.velocity.set(
         (Math.random() - 0.5) * 5,
-        7 + Math.random()*2,
+        7 + Math.random() * 2,
         (Math.random() - 0.5) * 5
       );
 
@@ -226,6 +255,7 @@ export function initDiceWidget(canvas, config) {
       );
     });
   }
+
 
 
   // ==============================
@@ -240,33 +270,27 @@ export function initDiceWidget(canvas, config) {
     const dt = 0.016;
 
     diceMeshes.forEach(die => {
-      // Move
       die.position.addScaledVector(die.userData.velocity, dt);
 
-      // Gravity
       die.userData.velocity.y -= 25 * dt;
 
-      // Rotation
       die.rotation.x += die.userData.angularVelocity.x * dt;
       die.rotation.y += die.userData.angularVelocity.y * dt;
       die.rotation.z += die.userData.angularVelocity.z * dt;
 
-      // Bounce floor
       if (die.position.y < floorY) {
         die.position.y = floorY;
         die.userData.velocity.y *= -0.35;
         die.userData.angularVelocity.multiplyScalar(0.45);
       }
 
-      // Slow down
       die.userData.velocity.multiplyScalar(0.98);
       die.userData.angularVelocity.multiplyScalar(0.98);
 
-      // Snap if slow
       if (die.userData.velocity.length() < 0.1 &&
           die.userData.angularVelocity.length() < 0.1) {
 
-        const top = getTopFace(die);
+        getTopFace(die);
 
         die.userData.velocity.set(0,0,0);
         die.userData.angularVelocity.set(0,0,0);
@@ -280,9 +304,11 @@ export function initDiceWidget(canvas, config) {
   animate();
 
 
-  //
-  // RETURN WIDGET CONTROL
-  //
+
+  // ==============================
+  // WIDGET CONTROL RETURN
+  // ==============================
+
   const widget = {
     rollAll,
     dispose() {
