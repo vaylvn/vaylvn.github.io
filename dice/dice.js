@@ -13,6 +13,8 @@ export function initDiceTest() {
     setupThree();
     setupCannon();
     createGround();
+	createWalls();
+
 
     // spawn 3 dice as a demo
     spawnDice([
@@ -39,9 +41,10 @@ function setupThree() {
     );
 
     // top-down camera
-    camera.position.set(0, 20, 0);
-    camera.lookAt(0, 0, 0);
-    camera.up.set(0, 0, -1);
+    camera.position.set(0, 12, -1);
+	camera.lookAt(0, 0, 2);  // looks slightly upward on the table
+	camera.up.set(0, 0, -1);
+
 
     renderer = new THREE.WebGLRenderer({
         alpha: true,
@@ -97,6 +100,35 @@ function createGround() {
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     world.addBody(ground);
 }
+
+function createWalls() {
+    const wallMaterial = new CANNON.Material({ friction: 0.2, restitution: 0.2 });
+
+    const size = 5;  // table is roughly 10x10 units
+
+    const thickness = 0.2;
+    const height = 2;
+
+    const walls = [
+        { x: 0, y: height/2, z:  size, rotY: 0 },            // top
+        { x: 0, y: height/2, z: -size, rotY: 0 },            // bottom
+        { x:  size, y: height/2, z: 0, rotY: Math.PI/2 },    // right
+        { x: -size, y: height/2, z: 0, rotY: Math.PI/2 }     // left
+    ];
+
+    walls.forEach(w => {
+        const wallShape = new CANNON.Box(new CANNON.Vec3(size, height/2, thickness));
+        const wallBody = new CANNON.Body({
+            type: CANNON.Body.STATIC,
+            material: wallMaterial
+        });
+        wallBody.addShape(wallShape);
+        wallBody.position.set(w.x, w.y, w.z);
+        wallBody.quaternion.setFromEuler(0, w.rotY, 0);
+        world.addBody(wallBody);
+    });
+}
+
 
 /* ---------------------- DICE GENERATION ---------------------- */
 
@@ -171,28 +203,32 @@ function rollDice() {
     for (let i = 0; i < diceBodies.length; i++) {
         const body = diceBodies[i];
 
+        // Start at ground level, spaced out
         body.position.set(
-            (Math.random() - 0.5) * 1,
-            2 + Math.random() * 0.4,
-            (Math.random() - 0.5) * 1
+            (Math.random() - 0.5) * 1.2,
+            0.55,
+            -2   // spawn off-screen bottom and roll upwards
         );
 
+        // Mild rotation variance
         body.quaternion.setFromEuler(
-            Math.random()*Math.PI,
-            Math.random()*Math.PI,
-            Math.random()*Math.PI
+            Math.random() * 0.6,
+            Math.random() * Math.PI * 2,
+            Math.random() * 0.6
         );
 
+        // Forward push like a real roll
         body.velocity.set(
-            (Math.random() - 0.5) * 5,
-            5 + Math.random() * 2,
-            (Math.random() - 0.5) * 5
+            (Math.random() - 0.5) * 0.5, // tiny sideways movement
+            0.1,                         // barely any upward force
+            4 + Math.random() * 1.5      // forward push towards camera
         );
 
+        // Natural spin
         body.angularVelocity.set(
-            (Math.random() - 0.5) * 15,
-            (Math.random() - 0.5) * 15,
-            (Math.random() - 0.5) * 15
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 5
         );
 
         body.wakeUp();
@@ -201,6 +237,7 @@ function rollDice() {
     waitingForStop = true;
     lastStillTime = 0;
 }
+
 
 /* ---------------------- DETECT STOP + GET RESULT ---------------------- */
 
