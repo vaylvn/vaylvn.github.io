@@ -41,8 +41,8 @@ function setupThree() {
     );
 
     // top-down camera
-    camera.position.set(0, 12, -1);
-	camera.lookAt(0, 0, 2);  // looks slightly upward on the table
+    camera.position.set(0, 12, 0);
+	camera.lookAt(0, 0, 0);  // looks slightly upward on the table
 	camera.up.set(0, 0, -1);
 
 
@@ -102,32 +102,32 @@ function createGround() {
 }
 
 function createWalls() {
-    const wallMaterial = new CANNON.Material({ friction: 0.2, restitution: 0.2 });
+    const wallMaterial = new CANNON.Material({ friction: 0.3, restitution: 0.3 });
 
-    const size = 5;  // table is roughly 10x10 units
+    const size = 5;     // half-width of tray
+    const height = 5;   // walls tall enough to contain dice
+    const thickness = 0.5;
 
-    const thickness = 0.2;
-    const height = 2;
-
+    // (x, z, rotationY)
     const walls = [
-        { x: 0, y: height/2, z:  size, rotY: 0 },            // top
-        { x: 0, y: height/2, z: -size, rotY: 0 },            // bottom
-        { x:  size, y: height/2, z: 0, rotY: Math.PI/2 },    // right
-        { x: -size, y: height/2, z: 0, rotY: Math.PI/2 }     // left
+        { x: 0,     y: height/2, z:  size, rotY: 0 },
+        { x: 0,     y: height/2, z: -size, rotY: 0 },
+        { x:  size, y: height/2, z: 0,     rotY: Math.PI/2 },
+        { x: -size, y: height/2, z: 0,     rotY: Math.PI/2 },
     ];
 
     walls.forEach(w => {
-        const wallShape = new CANNON.Box(new CANNON.Vec3(size, height/2, thickness));
-        const wallBody = new CANNON.Body({
-            type: CANNON.Body.STATIC,
-            material: wallMaterial
+        const shape = new CANNON.Box(new CANNON.Vec3(size, height/2, thickness));
+        const body = new CANNON.Body({
+            mass: 0,
+            shape,
+            position: new CANNON.Vec3(w.x, w.y, w.z)
         });
-        wallBody.addShape(wallShape);
-        wallBody.position.set(w.x, w.y, w.z);
-        wallBody.quaternion.setFromEuler(0, w.rotY, 0);
-        world.addBody(wallBody);
+        body.quaternion.setFromEuler(0, w.rotY, 0);
+        world.addBody(body);
     });
 }
+
 
 
 /* ---------------------- DICE GENERATION ---------------------- */
@@ -203,28 +203,30 @@ function rollDice() {
     for (let i = 0; i < diceBodies.length; i++) {
         const body = diceBodies[i];
 
-        // Start at ground level, spaced out
+        // Reset inside tray
         body.position.set(
-            (Math.random() - 0.5) * 1.2,
+            (Math.random() - 0.5) * 2.0,
             0.55,
-            -2   // spawn off-screen bottom and roll upwards
+            (Math.random() - 0.5) * 2.0
         );
 
-        // Mild rotation variance
+        // Face randomly
         body.quaternion.setFromEuler(
-            Math.random() * 0.6,
-            Math.random() * Math.PI * 2,
-            Math.random() * 0.6
+            Math.random() * Math.PI,
+            Math.random() * Math.PI,
+            Math.random() * Math.PI
         );
 
-        // Forward push like a real roll
-        body.velocity.set(
-            (Math.random() - 0.5) * 0.5, // tiny sideways movement
-            0.1,                         // barely any upward force
-            4 + Math.random() * 1.5      // forward push towards camera
+        // Forward push ONLY (no upward force AT ALL)
+        const force = new CANNON.Vec3(
+            (Math.random() - 0.5) * 1.2,
+            0, // no vertical component
+            (Math.random() * 3) + 2
         );
 
-        // Natural spin
+        body.velocity.set(force.x, force.y, force.z);
+
+        // Natural spin (moderate, not insane)
         body.angularVelocity.set(
             (Math.random() - 0.5) * 5,
             (Math.random() - 0.5) * 5,
@@ -237,6 +239,7 @@ function rollDice() {
     waitingForStop = true;
     lastStillTime = 0;
 }
+
 
 
 /* ---------------------- DETECT STOP + GET RESULT ---------------------- */
