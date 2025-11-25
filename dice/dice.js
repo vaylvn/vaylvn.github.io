@@ -39,7 +39,7 @@ function setupThree() {
     );
 
     // top-down camera
-    camera.position.set(0, 6, 0);
+    camera.position.set(0, 20, 0);
     camera.lookAt(0, 0, 0);
     camera.up.set(0, 0, -1);
 
