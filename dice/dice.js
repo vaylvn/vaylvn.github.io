@@ -187,44 +187,58 @@ function makeFaceTexture(n, bg, text) {
 /* ---------------------- THROW LOGIC ---------------------- */
 
 function rollDice() {
+    // Spawn origin: bottom-right outside view
+    const spawnX = 4.5;
+    const spawnZ = -4.5;
+
+    // Target: top-left inside tray
+    const targetX = -2.5;
+    const targetZ = 2.5;
+
+    // Compute clean direction vector
+    const dirX = targetX - spawnX;
+    const dirZ = targetZ - spawnZ;
+    const baseMag = Math.sqrt(dirX*dirX + dirZ*dirZ);
+
+    const baseDirX = dirX / baseMag;
+    const baseDirZ = dirZ / baseMag;
+
     for (let i = 0; i < diceBodies.length; i++) {
         const body = diceBodies[i];
 
-        // 🔥 spawn OFF-SCREEN (bottom-right)
-        const spawnX = 4 + Math.random() * 0.5;
-        const spawnZ = -4 - Math.random() * 0.5;
+        // Each die spawns very close together (small jitter)
+        const jitter = 0.12;                           // small shift, keeps cluster tight
+        const sx = spawnX + (Math.random() - 0.5) * jitter;
+        const sz = spawnZ + (Math.random() - 0.5) * jitter;
 
-        body.position.set(spawnX, 0.55, spawnZ);
+        body.position.set(sx, 0.6, sz);
 
-        // random orientation
+        // Clean orientation
         body.quaternion.setFromEuler(
-            Math.random() * Math.PI,
+            Math.random() * 0.5,
             Math.random() * Math.PI * 2,
-            Math.random() * Math.PI
+            Math.random() * 0.5
         );
 
-        // target = top-left
-        const targetX = -3;
-        const targetZ = +3;
+        // Narrow throw cone
+        const ang = (Math.random() - 0.5) * 0.10;       // ±0.10 rad ≈ ±5.7°
+        const cosA = Math.cos(ang);
+        const sinA = Math.sin(ang);
 
-        const dirX = targetX - spawnX;
-        const dirZ = targetZ - spawnZ;
+        const coneDirX = baseDirX * cosA - baseDirZ * sinA;
+        const coneDirZ = baseDirX * sinA + baseDirZ * cosA;
 
-        const mag = Math.sqrt(dirX*dirX + dirZ*dirZ);
+        // Speed scaling (kept tight)
+        const speed = 4 + Math.random() * 0.4;          // minimal variation
 
-        const forceScale = 4 + Math.random() * 1.5;
+        body.velocity.set(coneDirX * speed, 0, coneDirZ * speed);
 
-        const velX = (dirX / mag) * forceScale;
-        const velZ = (dirZ / mag) * forceScale;
-
-        // 🔥 no upward force = natural roll
-        body.velocity.set(velX, 0, velZ);
-
-        // natural spin
+        // Spin (reduced)
+        const spin = 4;                                 // less chaotic
         body.angularVelocity.set(
-            (Math.random() - 0.5) * 8,
-            (Math.random() - 0.5) * 8,
-            (Math.random() - 0.5) * 8
+            (Math.random() - 0.5) * spin,
+            (Math.random() - 0.5) * spin,
+            (Math.random() - 0.5) * spin
         );
 
         body.wakeUp();
@@ -233,6 +247,7 @@ function rollDice() {
     waitingForStop = true;
     lastStillTime = 0;
 }
+
 
 /* ---------------------- TOP FACE DETECTION ---------------------- */
 
