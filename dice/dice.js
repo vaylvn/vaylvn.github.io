@@ -220,8 +220,8 @@ function rollDice() {
         );
 
         // push toward top-left corner
-        const targetX = -3;
-        const targetZ = -3;
+        const targetX = 6;
+        const targetZ = 6;
 
         // direction vector
         const dirX = targetX - spawnX;
@@ -229,7 +229,7 @@ function rollDice() {
 
         // normalize + scale force
         const mag = Math.sqrt(dirX*dirX + dirZ*dirZ);
-        const forceScale = 4 + Math.random() * 1.5;
+        const forceScale = 1 + Math.random() * 1.5;
 
         const velX = (dirX / mag) * forceScale;
         const velZ = (dirZ / mag) * forceScale;
