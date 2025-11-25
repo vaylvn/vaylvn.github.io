@@ -1,90 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vayl Dice Roller</title>
-
-  <link rel="stylesheet" href="dice.css" />
-
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-  />
+<meta charset="UTF-8" />
+<title>Dice Physics Test</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+    }
+</style>
 </head>
-
 <body>
-
-  <div id="layout">
-    <!-- =======================
-         SIDEBAR: CONFIG PANEL
-         ======================= -->
-    <aside id="configPanel">
-
-      <h2>Dice Configuration</h2>
-
-      <button id="addDie" class="button">+ Add Die</button>
-
-      <table id="diceTable">
-        <thead>
-          <tr>
-            <th>Faces</th>
-            <th>Die Colour</th>
-            <th>Number Colour</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="diceRows"></tbody>
-      </table>
-
-      <section>
-        <h3>Export / Import</h3>
-        <label>Share URL</label>
-        <input id="shareUrl" readonly />
-
-        <button id="copyUrl" class="button">Copy</button>
-
-        <label>Load Config</label>
-        <input id="urlImport" placeholder="Paste config URL…" />
-
-        <button id="importUrl" class="button">Load</button>
-      </section>
-
-    </aside>
-
-    <!-- =======================
-         MAIN CANVAS PANEL
-         ======================= -->
-    <main id="canvasPanel">
-      <canvas id="diceCanvas"></canvas>
-    </main>
-  </div>
-
-  <!-- TWEEN FOR ANIMATION -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-
-  <!-- CONFIG SCRIPT -->
-  <script type="module" src="dice-config.js"></script>
-
-  <!-- WIDGET SCRIPT -->
-  <script type="module">
-    import { initDiceWidget } from "./dice-widget.js";
-    import { getDiceConfig, onConfigChanged } from "./dice-config.js";
-
-    const canvas = document.getElementById("diceCanvas");
-
-    // Initial launch
-    let widget = initDiceWidget(canvas, getDiceConfig());
-
-    // When config changes → rebuild the widget cleanly
-    onConfigChanged(() => {
-      widget = initDiceWidget(canvas, getDiceConfig());
-    });
-
-    // Roll dice on click
-    canvas.addEventListener("click", () => {
-      widget.rollAll();
-    });
-  </script>
-
+<script type="module" src="./loader.js"></script>
 </body>
 </html>
