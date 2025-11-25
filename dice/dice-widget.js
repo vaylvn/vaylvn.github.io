@@ -21,7 +21,10 @@ export function initDiceWidget(canvas, diceCount = 3) {
         0.1,
         100
     );
-    camera.position.set(0, 3, 6);
+	
+    camera.position.set(0, 1.3, 4.5);
+	camera.lookAt(0, 0, 0);
+
 
     // -------- LIGHTS --------
     scene.add(new THREE.AmbientLight(0xffffff, 0.45));
