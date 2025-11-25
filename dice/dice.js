@@ -1,5 +1,6 @@
-import * as THREE from "./libs/three.module.js";
-import * as CANNON from "./libs/cannon-es.js";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164/build/three.module.js";
+import * as CANNON from "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js";
+
 
 let scene, camera, renderer;
 let world;
