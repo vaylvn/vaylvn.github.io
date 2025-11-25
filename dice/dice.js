@@ -23,13 +23,18 @@ function setupThree() {
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(
-        45,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        100
-    );
-    camera.position.set(2.5, 2.5, 2.5);
-    camera.lookAt(0, 0, 0);
+		45,
+		window.innerWidth / window.innerHeight,
+		0.1,
+		100
+	);
+
+	// Put camera ABOVE the scene
+	camera.position.set(0, 6, 0);
+
+	// Look straight down at the dice
+	camera.lookAt(0, 0, 0);
+	camera.up.set(0, 0, -1);  // keeps orientation consistent for top-down
 
     renderer = new THREE.WebGLRenderer({
         alpha: true,
@@ -45,10 +50,10 @@ function setupThree() {
     });
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(4, 6, 4);
-    scene.add(light);
+	light.position.set(0, 6, 3);
+	scene.add(light);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+	scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 }
 
 // ---------- CANNON ----------
