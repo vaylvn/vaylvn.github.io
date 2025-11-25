@@ -41,9 +41,9 @@ function setupThree() {
     );
 
     // top-down camera
-    camera.position.set(0, 10, 0);
+    camera.position.set(0, 25, 0);
 	camera.lookAt(0, 0, 0);
-	camera.up.set(1, 0, 0);
+	camera.up.set(0, 0, 0);
 
 
 
@@ -207,8 +207,8 @@ function rollDice() {
         const body = diceBodies[i];
 
         // spawn OFF-SCREEN in bottom-right corner
-        const spawnX = 4 + Math.random() * 0.5;
-        const spawnZ = -4 - Math.random() * 0.5;
+        const spawnX = 4;
+        const spawnZ = 4;
 
         body.position.set(spawnX, 0.55, spawnZ);
 
@@ -221,7 +221,7 @@ function rollDice() {
 
         // push toward top-left corner
         const targetX = -3;
-        const targetZ = 3;
+        const targetZ = -3;
 
         // direction vector
         const dirX = targetX - spawnX;
