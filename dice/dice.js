@@ -3,6 +3,7 @@ import * as CANNON from "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cann
 
 let scene, camera, renderer;
 let world;
+
 let diceMeshes = [];
 let diceBodies = [];
 
@@ -13,10 +14,9 @@ export function initDiceTest() {
     setupThree();
     setupCannon();
     createGround();
-	createWalls();
+    createWalls();
 
-
-    // spawn 3 dice as a demo
+    // demo: 3 dice
     spawnDice([
         { sides: 6, color: "#ffffff", text: "#000000" },
         { sides: 6, color: "#ffffff", text: "#000000" },
@@ -40,13 +40,10 @@ function setupThree() {
         100
     );
 
-    // top-down camera
-    camera.position.set(0, 25, 0);
-	camera.lookAt(0, 0, 0);
-	camera.up.set(0, 0, 0);
-
-
-
+    // 🔥 Correct top-down camera — no axis flipping
+    camera.position.set(0, 10, 0);
+    camera.lookAt(0, 0, 0);
+    camera.up.set(0, 0, 1); // matches world-space
 
     renderer = new THREE.WebGLRenderer({
         alpha: true,
@@ -62,21 +59,20 @@ function setupThree() {
     });
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 6, 3);
+    light.position.set(5, 10, 5);
     scene.add(light);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-    // invisible plane (helps orientation)
+    // invisible floor (helps shading)
     const planeGeo = new THREE.PlaneGeometry(20, 20);
     const planeMat = new THREE.MeshStandardMaterial({
-        color: 0x000000,
         transparent: true,
         opacity: 0
     });
-    const planeMesh = new THREE.Mesh(planeGeo, planeMat);
-    planeMesh.rotation.x = -Math.PI / 2;
-    scene.add(planeMesh);
+    const plane = new THREE.Mesh(planeGeo, planeMat);
+    plane.rotation.x = -Math.PI / 2;
+    scene.add(plane);
 }
 
 /* ---------------------- PHYSICS SETUP ---------------------- */
@@ -94,76 +90,64 @@ function setupCannon() {
 function createGround() {
     const ground = new CANNON.Body({
         type: CANNON.Body.STATIC,
-        shape: new CANNON.Plane(),
-        material: new CANNON.Material({ friction: 0.3, restitution: 0.3 })
+        shape: new CANNON.Plane()
     });
 
-    // rotate to horizontal plane
+    // rotate so normal faces upward
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+
     world.addBody(ground);
 }
 
+/* ---------------------- L-SHAPED WALLS ---------------------- */
+
 function createWalls() {
-    const wallMaterial = new CANNON.Material({
-        friction: 0.3,
-        restitution: 0.3
-    });
+    const wallMat = new CANNON.Material({ friction: 0.3, restitution: 0.3 });
 
     const height = 3;
     const thickness = 0.5;
-    const halfSize = 4; // tray spans about 8x8 in view
+    const halfSize = 4; // tray spans ~8x8 visible units
 
-    // NORTH wall (z = +halfSize)
+    // NORTH wall (top)
     const north = new CANNON.Body({
         type: CANNON.Body.STATIC,
-        shape: new CANNON.Box(new CANNON.Vec3(halfSize, height/2, thickness)),
-        position: new CANNON.Vec3(0, height/2, halfSize)
+        material: wallMat,
+        shape: new CANNON.Box(new CANNON.Vec3(halfSize, height / 2, thickness)),
+        position: new CANNON.Vec3(0, height / 2, halfSize)
     });
     world.addBody(north);
 
-    // WEST wall (x = -halfSize)
+    // WEST wall (left)
     const west = new CANNON.Body({
         type: CANNON.Body.STATIC,
-        shape: new CANNON.Box(new CANNON.Vec3(thickness, height/2, halfSize)),
-        position: new CANNON.Vec3(-halfSize, height/2, 0)
+        material: wallMat,
+        shape: new CANNON.Box(new CANNON.Vec3(thickness, height / 2, halfSize)),
+        position: new CANNON.Vec3(-halfSize, height / 2, 0)
     });
     world.addBody(west);
 }
 
-
-
-
 /* ---------------------- DICE GENERATION ---------------------- */
 
-function spawnDice(diceConfig) {
-    // remove previous
+function spawnDice(configArray) {
+    // remove existing
     diceMeshes.forEach(m => scene.remove(m));
     diceBodies.forEach(b => world.removeBody(b));
     diceMeshes = [];
     diceBodies = [];
 
-    const spacing = 1.4;
-    let index = 0;
-
-    for (const cfg of diceConfig) {
-        // Only D6 for now
+    let idx = 0;
+    for (const cfg of configArray) {
+        // D6 mesh
         const geom = new THREE.BoxGeometry(1, 1, 1);
-
         const materials = [];
         for (let i = 1; i <= 6; i++) {
             materials.push(new THREE.MeshStandardMaterial({
-                map: makeFaceTexture(i, cfg.color, cfg.text),
-                roughness: 0.3,
-                metalness: 0.1
+                map: makeFaceTexture(i, cfg.color, cfg.text)
             }));
         }
 
         const mesh = new THREE.Mesh(geom, materials);
-
-        const x = (index % 4) * spacing - spacing * 1.5;
-        const z = Math.floor(index / 4) * spacing;
-
-        mesh.position.set(x, 0, z);
         scene.add(mesh);
         diceMeshes.push(mesh);
 
@@ -171,27 +155,27 @@ function spawnDice(diceConfig) {
         const body = new CANNON.Body({
             mass: 1,
             shape: shape,
-            position: new CANNON.Vec3(x, 1.4 + Math.random()*0.3, z),
-            sleepThreshold: 0.1,
-            angularDamping: 0.1
+            position: new CANNON.Vec3(0, 0.6, 0),
+            angularDamping: 0.1,
+            sleepThreshold: 0.1
         });
 
         world.addBody(body);
         diceBodies.push(body);
 
-        index++;
+        idx++;
     }
 }
 
-function makeFaceTexture(n, bgColor, textColor) {
+function makeFaceTexture(n, bg, text) {
     const c = document.createElement("canvas");
     c.width = c.height = 256;
 
     const ctx = c.getContext("2d");
-    ctx.fillStyle = bgColor;
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 256, 256);
 
-    ctx.fillStyle = textColor;
+    ctx.fillStyle = text;
     ctx.font = "bold 160px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -200,43 +184,43 @@ function makeFaceTexture(n, bgColor, textColor) {
     return new THREE.CanvasTexture(c);
 }
 
-/* ---------------------- ROLL LOGIC ---------------------- */
+/* ---------------------- THROW LOGIC ---------------------- */
 
 function rollDice() {
     for (let i = 0; i < diceBodies.length; i++) {
         const body = diceBodies[i];
 
-        // spawn OFF-SCREEN in bottom-right corner
-        const spawnX = 4;
-        const spawnZ = 4;
+        // 🔥 spawn OFF-SCREEN (bottom-right)
+        const spawnX = 4 + Math.random() * 0.5;
+        const spawnZ = -4 - Math.random() * 0.5;
 
-        body.position.set(spawnX, 1, spawnZ);
+        body.position.set(spawnX, 0.55, spawnZ);
 
-        // random facing
+        // random orientation
         body.quaternion.setFromEuler(
             Math.random() * Math.PI,
             Math.random() * Math.PI * 2,
             Math.random() * Math.PI
         );
 
-        // push toward top-left corner
-        const targetX = -4;
-        const targetZ = -4;
+        // target = top-left
+        const targetX = -3;
+        const targetZ = +3;
 
-        // direction vector
         const dirX = targetX - spawnX;
         const dirZ = targetZ - spawnZ;
 
-        // normalize + scale force
         const mag = Math.sqrt(dirX*dirX + dirZ*dirZ);
-        const forceScale = 1 + Math.random() * 1.5;
+
+        const forceScale = 4 + Math.random() * 1.5;
 
         const velX = (dirX / mag) * forceScale;
         const velZ = (dirZ / mag) * forceScale;
 
+        // 🔥 no upward force = natural roll
         body.velocity.set(velX, 0, velZ);
 
-        // natural rolling spin
+        // natural spin
         body.angularVelocity.set(
             (Math.random() - 0.5) * 8,
             (Math.random() - 0.5) * 8,
@@ -250,10 +234,7 @@ function rollDice() {
     lastStillTime = 0;
 }
 
-
-
-
-/* ---------------------- DETECT STOP + GET RESULT ---------------------- */
+/* ---------------------- TOP FACE DETECTION ---------------------- */
 
 function getTopFace(body) {
     const up = new CANNON.Vec3(0, 1, 0);
@@ -272,7 +253,7 @@ function getTopFace(body) {
     return faces[maxIndex];
 }
 
-/* ---------------------- MAIN UPDATE LOOP ---------------------- */
+/* ---------------------- MAIN LOOP ---------------------- */
 
 function update() {
     world.step(1/60);
@@ -290,9 +271,9 @@ function update() {
 
         if (still) {
             lastStillTime += 1/60;
+
             if (lastStillTime > 0.5) {
                 waitingForStop = false;
-
                 const results = diceBodies.map(getTopFace);
                 console.log("Roll results:", results);
             }
