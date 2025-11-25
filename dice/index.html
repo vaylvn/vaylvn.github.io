@@ -113,27 +113,15 @@
 
 
   <!-- === CONFIG OR WIDGET SCRIPT === -->
-  <script>
-    if (document.body.dataset.mode === "config") {
-      const script = document.createElement("script");
-      script.src = "dice-config.js";
-      document.body.appendChild(script);
-
-    } else {
-
-      // LIVE MODE — clean module import
-      const liveScript = document.createElement("script");
-      liveScript.type = "module";
-      liveScript.textContent = `
-        import { initDiceWidget } from "./dice-widget.js";
-        const canvas = document.getElementById("diceCanvas");
-        const widget = initDiceWidget(canvas);
-        canvas.addEventListener("click", widget.rollDice);
-      `;
-      document.body.appendChild(liveScript);
-
-    }
+  <script type="module">
+    import { initDiceWidget } from "./dice-widget.js";
+    const canvas = document.getElementById("diceCanvas");
+    const widget = initDiceWidget(canvas);
+    canvas.addEventListener("click", widget.rollDice);
   </script>
+
+  <!-- === ALWAYS LOAD CONFIG SCRIPT (same as spinner) === -->
+  <script src="dice-config.js"></script>
 
 </body>
 </html>
