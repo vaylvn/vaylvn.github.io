@@ -120,25 +120,25 @@ export function initDiceWidget(canvas, config) {
   function buildDie(dcfg, index, total) {
     const { faces, dieColor, numberColor } = dcfg;
 
+
+
+
+
+
     //
     // CREATE GEOMETRY
     //
-    let geo = DIE_GEOMETRIES[faces]();
+	let geo = DIE_GEOMETRIES[faces]();
 
-    // ------------ IMPORTANT FIX ------------
-    // Ensure geometry has an index buffer.
-    if (!geo.index) {
-      const nonIdx = geo.toNonIndexed();
+	// Ensure the geometry has an index buffer.
+	if (!geo.index) {
+	  const count = geo.attributes.position.count;
+	  const idx = Array.from({ length: count }, (_, i) => i);
+	  geo.setIndex(idx);
+	}
 
-      const idx = [];
-      for (let i = 0; i < nonIdx.attributes.position.count; i++) {
-        idx.push(i);
-      }
-      nonIdx.setIndex(idx);
-
-      geo = nonIdx;
-    }
-    geo.computeVertexNormals();
+	// Recompute normals AFTER index creation.
+	geo.computeVertexNormals();
     // ----------------------------------------
 
 
