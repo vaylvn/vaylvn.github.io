@@ -210,7 +210,7 @@ function rollDice() {
         const spawnX = 4;
         const spawnZ = 4;
 
-        body.position.set(spawnX, 0.55, spawnZ);
+        body.position.set(spawnX, 1, spawnZ);
 
         // random facing
         body.quaternion.setFromEuler(
@@ -220,8 +220,8 @@ function rollDice() {
         );
 
         // push toward top-left corner
-        const targetX = 6;
-        const targetZ = 6;
+        const targetX = -4;
+        const targetZ = -4;
 
         // direction vector
         const dirX = targetX - spawnX;
