@@ -41,9 +41,10 @@ function setupThree() {
     );
 
     // top-down camera
-    camera.position.set(0, 12, 0);
-	camera.lookAt(0, 0, 0);  // looks slightly upward on the table
-	camera.up.set(0, 0, -1);
+    camera.position.set(0, 10, 0);
+	camera.lookAt(0, 0, 0);
+	camera.up.set(1, 0, 0);
+
 
 
     renderer = new THREE.WebGLRenderer({
