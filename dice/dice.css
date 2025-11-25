@@ -176,7 +176,12 @@ body[data-mode="live"] #widgetPanel {
   outline: none;
   background: transparent;
   cursor: pointer;
+  width: 100%;
+  height: 100%;
 }
+
+
+
 
 
 /* HIDE CONFIG ELEMENTS IN LIVE MODE -------------------------------------- */
