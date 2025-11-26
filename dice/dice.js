@@ -41,28 +41,30 @@ function createDieFace(value, faceColor, textColor) {
 ------------------------------------------------------ */
 
 class FakeDie {
-    constructor(value, faceColor, textColor) {
+    constructor(value, faceColor, textColor, existingTargets) {
         this.value = value;
-
-        // generate face image on the fly
         this.img = createDieFace(value, faceColor, textColor);
 
         // start offscreen bottom-right
         this.x = canvas.width + 100;
         this.y = canvas.height + 100;
 
-        // target landing position
-        this.tx = Math.random() * (canvas.width - 200) + 100;
-        this.ty = Math.random() * (canvas.height - 200) + 100;
+        // pick safe landing position (no overlap)
+        const target = this.getNonOverlappingTarget(existingTargets);
+        this.tx = target.x;
+        this.ty = target.y;
 
         this.t = 0;
 
-        // random animation spin
+        // spin + settle rotation
         this.angle = Math.random() * Math.PI * 2;
         this.spin = (Math.random() * 2 - 1) * 0.25;
-
-        this.speed = 0.016 + Math.random() * 0.006;
         this.settleAngle = (Math.random() * 20 - 10) * Math.PI / 180;
+
+        // speed determines animation length
+        this.speed = 0.016 + Math.random() * 0.006;
+
+        // start coords saved later
     }
 
     start() {
@@ -72,17 +74,50 @@ class FakeDie {
 
     lerp(a, b, t) { return a + (b - a) * t; }
 
+    // ---------- NEW: NO OVERLAP ----------
+    getNonOverlappingTarget(existing) {
+        let tx, ty;
+        let attempts = 0;
+
+        while (true) {
+            attempts++;
+
+            tx = Math.random() * (canvas.width - 200) + 100;
+            ty = Math.random() * (canvas.height - 200) + 100;
+
+            let valid = true;
+
+            for (const pos of existing) {
+                const dx = tx - pos.x;
+                const dy = ty - pos.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < 120) {  // 80px dice → safe spacing ~120px
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid || attempts > 50) {
+                return { x: tx, y: ty };
+            }
+        }
+    }
+
     update() {
         if (this.t < 1) {
             this.t += this.speed;
+
             const p = 1 - Math.pow(1 - this.t, 3); // ease-out cubic
 
             this.x = this.lerp(this.startX, this.tx, p);
             this.y = this.lerp(this.startY, this.ty, p);
 
+            // spin stops gradually
             this.angle += this.spin * (1 - p);
         } else {
-            this.angle = this.settleAngle;
+            // ---------- NEW: SMOOTH ANGLE SETTLE ----------
+            // softly interpolate angle toward final settleAngle
+            this.angle = this.lerp(this.angle, this.settleAngle, 0.1);
         }
     }
 
@@ -94,6 +129,7 @@ class FakeDie {
         ctx.restore();
     }
 }
+
 
 let dice = [];
 let animating = false;
@@ -107,7 +143,8 @@ function rollDice(count = 3, faceColor = "#ffffff", textColor = "#000000") {
 
     for (let i = 0; i < count; i++) {
         const value = Math.floor(Math.random() * 6) + 1;
-        const die = new FakeDie(value, faceColor, textColor);
+        const die = new FakeDie(value, faceColor, textColor, dice.map(d => ({x: d.tx, y: d.ty})));
+
         dice.push(die);
         die.start();
     }
