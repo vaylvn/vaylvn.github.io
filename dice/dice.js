@@ -8,74 +8,89 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-const diceImages = {};
-for (let i = 1; i <= 6; i++) {
-    diceImages[i] = new Image();
-    diceImages[i].src = `assets/${i}.png`;
+/* ------------------------------------------------------
+   DYNAMIC DICE FACE GENERATION
+------------------------------------------------------ */
+
+function createDieFace(value, faceColor, textColor) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 80;
+    const g = c.getContext("2d");
+
+    // background
+    g.fillStyle = faceColor;
+    g.fillRect(0, 0, 80, 80);
+
+    // border
+    g.strokeStyle = "#00000055";
+    g.lineWidth = 4;
+    g.strokeRect(2, 2, 76, 76);
+
+    // number
+    g.fillStyle = textColor;
+    g.font = "bold 42px sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(value, 40, 42);
+
+    return c;
 }
 
 /* ------------------------------------------------------
-   Fake physics: simple animation objects
+   Fake physics: animated dice objects
 ------------------------------------------------------ */
 
 class FakeDie {
-    constructor(finalValue) {
-        this.value = finalValue;
+    constructor(value, faceColor, textColor) {
+        this.value = value;
 
-        // start off-screen bottom-right
+        // generate face image on the fly
+        this.img = createDieFace(value, faceColor, textColor);
+
+        // start offscreen bottom-right
         this.x = canvas.width + 100;
         this.y = canvas.height + 100;
 
-        // end somewhere on table
+        // target landing position
         this.tx = Math.random() * (canvas.width - 200) + 100;
         this.ty = Math.random() * (canvas.height - 200) + 100;
 
-        // animation progress
         this.t = 0;
 
-        // random initial angle & spin rate
+        // random animation spin
         this.angle = Math.random() * Math.PI * 2;
-        this.spin = (Math.random() * 2 - 1) * 0.3;
+        this.spin = (Math.random() * 2 - 1) * 0.25;
 
-        // random speed multiplier
-        this.speed = 0.02 + Math.random() * 0.01;
-
-        // final rotation should be small (looks "settled")
+        this.speed = 0.016 + Math.random() * 0.006;
         this.settleAngle = (Math.random() * 20 - 10) * Math.PI / 180;
     }
 
-    update() {
-        if (this.t < 1) {
-            this.t += this.speed;
-
-            // ease-out cubic
-            const p = 1 - Math.pow(1 - this.t, 3);
-
-            this.x = this.lerp(this.startX, this.tx, p);
-            this.y = this.lerp(this.startY, this.ty, p);
-
-            // spin heavily at start, slow at end
-            this.angle += this.spin * (1 - p);
-        } else {
-            // lock angle to a gentle final tilt
-            this.angle = this.settleAngle;
-        }
-    }
-
     start() {
-        // called just before animation
         this.startX = this.x;
         this.startY = this.y;
     }
 
     lerp(a, b, t) { return a + (b - a) * t; }
 
+    update() {
+        if (this.t < 1) {
+            this.t += this.speed;
+            const p = 1 - Math.pow(1 - this.t, 3); // ease-out cubic
+
+            this.x = this.lerp(this.startX, this.tx, p);
+            this.y = this.lerp(this.startY, this.ty, p);
+
+            this.angle += this.spin * (1 - p);
+        } else {
+            this.angle = this.settleAngle;
+        }
+    }
+
     draw() {
-        const img = diceImages[this.value];
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
-        ctx.drawImage(img, -40, -40, 80, 80);
+        ctx.drawImage(this.img, -40, -40);
         ctx.restore();
     }
 }
@@ -83,14 +98,18 @@ class FakeDie {
 let dice = [];
 let animating = false;
 
-function rollDice(count = 3) {
+/* ------------------------------------------------------
+   Roll & animate
+------------------------------------------------------ */
+
+function rollDice(count = 3, faceColor = "#ffffff", textColor = "#000000") {
     dice = [];
 
     for (let i = 0; i < count; i++) {
         const value = Math.floor(Math.random() * 6) + 1;
-        const d = new FakeDie(value);
-        dice.push(d);
-        d.start();
+        const die = new FakeDie(value, faceColor, textColor);
+        dice.push(die);
+        die.start();
     }
 
     animating = true;
@@ -100,23 +119,22 @@ function rollDice(count = 3) {
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    let doneCount = 0;
+    let done = 0;
 
     for (const d of dice) {
         d.update();
         d.draw();
-
-        if (d.t >= 1) doneCount++;
+        if (d.t >= 1) done++;
     }
 
-    if (doneCount < dice.length) {
+    if (done < dice.length) {
         requestAnimationFrame(animate);
     } else {
         animating = false;
-        console.log("Final results:", dice.map(d => d.value));
+        console.log("🟩 Results:", dice.map(d => d.value));
     }
 }
 
 window.addEventListener("click", () => {
-    if (!animating) rollDice(3);
+    if (!animating) rollDice(3, "#ffffff", "#000000");
 });
