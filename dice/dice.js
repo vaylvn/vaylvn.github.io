@@ -124,36 +124,42 @@ class FakeDie {
     draw() {
 		ctx.save();
 
-		// depth factor = how "in the air" the die is
-		const p = Math.min(this.t / 1, 1);  
-		const depth = 1 - Math.pow(p, 3); // strong depth at start, disappears at end
+		// Movement progress
+		const p = Math.min(this.t / 1, 1);
+		const depth = 1 - Math.pow(p, 3); // how "high" the die is
 
-		// ----- SHADOW -----
-		const shadowSize = 50 * depth;
-		const shadowAlpha = 0.35 * depth;
+		// ----- SHADOW (clean, subtle) -----
+		const shadowSize = 40 + depth * 25;       // slightly larger when “in the air”
+		const shadowOffset = 15 * depth;          // lifts shadow as die is high
+		const shadowAlpha = 0.25 + depth * 0.15;  // softer, not dramatic
 
 		ctx.beginPath();
-		ctx.ellipse(this.x, this.y + 25 * depth, shadowSize, shadowSize * 0.4, 0, 0, Math.PI * 2);
+		ctx.ellipse(
+			this.x,
+			this.y + shadowOffset,
+			shadowSize,
+			shadowSize * 0.45,
+			0,
+			0,
+			Math.PI * 2
+		);
 		ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
 		ctx.fill();
 
-		// ----- 3D-ish SQUASH (tumbling effect) -----
-		const squash = 1 - depth * 0.4; // vertical flatten while high
+		// ----- FAKE 3D PERSPECTIVE -----
 		ctx.translate(this.x, this.y);
-
 		ctx.rotate(this.angle);
 
-		ctx.scale(1, squash); // fake perspective tilt
+		// vertical flattening when high → gives rolling look
+		const squash = 1 - depth * 0.35; 
+		ctx.scale(1, squash);
 
-		// ----- FADE-IN SHARPNESS -----
-		const blurAmount = 10 * depth;  // blur more while moving
-		ctx.filter = `blur(${blurAmount}px)`;
-
-		// draw the die
+		// draw die (crisp)
 		ctx.drawImage(this.img, -40, -40);
 
 		ctx.restore();
 	}
+
 
 }
 
