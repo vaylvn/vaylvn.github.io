@@ -59,7 +59,7 @@ class FakeDie {
         // spin + settle rotation
         this.angle = Math.random() * Math.PI * 2;
         this.spin = (Math.random() * 2 - 1) * 0.25;
-        this.settleAngle = (Math.random() * 20 - 10) * Math.PI / 180;
+
 
         // speed determines animation length
         this.speed = 0.016 + Math.random() * 0.006;
@@ -104,30 +104,57 @@ class FakeDie {
     }
 
     update() {
-        if (this.t < 1) {
-            this.t += this.speed;
+		if (this.t < 1) {
+			this.t += this.speed;
 
-            const p = 1 - Math.pow(1 - this.t, 3); // ease-out cubic
+			const p = 1 - Math.pow(1 - this.t, 3); // ease-out cubic
 
-            this.x = this.lerp(this.startX, this.tx, p);
-            this.y = this.lerp(this.startY, this.ty, p);
+			this.x = this.lerp(this.startX, this.tx, p);
+			this.y = this.lerp(this.startY, this.ty, p);
 
-            // spin stops gradually
-            this.angle += this.spin * (1 - p);
-        } else {
-            // ---------- NEW: SMOOTH ANGLE SETTLE ----------
-            // softly interpolate angle toward final settleAngle
-            this.angle = this.lerp(this.angle, this.settleAngle, 0.1);
-        }
-    }
+			// Spin ONLY while moving
+			this.angle += this.spin * (1 - p);
+		} else {
+			// STOP DEAD. Preserve current angle.
+			// No more rotation changes.
+		}
+	}
+
 
     draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.angle);
-        ctx.drawImage(this.img, -40, -40);
-        ctx.restore();
-    }
+		ctx.save();
+
+		// depth factor = how "in the air" the die is
+		const p = Math.min(this.t / 1, 1);  
+		const depth = 1 - Math.pow(p, 3); // strong depth at start, disappears at end
+
+		// ----- SHADOW -----
+		const shadowSize = 50 * depth;
+		const shadowAlpha = 0.35 * depth;
+
+		ctx.beginPath();
+		ctx.ellipse(this.x, this.y + 25 * depth, shadowSize, shadowSize * 0.4, 0, 0, Math.PI * 2);
+		ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+		ctx.fill();
+
+		// ----- 3D-ish SQUASH (tumbling effect) -----
+		const squash = 1 - depth * 0.4; // vertical flatten while high
+		ctx.translate(this.x, this.y);
+
+		ctx.rotate(this.angle);
+
+		ctx.scale(1, squash); // fake perspective tilt
+
+		// ----- FADE-IN SHARPNESS -----
+		const blurAmount = 10 * depth;  // blur more while moving
+		ctx.filter = `blur(${blurAmount}px)`;
+
+		// draw the die
+		ctx.drawImage(this.img, -40, -40);
+
+		ctx.restore();
+	}
+
 }
 
 
