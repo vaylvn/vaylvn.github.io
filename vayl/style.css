@@ -6,6 +6,60 @@ body {
   overflow: hidden;
 }
 
+
+
+/* ------------------------- */
+/*        TOP BAR            */
+/* ------------------------- */
+
+#topbar {
+  height: 42px;
+  background: #111;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.topbar-logo {
+  height: 22px;
+  width: auto;
+  margin-right: 10px;
+}
+
+.topbar-title {
+  font-size: 17px;
+  font-weight: bold;
+  color: #ddd;
+  margin-right: 30px;
+}
+
+.topbar-tabs {
+  display: flex;
+  gap: 20px;
+}
+
+.topbar-tab {
+  font-size: 14px;
+  color: #aaa;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.topbar-tab:hover {
+  color: #fff;
+}
+
+/* Push the entire app down so topbar doesn't overlap */
+#app {
+  margin-top: 42px;
+}
+
+
+
+
+
 /* Layout */
 #app {
   display: flex;
@@ -65,6 +119,15 @@ body {
   background: #2e2e2e;
 }
 
+.sidebar-subtitle {
+  margin-left: 10px;
+  margin-top: 4px;
+  margin-bottom: 2px;
+  font-size: 12px;
+  color: #999;
+}
+
+
 /* Editor */
 #editor-panel {
   display: flex;
@@ -93,4 +156,63 @@ body {
 
 #save-button:hover {
   background: #555;
+}
+
+
+/* Console button */
+.console-item {
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+/* Accordion headers */
+.accordion-header {
+  padding: 8px 10px;
+  margin-top: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  background: #181818;
+  border-radius: 4px;
+  user-select: none;
+  color: #ccc;
+  transition: background 0.15s;
+}
+
+.accordion-header:hover {
+  background: #242424;
+}
+
+.accordion-header.open {
+  background: #303030;
+  color: #fff;
+}
+
+/* Accordion content area */
+.accordion-content {
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid #333;
+  margin-top: 4px;
+}
+
+/* Subtitles inside sections (Variable types, etc.) */
+.sidebar-subtitle {
+  margin-top: 6px;
+  margin-bottom: 3px;
+  padding-left: 4px;
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+/* Sidebar items inside accordion */
+.accordion-content .sidebar-item {
+  padding: 5px 10px;
+  margin: 2px 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.accordion-content .sidebar-item:hover {
+  background: #2d2d2d;
 }

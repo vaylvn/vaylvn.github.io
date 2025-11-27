@@ -29,28 +29,84 @@ function buildSidebar(root) {
   const sidebar = document.getElementById("sidebar");
   sidebar.innerHTML = "";
 
-  // Console button
+  // --- CONSOLE BUTTON ---
   const consoleBtn = document.createElement("div");
-  consoleBtn.className = "sidebar-item";
+  consoleBtn.className = "sidebar-item console-item";
   consoleBtn.textContent = "Console";
-  consoleBtn.onclick = () => showConsole();
+  consoleBtn.onclick = () => {
+    closeAllAccordionSections();
+    showConsole();
+  };
   sidebar.appendChild(consoleBtn);
 
-  for (const group of root) {
-    const title = document.createElement("div");
-    title.className = "sidebar-title";
-    title.textContent = group.name;
-    sidebar.appendChild(title);
+  // --- ACCORDION SECTIONS ---
+  root.forEach((group, index) => {
+    // Section header
+    const header = document.createElement("div");
+    header.className = "accordion-header";
+    header.textContent = group.name;
+    header.dataset.sectionIndex = index;
+    sidebar.appendChild(header);
 
+    // Section content wrapper
+    const content = document.createElement("div");
+    content.className = "accordion-content";
+    content.style.display = "none"; // collapsed by default
+    sidebar.appendChild(content);
+
+    // Populate section content
     if (group.files) {
-      group.files.forEach(f => addFileEntry(sidebar, f));
+      group.files.forEach(f => addFileEntry(content, f));
     }
 
     if (group.dynamic) {
-      group.dynamic.forEach(f => addFileEntry(sidebar, f));
+      group.dynamic.forEach(f => addFileEntry(content, f));
     }
+
+    if (group.groups) {
+      group.groups.forEach(sub => {
+        const subtitle = document.createElement("div");
+        subtitle.className = "sidebar-subtitle";
+        subtitle.textContent = sub.type;
+        content.appendChild(subtitle);
+
+        sub.files.forEach(f => addFileEntry(content, f));
+      });
+    }
+
+    // Click behavior for header
+    header.onclick = () => toggleAccordionSection(header, content);
+  });
+}
+
+
+// ---------------------------
+// Accordion Control Functions
+// ---------------------------
+
+function toggleAccordionSection(header, content) {
+  const isOpen = content.style.display === "block";
+
+  // Close all other sections first (true accordion)
+  closeAllAccordionSections();
+
+  // Then open this one (if it was previously closed)
+  if (!isOpen) {
+    content.style.display = "block";
+    header.classList.add("open");
   }
 }
+
+function closeAllAccordionSections() {
+  document.querySelectorAll(".accordion-content").forEach(c => {
+    c.style.display = "none";
+  });
+  document.querySelectorAll(".accordion-header").forEach(h => {
+    h.classList.remove("open");
+  });
+}
+
+
 
 function addFileEntry(sidebar, file) {
   const item = document.createElement("div");
