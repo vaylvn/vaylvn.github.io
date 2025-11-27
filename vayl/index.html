@@ -1,78 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Vayl UI Test</title>
-<style>
-  body {
-    font-family: Consolas, monospace;
-    background: #111;
-    color: #eee;
-    margin: 0;
-    padding: 20px;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vayl Control Panel</title>
 
-  #status {
-    margin-bottom: 20px;
-    font-size: 18px;
-  }
+  <link rel="stylesheet" href="style.css" />
 
-  #log {
-    border: 1px solid #333;
-    background: #181818;
-    padding: 10px;
-    height: 400px;
-    overflow-y: auto;
-  }
-
-  .msg {
-    padding: 6px 8px;
-    margin-bottom: 6px;
-    background: #202020;
-    border-left: 3px solid #4cc2ff;
-    white-space: pre-wrap;
-  }
-</style>
+  <!-- Monaco CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 </head>
 
 <body>
+  <div id="app">
+    <div id="sidebar"></div>
 
-<h1>Vayl WebSocket Test</h1>
-<div id="status">Connecting…</div>
-<div id="log"></div>
+    <div id="main">
+      <!-- CONSOLE PANEL -->
+      <div id="console-panel" class="panel visible">
+        <div id="console-output"></div>
+      </div>
 
-<script>
-  const statusEl = document.getElementById("status");
-  const logEl = document.getElementById("log");
+      <!-- EDITOR PANEL -->
+      <div id="editor-panel" class="panel">
+        <div id="editor"></div>
+        <div class="editor-toolbar">
+          <button id="save-button">Save File</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  let ws = null;
-
-  function connectWS() {
-    ws = new WebSocket("ws://localhost:8765");
-
-    ws.onopen = () => {
-      statusEl.textContent = "Connected to backend ✔";
-      statusEl.style.color = "#4cc2ff";
-    };
-
-    ws.onmessage = (event) => {
-      const div = document.createElement("div");
-      div.className = "msg";
-      div.textContent = event.data;
-      logEl.appendChild(div);
-      logEl.scrollTop = logEl.scrollHeight;
-    };
-
-    ws.onclose = () => {
-      statusEl.textContent = "Disconnected ✖ — retrying…";
-      statusEl.style.color = "red";
-
-      setTimeout(connectWS, 1500);
-    };
-  }
-
-  connectWS();
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>
