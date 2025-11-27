@@ -1,10 +1,17 @@
 /* ============================================== */
-/*                WEBSOCKET SETUP                 */
+/*                GLOBAL STATE                    */
 /* ============================================== */
 
 let socket = null;
 let editor = null;
+let monacoLoaded = false;
 let currentFilePath = null;
+let contextFile = null;
+
+
+/* ============================================== */
+/*                WEBSOCKET SETUP                 */
+/* ============================================== */
 
 function connectWebSocket() {
     socket = new WebSocket("ws://localhost:8765");
@@ -14,11 +21,11 @@ function connectWebSocket() {
     };
 
     socket.onmessage = (event) => {
-        handleServerMessage(event.data);
+        handleWebSocketMessage(event.data);
     };
 
     socket.onclose = () => {
-        console.log("Socket closed, reconnecting...");
+        console.log("Socket closed, retrying...");
         setTimeout(connectWebSocket, 1500);
     };
 }
@@ -27,34 +34,40 @@ connectWebSocket();
 
 
 /* ============================================== */
-/*               CONSOLE HANDLING                 */
+/*             WEBSOCKET MESSAGE HANDLER          */
 /* ============================================== */
 
-function handleServerMessage(msg) {
-    // If JSON, might be a directory update
-    if (msg.startsWith("{") || msg.startsWith("[")) {
-        try {
-            let data = JSON.parse(msg);
+function handleWebSocketMessage(msg) {
+    try {
+        const data = JSON.parse(msg);
 
-            // directory tree
-            if (data.virtual_tree) {
-                buildSidebar(data.virtual_tree);
-                return;
-            }
-
-        } catch {
-            // fallback to plain console
+        // Directory tree
+        if (data.virtual_tree) {
+            buildSidebar(data.virtual_tree);
+            return;
         }
-    }
 
-    // Append to console panel
-    const div = document.getElementById("console-output");
-    div.textContent += msg + "\n";
-    div.scrollTop = div.scrollHeight;
+        // File content
+        if (data.type === "file") {
+            handleFileContent(data.content);
+            return;
+        }
+
+    } catch {
+        // Plain console log
+        appendToConsole(msg);
+    }
 }
 
-function showConsole() {
-    switchMode("console");
+
+/* ============================================== */
+/*                CONSOLE OUTPUT                  */
+/* ============================================== */
+
+function appendToConsole(text) {
+    const out = document.getElementById("console-output");
+    out.textContent += text + "\n";
+    out.scrollTop = out.scrollHeight;
 }
 
 
@@ -63,7 +76,8 @@ function showConsole() {
 /* ============================================== */
 
 function switchMode(mode) {
-    document.querySelectorAll(".topbar-tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".topbar-tab")
+        .forEach(t => t.classList.remove("active"));
     document.getElementById("tab-" + mode).classList.add("active");
 
     const consolePanel = document.getElementById("console-panel");
@@ -81,6 +95,7 @@ function switchMode(mode) {
         consolePanel.style.display = "none";
         sidebar.style.display = "block";
         editorPanel.style.display = "flex";
+        initMonaco();
         return;
     }
 
@@ -88,6 +103,7 @@ function switchMode(mode) {
         consolePanel.style.display = "none";
         sidebar.style.display = "none";
         editorPanel.style.display = "flex";
+        initMonaco();
         loadSettingsPanel();
         return;
     }
@@ -96,6 +112,7 @@ function switchMode(mode) {
         consolePanel.style.display = "none";
         sidebar.style.display = "none";
         editorPanel.style.display = "flex";
+        initMonaco();
         loadHelpPanel();
         return;
     }
@@ -103,18 +120,104 @@ function switchMode(mode) {
 
 
 /* ============================================== */
-/*              SIDEBAR BUILDING                  */
+/*                MONACO SETUP                    */
+/* ============================================== */
+
+function initMonaco() {
+    if (monacoLoaded) {
+        // Already created, just resize it
+        setTimeout(() => editor.layout(), 50);
+        return;
+    }
+
+    require.config({
+        paths: {
+            'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs'
+        }
+    });
+
+    require(["vs/editor/editor.main"], function () {
+        editor = monaco.editor.create(document.getElementById("editor"), {
+            value: "",
+            language: "yaml",
+            theme: "vs-dark",
+            automaticLayout: true,
+            minimap: { enabled: false },
+            fontSize: 14
+        });
+
+        monacoLoaded = true;
+        setTimeout(() => editor.layout(), 50);
+    });
+}
+
+
+/* ============================================== */
+/*              FILE I/O HANDLING                 */
+/* ============================================== */
+
+function requestFile(path) {
+    currentFilePath = path;
+
+    socket.send(JSON.stringify({
+        type: "read",
+        path: path
+    }));
+}
+
+function handleFileContent(content) {
+    document.getElementById("editor-toolbar").style.display = "flex";
+
+    editor.setValue(content);
+
+    // Ensure visible in case the panel resized
+    setTimeout(() => editor.layout(), 50);
+}
+
+function saveFile() {
+    if (!currentFilePath) return;
+
+    socket.send(JSON.stringify({
+        type: "write",
+        path: currentFilePath,
+        content: editor.getValue()
+    }));
+}
+
+function renameFile(fileObj) {
+    alert("Rename dialog coming soon.");
+}
+
+function deleteFile(fileObj) {
+    alert("Delete dialog coming soon.");
+}
+
+
+/* ============================================== */
+/*          SETTINGS / HELP PLACEHOLDERS          */
+/* ============================================== */
+
+function loadSettingsPanel() {
+    editor.setValue("# Settings panel goes here");
+}
+
+function loadHelpPanel() {
+    editor.setValue("# Help / documentation goes here");
+}
+
+
+/* ============================================== */
+/*             SIDEBAR (ACCORDION)                */
 /* ============================================== */
 
 function buildSidebar(root) {
     const sidebar = document.getElementById("sidebar");
     sidebar.innerHTML = "";
 
-    root.forEach((group, index) => {
+    root.forEach((group) => {
         const header = document.createElement("div");
         header.className = "accordion-header";
         header.textContent = group.name;
-        header.dataset.section = index;
 
         const content = document.createElement("div");
         content.className = "accordion-content";
@@ -127,19 +230,17 @@ function buildSidebar(root) {
         if (group.files) {
             group.files.forEach(f => addFileEntry(content, f));
         }
-
         if (group.dynamic) {
             group.dynamic.forEach(f => addFileEntry(content, f));
         }
-
         if (group.groups) {
-            group.groups.forEach(group2 => {
-                const sub = document.createElement("div");
-                sub.className = "sidebar-subtitle";
-                sub.textContent = group2.type;
-                content.appendChild(sub);
+            group.groups.forEach(sub => {
+                const subtitle = document.createElement("div");
+                subtitle.className = "sidebar-subtitle";
+                subtitle.textContent = sub.type;
+                content.appendChild(subtitle);
 
-                group2.files.forEach(f => addFileEntry(content, f));
+                sub.files.forEach(f => addFileEntry(content, f));
             });
         }
     });
@@ -147,33 +248,35 @@ function buildSidebar(root) {
 
 function toggleAccordion(header, content) {
     const isOpen = content.style.display === "block";
-    closeAllAccordion();
+    closeAllAccordions();
+
     if (!isOpen) {
         content.style.display = "block";
         header.classList.add("open");
     }
 }
 
-function closeAllAccordion() {
-    document.querySelectorAll(".accordion-content").forEach(c => c.style.display = "none");
-    document.querySelectorAll(".accordion-header").forEach(h => h.classList.remove("open"));
+function closeAllAccordions() {
+    document.querySelectorAll(".accordion-content")
+        .forEach(c => c.style.display = "none");
+
+    document.querySelectorAll(".accordion-header")
+        .forEach(h => h.classList.remove("open"));
 }
 
 
 /* ============================================== */
-/*             SIDEBAR FILE ENTRIES               */
+/*           SIDEBAR FILE ENTRIES                 */
 /* ============================================== */
-
-let contextFile = null;
 
 function addFileEntry(container, file) {
     const row = document.createElement("div");
     row.className = "sidebar-file-row";
 
-    const item = document.createElement("div");
-    item.className = "sidebar-item";
-    item.textContent = file.display;
-    item.onclick = () => requestFile(file.path);
+    const label = document.createElement("div");
+    label.className = "sidebar-item";
+    label.textContent = file.display;
+    label.onclick = () => requestFile(file.path);
 
     const menu = document.createElement("div");
     menu.className = "file-menu-icon";
@@ -183,14 +286,14 @@ function addFileEntry(container, file) {
         openContextMenu(e, file);
     };
 
-    row.appendChild(item);
+    row.appendChild(label);
     row.appendChild(menu);
     container.appendChild(row);
 }
 
 
 /* ============================================== */
-/*               CONTEXT MENU UX                  */
+/*                CONTEXT MENU                    */
 /* ============================================== */
 
 function openContextMenu(e, file) {
@@ -214,89 +317,3 @@ function contextRename() {
 function contextDelete() {
     deleteFile(contextFile);
 }
-
-
-/* ============================================== */
-/*                  FILE I/O                      */
-/* ============================================== */
-
-function requestFile(path) {
-    currentFilePath = path;
-    socket.send(JSON.stringify({ type: "read", path }));
-}
-
-function handleFileContent(content) {
-    editor.setValue(content);
-}
-
-function saveFile() {
-    if (!currentFilePath) return;
-
-    socket.send(JSON.stringify({
-        type: "write",
-        path: currentFilePath,
-        content: editor.getValue()
-    }));
-}
-
-function renameFile(fileObj) {
-    alert("Rename coming soon.");
-}
-
-function deleteFile(fileObj) {
-    alert("Delete coming soon.");
-}
-
-
-/* ============================================== */
-/*                SETTINGS & HELP                 */
-/* ============================================== */
-
-function loadSettingsPanel() {
-    editor.setValue("# Settings panel will go here\n");
-}
-
-function loadHelpPanel() {
-    editor.setValue("# Help / documentation will go here\n");
-}
-
-
-/* ============================================== */
-/*               MONACO INITIALISATION            */
-/* ============================================== */
-
-require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
-
-require(["vs/editor/editor.main"], function () {
-    editor = monaco.editor.create(document.getElementById("editor"), {
-        value: "",
-        language: "yaml",
-        theme: "vs-dark",
-        automaticLayout: true,
-        fontSize: 14,
-        minimap: { enabled: false }
-    });
-});
-
-
-/* ============================================== */
-/*          HANDLE MESSAGES FROM SERVER           */
-/* ============================================== */
-
-socket.addEventListener("message", (event) => {
-    try {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "file") {
-            handleFileContent(data.content);
-            return;
-        }
-
-        if (data.virtual_tree) {
-            buildSidebar(data.virtual_tree);
-            return;
-        }
-    } catch {
-        handleServerMessage(event.data);
-    }
-});
