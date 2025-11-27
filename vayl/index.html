@@ -1,49 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vayl Control Panel</title>
-
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Monaco CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <meta charset="UTF-8" />
+    <title>Vayl</title>
+    <link rel="icon" href="assets/vayl-logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-	<div id="topbar">
-	  <img src="assets/logo.png" class="topbar-logo" />
-	  <div class="topbar-title">Vayl</div>
+<!-- ======================= -->
+<!--        TOP BAR          -->
+<!-- ======================= -->
+<div id="topbar">
+    <img src="assets/logo.png" class="topbar-logo" />
+    <div class="topbar-title">Vayl</div>
 
-	  <div class="topbar-tabs">
-		<div class="topbar-tab" onclick="showConsole()">Console</div>
-		<div class="topbar-tab">Settings</div>
-		<div class="topbar-tab">Help</div>
-	  </div>
-	</div>
+    <div class="topbar-tabs">
+        <div id="tab-console" class="topbar-tab active" onclick="switchMode('console')">Console</div>
+        <div id="tab-config" class="topbar-tab" onclick="switchMode('config')">Configuration</div>
+        <div id="tab-settings" class="topbar-tab" onclick="switchMode('settings')">Settings</div>
+        <div id="tab-help" class="topbar-tab" onclick="switchMode('help')">Help</div>
+    </div>
+</div>
 
 
-  <div id="app">
+<!-- ======================= -->
+<!--       MAIN LAYOUT       -->
+<!-- ======================= -->
+
+<div id="app">
+
+    <!-- ---- Console Panel ---- -->
+    <div id="console-panel">
+        <div id="console-output"></div>
+    </div>
+
+    <!-- ---- Sidebar (Config Mode Only) ---- -->
     <div id="sidebar"></div>
 
-    <div id="main">
-      <!-- CONSOLE PANEL -->
-      <div id="console-panel" class="panel visible">
-        <div id="console-output"></div>
-      </div>
-
-      <!-- EDITOR PANEL -->
-      <div id="editor-panel" class="panel">
-        <div id="editor"></div>
-        <div class="editor-toolbar">
-          <button id="save-button">Save File</button>
+    <!-- ---- Editor Panel ---- -->
+    <div id="editor-panel">
+        <div id="editor-toolbar">
+            <button class="editor-btn" onclick="saveFile()">Save</button>
+            <button class="editor-btn" onclick="renameFile()">Rename</button>
+            <button class="editor-btn danger" onclick="deleteFile()">Delete</button>
         </div>
-      </div>
+        <div id="editor"></div>
     </div>
-  </div>
 
-  <script src="script.js"></script>
+</div>
+
+
+<!-- ======================= -->
+<!--    CONTEXT MENU UI      -->
+<!-- ======================= -->
+<div id="context-menu" class="hidden">
+    <div onclick="contextRename()">Rename</div>
+    <div onclick="contextDelete()">Delete</div>
+</div>
+
+
+<script src="script.js"></script>
 </body>
 </html>

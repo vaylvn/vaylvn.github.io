@@ -23,6 +23,46 @@ function connect() {
 
 connect();
 
+
+
+function switchMode(mode) {
+  // Update tab highlight
+  document.querySelectorAll(".topbar-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("tab-" + mode).classList.add("active");
+
+  // Modes
+  if (mode === "console") {
+    document.getElementById("console-panel").style.display = "block";
+    document.getElementById("sidebar").style.display = "none";
+    document.getElementById("editor-panel").style.display = "none";
+    return;
+  }
+
+  if (mode === "config") {
+    document.getElementById("console-panel").style.display = "none";
+    document.getElementById("sidebar").style.display = "block";
+    document.getElementById("editor-panel").style.display = "block";
+    return;
+  }
+
+  if (mode === "settings") {
+    document.getElementById("console-panel").style.display = "none";
+    document.getElementById("sidebar").style.display = "none";
+    document.getElementById("editor-panel").style.display = "block";
+    loadSettingsPanel();
+    return;
+  }
+
+  if (mode === "help") {
+    document.getElementById("console-panel").style.display = "none";
+    document.getElementById("sidebar").style.display = "none";
+    document.getElementById("editor-panel").style.display = "block";
+    loadHelpPanel();
+    return;
+  }
+}
+
+
 /* ------------------------ Sidebar ----------------------- */
 
 function buildSidebar(root) {

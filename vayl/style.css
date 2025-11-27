@@ -21,6 +21,28 @@ body {
   padding: 0 12px;
 }
 
+
+/* App layout modes */
+#sidebar {
+  display: none;
+}
+
+#editor-panel {
+  display: none;
+}
+
+#console-panel {
+  display: block;
+}
+
+/* Active tab */
+.topbar-tab.active {
+  color: #fff;
+  border-bottom: 2px solid #fff;
+  padding-bottom: 3px;
+}
+
+
 .topbar-logo {
   height: 22px;
   width: auto;
