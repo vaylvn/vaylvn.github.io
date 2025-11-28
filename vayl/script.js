@@ -431,7 +431,75 @@ function formatCompact() {
     hideSelectionTools();
 }
 
+function openHighlightPicker() {
+    const picker = document.getElementById("highlight-color-picker");
 
+    picker.oninput = (e) => {
+        const color = e.target.value;
+        applyHighlightToSelection(color);
+    };
+
+    picker.click(); // Opens the native color picker
+}
+
+let HL_META = JSON.parse(localStorage.getItem("vayl_highlights") || "{}");
+let highlightDecorations = [];
+
+function applyHighlightToSelection(color) {
+    const file = currentFilePath;
+    const { startLine, endLine } = currentSelection;
+
+    HL_META[file] = HL_META[file] || {};
+
+    for (let line = startLine; line <= endLine; line++) {
+        HL_META[file][line] = color;
+    }
+
+    localStorage.setItem("vayl_highlights", JSON.stringify(HL_META));
+    redrawHighlights(file);
+}
+
+function redrawHighlights(file) {
+    const meta = HL_META[file] || {};
+
+    const decorations = Object.entries(meta).map(([line, color]) => ({
+        range: new monaco.Range(Number(line), 1, Number(line), 1),
+        options: {
+            isWholeLine: true,
+            inlineClassName: '', // not needed but must exist
+            linesDecorationsClassName: '', // not needed but must exist
+            className: '',
+
+            // THIS is the magic:
+            beforeContentClassName: 'dynamic-hl-' + Number(line)
+        }
+    }));
+
+    highlightDecorations =
+        editor.deltaDecorations(highlightDecorations, decorations);
+
+    injectDynamicHighlightCSS(meta);
+}
+
+function injectDynamicHighlightCSS(meta) {
+    let css = "";
+
+    for (const [line, color] of Object.entries(meta)) {
+        css += `
+        .monaco-editor .dynamic-hl-${line} {
+            border-left: 4px solid ${color} !important;
+        }`;
+    }
+
+    let style = document.getElementById("dynamic-highlight-style");
+    if (!style) {
+        style = document.createElement("style");
+        style.id = "dynamic-highlight-style";
+        document.head.appendChild(style);
+    }
+
+    style.innerHTML = css;
+}
 
 
 
