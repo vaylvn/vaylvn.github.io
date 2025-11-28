@@ -379,5 +379,6 @@ body {
 .log-error  { border-color: #E53935; }  /* red */
 .log-debug  { border-color: #757575; }  /* grey */
 .log-connect { border-color: #00BCD4; } /* cyan */
+.log-success { border-color: #00d455; } /* cyan */
 
 

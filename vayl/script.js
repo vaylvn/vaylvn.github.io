@@ -18,6 +18,7 @@ function connectWebSocket() {
 
     socket.onopen = () => {
         console.log("Connected to backend");
+		logMessage("success", "Connected", "Connected to Vayl");
     };
 
     socket.onmessage = (event) => {
