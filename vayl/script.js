@@ -65,10 +65,9 @@ function handleWebSocketMessage(msg) {
 /* ============================================== */
 
 function appendToConsole(text) {
-    const out = document.getElementById("console-output");
-    out.textContent += text + "\n";
-    out.scrollTop = out.scrollHeight;
+    logMessage("info", "Console", text);
 }
+
 
 
 /* ============================================== */
