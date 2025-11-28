@@ -325,9 +325,10 @@ function addFileEntry(parent, file) {
         menu.style.display = "none";
     } else {
         menu.onclick = (e) => {
-            e.stopPropagation();
-            openContextMenu(e.clientY, file.path);
-        };
+			e.stopPropagation();
+			openContextMenu(e, file.path);
+		};
+
     }
 
     row.appendChild(item);
@@ -340,15 +341,16 @@ function addFileEntry(parent, file) {
 /*                CONTEXT MENU                    */
 /* ============================================== */
 
-function openContextMenu(y, file) {
+function openContextMenu(event, file) {
     contextFile = file;
 
     const menu = document.getElementById("context-menu");
     menu.classList.remove("hidden");
 
-    menu.style.top = y + "px";
-    menu.style.left = "180px";
+    menu.style.top = event.clientY + "px";
+    menu.style.left = event.clientX + "px";
 }
+
 
 window.addEventListener("click", () => {
     document.getElementById("context-menu").classList.add("hidden");
