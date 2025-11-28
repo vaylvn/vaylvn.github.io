@@ -247,22 +247,58 @@ function ctxAction(type) {
     // CLEAN
     // ---------------------------------------------------------------------
     if (type === "clean") {
-        const lines = text.split("\n");
+		const lines = text.split("\n");
 
-        const parsed = lines.map(splitDivider);
+		function splitAll(line) {
+			if (!line.trim() || line.trim().startsWith("#")) return null;
 
-        // Find max left-column width among valid lines only
-        const leftWidths = parsed.filter(p => p).map(p => p.left.length);
-        const maxLeft = leftWidths.length ? Math.max(...leftWidths) : 0;
+			const indent = line.match(/^\s*/)[0];
 
-        newText = lines.map((line, i) => {
-            const p = parsed[i];
-            if (!p) return line; // leave blank/comment/invalid lines unchanged
+			// Split on ; or |, strip surrounding whitespace
+			const parts = line.split(/;|\|/).map(p => p.trim());
 
-            const leftPadded = p.left.padEnd(maxLeft, " ");
-            return `${p.indent}${leftPadded} ${p.divider} ${p.right}`;
-        }).join("\n");
-    }
+			// Capture dividers in the order they appear
+			const dividers = [...line.matchAll(/([;|])/g)].map(m => m[1]);
+
+			return { indent, parts, dividers };
+		}
+
+		const parsed = lines.map(splitAll);
+
+		// Determine how many columns exist across all lines
+		const maxCols = Math.max(...parsed.filter(p => p).map(p => p.parts.length));
+
+		// Compute max width for each column
+		const colWidths = Array(maxCols).fill(0);
+
+		parsed.forEach(p => {
+			if (!p) return;
+			p.parts.forEach((part, i) => {
+				colWidths[i] = Math.max(colWidths[i], part.length);
+			});
+		});
+
+		// Build aligned lines
+		newText = lines.map((line, i) => {
+			const p = parsed[i];
+			if (!p) return line;
+
+			let out = p.indent;
+
+			p.parts.forEach((part, idx) => {
+				const padded = part.padEnd(colWidths[idx], " ");
+				out += padded;
+
+				// Add original divider if present
+				if (p.dividers[idx]) {
+					out += " " + p.dividers[idx] + " ";
+				}
+			});
+
+			return out;
+		}).join("\n");
+	}
+
 
     // ---------------------------------------------------------------------
     // COMPACT
