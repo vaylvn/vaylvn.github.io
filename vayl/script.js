@@ -125,7 +125,6 @@ function switchMode(mode) {
 
 function initMonaco() {
     if (monacoLoaded) {
-        // Already created, just resize it
         setTimeout(() => editor.layout(), 50);
         return;
     }
@@ -142,41 +141,39 @@ function initMonaco() {
             language: "yaml",
             theme: "vs-dark",
             automaticLayout: true,
-			contextmenu: false,
+            contextmenu: false,   // disable Monaco's built-in menu
             minimap: { enabled: false },
             fontSize: 14
         });
 
         monacoLoaded = true;
         setTimeout(() => editor.layout(), 50);
-		
-		editor.onMouseDown((e) => {
-			if (e.event.rightButton) {
-				showEditorContextMenu(e.event.browserEvent, e.target.position);
-			}
-		});
 
-		
+        // Right-click inside Monaco -> our custom menu
+        editor.onMouseDown((e) => {
+            if (e.event.rightButton) {
+                showEditorContextMenu(e.event.browserEvent);
+            }
+        });
+
+        // Block browser's native context menu inside editor
+        const editorContainer = document.getElementById("editor");
+        editorContainer.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+        });
     });
-	
-
-	
 }
 
 
 
 
-function showEditorContextMenu(browserEvent, pos) {
-    const selection = editor.getSelection();
 
-    // No selection -> let default browser menu open instead
-    if (!selection || selection.isEmpty()) {
-        hideEditorContextMenu();
-        return;
-    }
-
+function showEditorContextMenu(browserEvent) {
     browserEvent.preventDefault();
     browserEvent.stopPropagation();
+
+    // close any existing one
+    hideEditorContextMenu();
 
     const menu = document.getElementById("editor-context-menu");
 
@@ -185,15 +182,26 @@ function showEditorContextMenu(browserEvent, pos) {
     menu.classList.remove("hidden");
 }
 
-window.addEventListener("click", () => hideEditorContextMenu());
-
 function hideEditorContextMenu() {
-    document.getElementById("editor-context-menu").classList.add("hidden");
+    const menu = document.getElementById("editor-context-menu");
+    if (menu) {
+        menu.classList.add("hidden");
+    }
 }
 
+// Hide when clicking anywhere else
+window.addEventListener("click", () => {
+    hideEditorContextMenu();
+});
+
 function ctxAction(type) {
+    if (!editor) return;
+
     const selection = editor.getSelection();
-    if (!selection || selection.isEmpty()) return;
+    if (!selection || selection.isEmpty()) {
+        hideEditorContextMenu();
+        return;
+    }
 
     const model = editor.getModel();
     const range = new monaco.Range(
@@ -207,10 +215,12 @@ function ctxAction(type) {
     let newText = text;
 
     if (type === "clean") {
+        // collapse whitespace
         newText = text.replace(/\s+/g, " ").trim();
     }
 
     if (type === "compact") {
+        // trim each line and join with no newlines
         newText = text
             .split("\n")
             .map(line => line.trim())
@@ -218,15 +228,17 @@ function ctxAction(type) {
     }
 
     if (type === "highlight") {
-        newText = `<<${text}>>`;  // customize however you want
+        // simple marker wrapper – change to whatever you want
+        newText = `<<${text}>>`;
     }
 
     model.pushEditOperations([], [
-        { range: range, text: newText }
+        { range, text: newText }
     ], () => null);
 
     hideEditorContextMenu();
 }
+
 
 
 
