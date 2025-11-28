@@ -361,7 +361,7 @@ function ctxAction(type) {
 
 const TAGS = {
     global: [
-        { tag: "[g:user]", desc: "Name of the user who triggered the event" },
+        { tag: "[user]", desc: "Name of the user who triggered the event" },
         { tag: "[g:time]", desc: "Current system time" },
         { tag: "[g:rfollower]", desc: "Random follower" },
         { tag: "[g:channel]", desc: "The channel name" }
@@ -440,10 +440,13 @@ window.addEventListener("click", (e) => {
     const panel = document.getElementById("tag-panel");
     const toggle = document.getElementById("tag-toggle-btn");
 
+    // If clicked outside panel & not clicking the toggle button:
     if (!panel.contains(e.target) && e.target !== toggle) {
         panel.classList.remove("open");
+        panel.classList.add("hidden");
     }
 });
+
 
 
 
