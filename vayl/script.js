@@ -246,6 +246,16 @@ function buildSidebar(root) {
     });
 }
 
+
+
+const EDITABLE_DIRS = ["variables", "conditionals", "actionpacks"];
+
+function canModifyFile(path) {
+    return EDITABLE_DIRS.some(dir => path.startsWith(dir + "/"));
+}
+
+
+
 function toggleAccordion(header, content) {
     const isOpen = content.style.display === "block";
     closeAllAccordions();
@@ -269,27 +279,36 @@ function closeAllAccordions() {
 /*           SIDEBAR FILE ENTRIES                 */
 /* ============================================== */
 
-function addFileEntry(container, file) {
+function addFileEntry(parent, file) {
     const row = document.createElement("div");
     row.className = "sidebar-file-row";
 
-    const label = document.createElement("div");
-    label.className = "sidebar-item";
-    label.textContent = file.display;
-    label.onclick = () => requestFile(file.path);
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+    item.textContent = file.name;
 
     const menu = document.createElement("div");
     menu.className = "file-menu-icon";
-    menu.innerHTML = "⋮";
-    menu.onclick = (e) => {
-        e.stopPropagation();
-        openContextMenu(e, file);
-    };
+    menu.textContent = "⋮";
 
-    row.appendChild(label);
+    // Always load file on click
+    item.onclick = () => loadFile(file.path);
+
+    // Only allow rename/delete for files inside editable dirs
+    if (!canModifyFile(file.path)) {
+        menu.style.display = "none";  // remove kebab menu entirely
+    } else {
+        menu.onclick = (e) => {
+            e.stopPropagation();
+            openContextMenu(e.clientX, e.clientY, file.path);
+        };
+    }
+
+    row.appendChild(item);
     row.appendChild(menu);
-    container.appendChild(row);
+    parent.appendChild(row);
 }
+
 
 
 /* ============================================== */
