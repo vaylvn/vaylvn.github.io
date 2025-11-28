@@ -327,8 +327,9 @@ function addFileEntry(parent, file) {
     } else {
         menu.onclick = (e) => {
 			e.stopPropagation();
-			openContextMenu(e, file.path);
+			openContextMenu(e, file);   // pass the full file object
 		};
+
 
     }
 
@@ -342,15 +343,16 @@ function addFileEntry(parent, file) {
 /*                CONTEXT MENU                    */
 /* ============================================== */
 
-function openContextMenu(event, file) {
+function openContextMenu(e, file) {
     contextFile = file;
 
     const menu = document.getElementById("context-menu");
     menu.classList.remove("hidden");
 
-    menu.style.top = event.clientY + "px";
-    menu.style.left = event.clientX + "px";
+    menu.style.top = e.clientY + "px";
+    menu.style.left = e.clientX + "px";
 }
+
 
 
 window.addEventListener("click", () => {
