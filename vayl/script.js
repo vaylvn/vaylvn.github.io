@@ -310,6 +310,16 @@ function addFileEntry(parent, file) {
 }
 
 
+function loadFile(path) {
+    currentFilePath = path;
+
+    // Request file content from backend
+    socket.send(JSON.stringify({
+        type: "load_file",
+        path: path
+    }));
+}
+
 
 /* ============================================== */
 /*                CONTEXT MENU                    */
@@ -330,9 +340,12 @@ window.addEventListener("click", () => {
 });
 
 function contextRename() {
-    renameFile(contextFile);
+    if (!canModifyFile(contextFile)) return;
+    renameFile();
 }
 
 function contextDelete() {
-    deleteFile(contextFile);
+    if (!canModifyFile(contextFile)) return;
+    deleteFile();
 }
+
