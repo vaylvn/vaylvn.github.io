@@ -214,54 +214,71 @@ function ctxAction(type) {
     const text = model.getValueInRange(range);
     let newText = text;
 
+    // -------------------------------------------
+    // Helper: split left / divider / right
+    // -------------------------------------------
+    function splitDivider(line) {
+        const match = line.match(/^(.*?)(?:\s*([;|])\s*)(.*)$/);
+        if (!match) return null;
+
+        return {
+            left: match[1].trim(),
+            divider: match[2],
+            right: match[3].trim()
+        };
+    }
+
+    // -------------------------------------------
+    // CLEAN: align columns
+    // -------------------------------------------
     if (type === "clean") {
-		const lines = text.split("\n");
+        const lines = text.split("\n");
+        const parsed = lines.map(splitDivider);
 
-		const parsed = lines.map(splitDivider);
+        // Bail out if any line doesn't contain a divider
+        if (parsed.some(p => p === null)) {
+            hideEditorContextMenu();
+            return;
+        }
 
-		// If any line doesn't contain a divider, skip formatting entirely
-		if (parsed.some(p => p === null)) {
-			newText = text;
-			break;
-		}
+        // Find the widest left part
+        const maxLeft = Math.max(...parsed.map(p => p.left.length));
 
-		// Determine the max left width for alignment
-		const maxLeft = Math.max(...parsed.map(p => p.left.length));
+        newText = parsed
+            .map(p => {
+                const leftPadded = p.left.padEnd(maxLeft, " ");
+                return `${leftPadded} ${p.divider} ${p.right}`;
+            })
+            .join("\n");
+    }
 
-		newText = parsed
-			.map(p => {
-				const leftPadded = p.left.padEnd(maxLeft, " ");
-				return `${leftPadded} ${p.divider} ${p.right}`;
-			})
-			.join("\n");
-
-		break;
-	}
-
-
+    // -------------------------------------------
+    // COMPACT: enforce " X ; Y " spacing
+    // -------------------------------------------
     if (type === "compact") {
-		const lines = text.split("\n");
+        const lines = text.split("\n");
+        const parsed = lines.map(splitDivider);
 
-		const parsed = lines.map(splitDivider);
+        if (parsed.some(p => p === null)) {
+            hideEditorContextMenu();
+            return;
+        }
 
-		if (parsed.some(p => p === null)) {
-			newText = text;
-			break;
-		}
+        newText = parsed
+            .map(p => `${p.left} ${p.divider} ${p.right}`)
+            .join("\n");
+    }
 
-		newText = parsed
-			.map(p => `${p.left} ${p.divider} ${p.right}`)
-			.join("\n");
-
-		break;
-	}
-
-
+    // -------------------------------------------
+    // HIGHLIGHT: unchanged
+    // -------------------------------------------
     if (type === "highlight") {
-        // simple marker wrapper – change to whatever you want
         newText = `<<${text}>>`;
     }
 
+    // -------------------------------------------
+    // APPLY EDIT
+    // -------------------------------------------
     model.pushEditOperations([], [
         { range, text: newText }
     ], () => null);
@@ -269,17 +286,6 @@ function ctxAction(type) {
     hideEditorContextMenu();
 }
 
-function splitDivider(line) {
-    // match either `;` or `|`
-    const match = line.match(/(.*?)(?:\s*[;|]\s*)(.*)/);
-    if (!match) return null;
-
-    return {
-        left: match[1].trim(),
-        right: match[2].trim(),
-        divider: line.includes(";") ? ";" : "|"
-    };
-}
 
 
 
