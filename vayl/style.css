@@ -136,7 +136,8 @@ body {
 .sidebar-item {
     padding: 5px 10px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 2px;
+	border-left: solid white 3px;
     transition: background 0.15s;
 }
 
