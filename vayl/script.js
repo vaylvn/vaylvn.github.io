@@ -154,16 +154,19 @@ function initMonaco() {
 				{ token: "key", foreground: "6EC1FF", fontStyle: "bold" },
 
 				// Values (general)
-				{ token: "string.value.yaml", foreground: "E0B070" },
+				{ token: "string.value.yaml", foreground: "e3e3e3" },
 				
 				// Tags: [counter:x], [text:y]
-				{ token: "string", foreground: "FFA75D" },
+				{ token: "string", foreground: "e3e3e3" },
 
 				// Numbers
-				{ token: "number", foreground: "FFCC66" },
+				{ token: "number", foreground: "e3e3e3" },
 
-				// Booleans
-				{ token: "keyword", foreground: "FF6F6F", fontStyle: "bold" },
+				{ token: "keyword.yaml", foreground: "a8ff66", fontStyle: "bold", regex: "\\btrue\\b" },
+				{ token: "keyword.yaml", foreground: "ff7066", fontStyle: "bold", regex: "\\bfalse\\b" },
+
+
+
 
 				// Punctuation
 				{ token: "delimiter", foreground: "888888" },
