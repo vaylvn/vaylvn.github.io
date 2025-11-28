@@ -215,17 +215,47 @@ function ctxAction(type) {
     let newText = text;
 
     if (type === "clean") {
-        // collapse whitespace
-        newText = text.replace(/\s+/g, " ").trim();
-    }
+		const lines = text.split("\n");
+
+		const parsed = lines.map(splitDivider);
+
+		// If any line doesn't contain a divider, skip formatting entirely
+		if (parsed.some(p => p === null)) {
+			newText = text;
+			break;
+		}
+
+		// Determine the max left width for alignment
+		const maxLeft = Math.max(...parsed.map(p => p.left.length));
+
+		newText = parsed
+			.map(p => {
+				const leftPadded = p.left.padEnd(maxLeft, " ");
+				return `${leftPadded} ${p.divider} ${p.right}`;
+			})
+			.join("\n");
+
+		break;
+	}
+
 
     if (type === "compact") {
-        // trim each line and join with no newlines
-        newText = text
-            .split("\n")
-            .map(line => line.trim())
-            .join("");
-    }
+		const lines = text.split("\n");
+
+		const parsed = lines.map(splitDivider);
+
+		if (parsed.some(p => p === null)) {
+			newText = text;
+			break;
+		}
+
+		newText = parsed
+			.map(p => `${p.left} ${p.divider} ${p.right}`)
+			.join("\n");
+
+		break;
+	}
+
 
     if (type === "highlight") {
         // simple marker wrapper – change to whatever you want
@@ -237,6 +267,18 @@ function ctxAction(type) {
     ], () => null);
 
     hideEditorContextMenu();
+}
+
+function splitDivider(line) {
+    // match either `;` or `|`
+    const match = line.match(/(.*?)(?:\s*[;|]\s*)(.*)/);
+    if (!match) return null;
+
+    return {
+        left: match[1].trim(),
+        right: match[2].trim(),
+        divider: line.includes(";") ? ";" : "|"
+    };
 }
 
 
