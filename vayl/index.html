@@ -52,6 +52,10 @@
             <button class="editor-btn danger" onclick="deleteFile()">Delete</button>
         </div>
         <div id="editor"></div>
+		<div id="tag-panel" class="hidden">
+			<input id="tag-search" placeholder="Search tags..." oninput="filterTagList()">
+			<div id="tag-list"></div>
+		</div>
 		<div id="tag-toggle-btn" onclick="toggleTagPanel()">Tags</div>
     </div>
 
@@ -76,10 +80,7 @@
 
 
 
-<div id="tag-panel" class="hidden">
-    <input id="tag-search" placeholder="Search tags..." oninput="filterTagList()">
-    <div id="tag-list"></div>
-</div>
+
 
 
 <script src="script.js"></script>
