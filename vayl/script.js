@@ -54,10 +54,15 @@ function handleWebSocketMessage(msg) {
         }
 
     } catch {
-        // Plain console log
-        appendToConsole(msg);
+        // Non-JSON messages become console entries
+        if (msg.toLowerCase().includes("error")) {
+            logMessage("error", "Error", msg);
+        } else {
+            logMessage("info", "Console", msg);
+        }
     }
 }
+
 
 
 /* ============================================== */
