@@ -162,10 +162,8 @@ function initMonaco() {
 				// Numbers
 				{ token: "number", foreground: "e3e3e3" },
 
-				{ token: "keyword.yaml.true", foreground: "a8ff66", fontStyle: "bold" },
-				{ token: "keyword.yaml.false", foreground: "ff7066", fontStyle: "bold" },
-
-
+				// Booleans
+				{ token: "keyword", foreground: "ffc766", fontStyle: "bold" },
 
 				// Punctuation
 				{ token: "delimiter", foreground: "888888" },
@@ -197,6 +195,7 @@ function initMonaco() {
 			language: "yaml",
 			theme: "vayl-dark",   // <── use your theme
 			automaticLayout: true,
+			contextmenu: false,
 			minimap: { enabled: false },
 			fontFamily: "JetBrains Mono, monospace",
 			fontSize: 14,
