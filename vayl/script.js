@@ -141,15 +141,65 @@ function initMonaco() {
     });
 
     require(["vs/editor/editor.main"], function () {
+		
+		
+		monaco.editor.defineTheme("vayl-dark", {
+			base: "vs-dark",
+			inherit: true,
+			rules: [
+				// Base text
+				{ token: "", foreground: "C7C7C7" },
+
+				// YAML keys
+				{ token: "key", foreground: "6EC1FF", fontStyle: "bold" },
+
+				// Values (general)
+				{ token: "string.value.yaml", foreground: "E0B070" },
+				
+				// Tags: [counter:x], [text:y]
+				{ token: "string", foreground: "FFA75D" },
+
+				// Numbers
+				{ token: "number", foreground: "FFCC66" },
+
+				// Booleans
+				{ token: "keyword", foreground: "FF6F6F", fontStyle: "bold" },
+
+				// Punctuation
+				{ token: "delimiter", foreground: "888888" },
+
+				// Comments
+				{ token: "comment", foreground: "555555", fontStyle: "italic" },
+
+				// Special: internal keyword or action type
+				{ token: "type.identifier", foreground: "00E6CC" },
+			],
+			colors: {
+				"editor.background": "#0D0D0D",
+				"editor.foreground": "#C7C7C7",
+				"editorLineNumber.foreground": "#444444",
+				"editor.lineHighlightBackground": "#1A1A1A",
+				"editorCursor.foreground": "#4FDFFF",
+				"editor.selectionBackground": "#224E5A",
+				"editorIndentGuide.background": "#1F1F1F",
+				"editorIndentGuide.activeBackground": "#3A3A3A"
+			}
+		});
+
+		
+		
+		
+		
         editor = monaco.editor.create(document.getElementById("editor"), {
-            value: "",
-            language: "yaml",
-            theme: "vs-dark",
-            automaticLayout: true,
-            contextmenu: false,   // disable Monaco's built-in menu
-            minimap: { enabled: false },
-            fontSize: 14
-        });
+			value: "",
+			language: "yaml",
+			theme: "vayl-dark",   // <── use your theme
+			automaticLayout: true,
+			minimap: { enabled: false },
+			fontFamily: "JetBrains Mono, monospace",
+			fontSize: 14,
+		});
+
 
         monacoLoaded = true;
         setTimeout(() => editor.layout(), 50);
