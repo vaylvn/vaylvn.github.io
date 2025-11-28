@@ -162,9 +162,8 @@ function initMonaco() {
 				// Numbers
 				{ token: "number", foreground: "e3e3e3" },
 
-				{ token: "keyword.yaml", foreground: "a8ff66", fontStyle: "bold", regex: "\\btrue\\b" },
-				{ token: "keyword.yaml", foreground: "ff7066", fontStyle: "bold", regex: "\\bfalse\\b" },
-
+				{ token: "keyword.yaml.true", foreground: "a8ff66", fontStyle: "bold" },
+				{ token: "keyword.yaml.false", foreground: "ff7066", fontStyle: "bold" },
 
 
 
