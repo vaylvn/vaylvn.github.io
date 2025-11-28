@@ -253,31 +253,27 @@ body {
 
 
 
-
-#selection-toolbar {
+#editor-context-menu {
     position: absolute;
     background: #222;
     border: 1px solid #444;
-    padding: 4px 6px;
+    padding: 4px 0;
     border-radius: 4px;
-    display: flex;
-    gap: 4px;
-    z-index: 9999;
+    z-index: 99999;
+    width: 140px;
 }
 
-#selection-toolbar.hidden {
+#editor-context-menu.hidden {
     display: none !important;
 }
 
-#selection-toolbar button {
-    background: #333;
-    border: none;
-    color: white;
-    padding: 3px 6px;
+#editor-context-menu div {
+    padding: 6px 10px;
+    color: #fff;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
 }
 
-#selection-toolbar button:hover {
-    background: #555;
+#editor-context-menu div:hover {
+    background: #444;
 }
