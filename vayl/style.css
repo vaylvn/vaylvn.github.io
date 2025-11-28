@@ -253,12 +253,31 @@ body {
 
 
 
-#selection-tools {
+
+#selection-toolbar {
     position: absolute;
     background: #222;
     border: 1px solid #444;
-    padding: 6px 10px;
+    padding: 4px 6px;
     border-radius: 4px;
-    display: none;
-    z-index: 5000;
+    display: flex;
+    gap: 4px;
+    z-index: 9999;
+}
+
+#selection-toolbar.hidden {
+    display: none !important;
+}
+
+#selection-toolbar button {
+    background: #333;
+    border: none;
+    color: white;
+    padding: 3px 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#selection-toolbar button:hover {
+    background: #555;
 }

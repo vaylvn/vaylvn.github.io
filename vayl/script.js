@@ -149,7 +149,104 @@ function initMonaco() {
         monacoLoaded = true;
         setTimeout(() => editor.layout(), 50);
     });
+	
+	
+	editor.onDidChangeCursorSelection(updateSelectionToolbar);
+
+	
 }
+
+
+
+
+
+function updateSelectionToolbar() {
+    const sel = editor.getSelection();
+    if (!sel || sel.isEmpty()) {
+        hideSelectionToolbar();
+        return;
+    }
+
+    const range = new monaco.Range(
+        sel.startLineNumber,
+        sel.startColumn,
+        sel.endLineNumber,
+        sel.endColumn
+    );
+
+    const selectedText = editor.getModel().getValueInRange(range);
+
+    // empty selection? hide
+    if (!selectedText.trim()) {
+        hideSelectionToolbar();
+        return;
+    }
+
+    // position
+    const start = editor.getScrolledVisiblePosition({ lineNumber: sel.startLineNumber, column: sel.startColumn });
+    if (!start) {
+        hideSelectionToolbar();
+        return;
+    }
+
+    const toolbar = document.getElementById("selection-toolbar");
+    toolbar.classList.remove("hidden");
+
+    // Position just above the selected text
+    toolbar.style.left = (start.left + 20) + "px";
+    toolbar.style.top = (start.top - 35) + "px";
+}
+
+function hideSelectionToolbar() {
+    document.getElementById("selection-toolbar").classList.add("hidden");
+}
+
+function toolbarAction(type) {
+    const sel = editor.getSelection();
+    if (!sel || sel.isEmpty()) return;
+
+    const model = editor.getModel();
+    const range = new monaco.Range(
+        sel.startLineNumber,
+        sel.startColumn,
+        sel.endLineNumber,
+        sel.endColumn
+    );
+
+    let text = model.getValueInRange(range);
+    let newText = text;
+
+    if (type === "clean") {
+        newText = text.replace(/\s+/g, " ").trim();
+    }
+
+    if (type === "compact") {
+        newText = text
+            .split("\n")
+            .map(l => l.trim())
+            .join("");
+    }
+
+    if (type === "highlight") {
+        newText = `<<${text}>>`;  // placeholder style
+    }
+
+    model.pushEditOperations([], [
+        { range: range, text: newText }
+    ], () => null);
+
+    hideSelectionToolbar();
+}
+
+
+
+
+
+
+
+
+
+
 
 
 /* ============================================== */

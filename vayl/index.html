@@ -65,12 +65,13 @@
     <div onclick="contextDelete()">Delete</div>
 </div>
 
-<input type="color" id="highlight-color-picker" style="display:none;">
-<div id="selection-tools">
-    <button onclick="formatClean()">Clean</button>
-    <button onclick="formatCompact()">Compact</button>
-    <button onclick="openHighlightPicker()">Highlight</button>
+
+<div id="selection-toolbar" class="hidden">
+    <button onclick="toolbarAction('clean')">Clean</button>
+    <button onclick="toolbarAction('compact')">Compact</button>
+    <button onclick="toolbarAction('highlight')">Highlight</button>
 </div>
+
 
 
 
