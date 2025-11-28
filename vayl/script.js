@@ -304,15 +304,36 @@ function ctxAction(type) {
     // COMPACT
     // ---------------------------------------------------------------------
     if (type === "compact") {
-        const lines = text.split("\n");
-        const parsed = lines.map(splitDivider);
+		const lines = text.split("\n");
 
-        newText = lines.map((line, i) => {
-            const p = parsed[i];
-            if (!p) return line;
-            return `${p.indent}${p.left} ${p.divider} ${p.right}`;
-        }).join("\n");
-    }
+		newText = lines.map(line => {
+			if (!line.trim() || line.trim().startsWith("#")) return line;
+
+			const indent = line.match(/^\s*/)[0];
+
+			// Split into parts (left/right/etc)
+			const parts = line.split(/;|\|/).map(p => p.trim());
+
+			// Capture original dividers in order
+			const dividers = [...line.matchAll(/([;|])/g)].map(m => m[1]);
+
+			// If no dividers → leave unchanged
+			if (!dividers.length) return line;
+
+			// Rebuild with normalized spacing
+			let out = indent;
+
+			parts.forEach((part, idx) => {
+				out += part;
+				if (dividers[idx]) {
+					out += " " + dividers[idx] + " ";
+				}
+			});
+
+			return out;
+		}).join("\n");
+	}
+
 
     // ---------------------------------------------------------------------
     // HIGHLIGHT (unchanged)
@@ -331,6 +352,113 @@ function ctxAction(type) {
 
 
 
+
+
+
+// ===========================
+//        TAG SYSTEM
+// ===========================
+
+const TAGS = {
+    global: [
+        { tag: "[g:user]", desc: "Name of the user who triggered the event" },
+        { tag: "[g:time]", desc: "Current system time" },
+        { tag: "[g:rfollower]", desc: "Random follower" },
+        { tag: "[g:channel]", desc: "The channel name" }
+    ],
+
+    events: {
+        raid: [
+            { tag: "[e:viewers]", desc: "Number of viewers in the raid" },
+            { tag: "[e:raider]", desc: "Name of the raiding streamer" }
+        ],
+        follow: [
+            { tag: "[e:follower]", desc: "Name of the follower" }
+        ],
+        redemption: [
+            { tag: "[e:reward]", desc: "Name of the channel point reward" },
+            { tag: "[e:message]", desc: "User message for the reward" }
+        ]
+    }
+};
+
+function getEventNameFromPath(path) {
+    if (!path) return null;
+
+    const file = path.split("/").pop();
+    if (!file.endsWith(".yml")) return null;
+
+    return file.replace(".yml", "");
+}
+
+function buildTagList() {
+    const list = document.getElementById("tag-list");
+    list.innerHTML = "";
+
+    const eventName = getEventNameFromPath(currentFilePath);
+
+    // Global tags
+    list.innerHTML += `<div class="tag-header">Global Tags</div>`;
+    TAGS.global.forEach(t => {
+        list.innerHTML += `
+            <div class="tag-item" data-tag="${t.tag}" title="${t.desc}"
+                 onclick="insertTag('${t.tag}')">${t.tag}</div>
+        `;
+    });
+
+    // Event tags (if applicable)
+    if (eventName && TAGS.events[eventName]) {
+        list.innerHTML += `<div class="tag-header">Event Tags (${eventName})</div>`;
+
+        TAGS.events[eventName].forEach(t => {
+            list.innerHTML += `
+                <div class="tag-item" data-tag="${t.tag}" title="${t.desc}"
+                     onclick="insertTag('${t.tag}')">${t.tag}</div>
+            `;
+        });
+    }
+}
+
+function insertTag(tag) {
+    editor.focus();
+    editor.trigger("tagInsert", "type", { text: tag });
+}
+
+function filterTagList() {
+    const search = document.getElementById("tag-search").value.toLowerCase();
+    const items = document.querySelectorAll("#tag-list .tag-item");
+
+    items.forEach(item => {
+        const tag = item.dataset.tag.toLowerCase();
+        item.style.display = tag.includes(search) ? "block" : "none";
+    });
+}
+
+
+
+window.addEventListener("click", (e) => {
+    const panel = document.getElementById("tag-panel");
+    const toggle = document.getElementById("tag-toggle-btn");
+
+    if (!panel.contains(e.target) && e.target !== toggle) {
+        panel.classList.remove("open");
+    }
+});
+
+
+
+function toggleTagPanel() {
+    const panel = document.getElementById("tag-panel");
+
+    // First-time build or rebuild of list
+    buildTagList();
+
+    if (panel.classList.contains("open")) {
+        panel.classList.remove("open");
+    } else {
+        panel.classList.add("open");
+    }
+}
 
 
 

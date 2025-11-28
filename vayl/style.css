@@ -278,3 +278,59 @@ body {
     background: #444;
 }
 
+
+
+
+
+#tag-toggle-btn {
+    position: absolute;
+    right: 0;
+    top: 100px;
+    width: 28px;
+    padding: 6px 0;
+    background: #2b2b2b;
+    color: #ccc;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    cursor: pointer;
+    border-left: 1px solid #444;
+    border-radius: 6px 0 0 6px;
+    z-index: 15000;
+    font-size: 12px;
+    user-select: none;
+    opacity: 0.7;
+    transition: opacity 0.1s, background 0.15s;
+}
+
+#tag-toggle-btn:hover {
+    opacity: 1;
+    background: #3a3a3a;
+    color: #fff;
+}
+
+#tag-panel {
+    position: absolute;
+    top: 60px;
+    right: -300px;  /* hidden offscreen */
+    width: 260px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 6px 0 0 6px;
+    padding: 10px;
+    z-index: 20000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: right 0.20s ease-out;
+}
+
+#tag-panel.open {
+    right: 20px;  /* Slide in */
+}
+
+#tag-panel.hidden {
+    display: none; /* safety fallback */
+}
+
