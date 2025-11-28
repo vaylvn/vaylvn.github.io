@@ -642,3 +642,27 @@ function contextRename() {
 function contextDelete() {
     deleteFile(contextFile);
 }
+
+
+
+
+function logMessage(type, header, detail) {
+    const out = document.getElementById("console-output");
+
+    const card = document.createElement("div");
+    card.className = `log-card log-${type}`;
+
+    const h = document.createElement("div");
+    h.className = "log-header";
+    h.textContent = header;
+
+    const d = document.createElement("div");
+    d.className = "log-detail";
+    d.textContent = detail;
+
+    card.appendChild(h);
+    card.appendChild(d);
+
+    out.appendChild(card);
+    out.scrollTop = out.scrollHeight;
+}
