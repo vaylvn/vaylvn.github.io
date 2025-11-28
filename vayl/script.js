@@ -7,6 +7,10 @@ let editor = null;
 let monacoLoaded = false;
 let currentFilePath = null;
 let contextFile = null;
+let currentSelection = null;
+
+let HL_META = JSON.parse(localStorage.getItem("vayl_highlights") || "{}");
+let highlightDecorations = [];
 
 
 /* ============================================== */
@@ -50,11 +54,11 @@ function handleWebSocketMessage(msg) {
         // File content
         if (data.type === "file") {
             handleFileContent(data.content);
+            redrawHighlights(currentFilePath);
             return;
         }
 
     } catch {
-        // Plain console log
         appendToConsole(msg);
     }
 }
@@ -125,7 +129,6 @@ function switchMode(mode) {
 
 function initMonaco() {
     if (monacoLoaded) {
-        // Already created, just resize it
         setTimeout(() => editor.layout(), 50);
         return;
     }
@@ -147,7 +150,30 @@ function initMonaco() {
         });
 
         monacoLoaded = true;
+        initSelectionTools();
         setTimeout(() => editor.layout(), 50);
+    });
+}
+
+
+/* ============================================== */
+/*         SAFE SELECTION TOOL INITIALISER        */
+/* ============================================== */
+
+function initSelectionTools() {
+    if (!editor) return;
+
+    editor.onDidChangeCursorSelection(e => {
+        const sel = e.selection;
+        const start = sel.startLineNumber;
+        const end = sel.endLineNumber;
+
+        if (start === end) {
+            hideSelectionTools();
+            return;
+        }
+
+        showSelectionTools(start, end);
     });
 }
 
@@ -165,12 +191,19 @@ function requestFile(path) {
     }));
 }
 
+function loadFile(path) {
+    currentFilePath = path;
+
+    socket.send(JSON.stringify({
+        type: "load_file",
+        path: path
+    }));
+}
+
 function handleFileContent(content) {
     document.getElementById("editor-toolbar").style.display = "flex";
 
     editor.setValue(content);
-
-    // Ensure visible in case the panel resized
     setTimeout(() => editor.layout(), 50);
 }
 
@@ -184,11 +217,11 @@ function saveFile() {
     }));
 }
 
-function renameFile(fileObj) {
+function renameFile() {
     alert("Rename dialog coming soon.");
 }
 
-function deleteFile(fileObj) {
+function deleteFile() {
     alert("Delete dialog coming soon.");
 }
 
@@ -246,15 +279,10 @@ function buildSidebar(root) {
     });
 }
 
-
-
 const EDITABLE_DIRS = ["variables", "conditionals", "actionpacks"];
-
 function canModifyFile(path) {
     return EDITABLE_DIRS.some(dir => path.startsWith(dir + "/"));
 }
-
-
 
 function toggleAccordion(header, content) {
     const isOpen = content.style.display === "block";
@@ -291,16 +319,14 @@ function addFileEntry(parent, file) {
     menu.className = "file-menu-icon";
     menu.textContent = "⋮";
 
-    // Always load file on click
     item.onclick = () => loadFile(file.path);
 
-    // Only allow rename/delete for files inside editable dirs
     if (!canModifyFile(file.path)) {
-        menu.style.display = "none";  // remove kebab menu entirely
+        menu.style.display = "none";
     } else {
         menu.onclick = (e) => {
             e.stopPropagation();
-            openContextMenu(e.clientX, e.clientY, file.path);
+            openContextMenu(e.clientY, file.path);
         };
     }
 
@@ -310,36 +336,38 @@ function addFileEntry(parent, file) {
 }
 
 
-function loadFile(path) {
-    currentFilePath = path;
-
-    // Request file content from backend
-    socket.send(JSON.stringify({
-        type: "load_file",
-        path: path
-    }));
-}
-
-
 /* ============================================== */
 /*                CONTEXT MENU                    */
 /* ============================================== */
 
+function openContextMenu(y, file) {
+    contextFile = file;
 
+    const menu = document.getElementById("context-menu");
+    menu.classList.remove("hidden");
 
-editor.onDidChangeCursorSelection(e => {
-    const sel = e.selection;
-    const start = sel.startLineNumber;
-    const end = sel.endLineNumber;
+    menu.style.top = y + "px";
+    menu.style.left = "180px";
+}
 
-    // Hide if no meaningful selection
-    if (start === end) {
-        hideSelectionTools();
-        return;
-    }
-
-    showSelectionTools(start, end);
+window.addEventListener("click", () => {
+    document.getElementById("context-menu").classList.add("hidden");
 });
+
+function contextRename() {
+    if (!canModifyFile(contextFile)) return;
+    renameFile();
+}
+
+function contextDelete() {
+    if (!canModifyFile(contextFile)) return;
+    deleteFile();
+}
+
+
+/* ============================================== */
+/*           SELECTION TOOL POPUP UI              */
+/* ============================================== */
 
 function showSelectionTools(startLine, endLine) {
     const pos = editor.getScrolledVisiblePosition({ lineNumber: startLine, column: 1 });
@@ -357,6 +385,10 @@ function hideSelectionTools() {
 }
 
 
+/* ============================================== */
+/*                 CLEAN FORMAT                   */
+/* ============================================== */
+
 function formatClean() {
     const { startLine, endLine } = currentSelection;
 
@@ -365,17 +397,14 @@ function formatClean() {
         lines.push(editor.getModel().getLineContent(i));
     }
 
-    // Split each line by separators
     const parsed = lines.map(line => {
         const trimmed = line.trim();
         if (!trimmed.startsWith("-")) return { raw: line };
 
-        // Accept both ; and |
         let parts = trimmed.slice(1).split(/;|\|/g).map(p => p.trim());
         return { parts, indent: line.search(/\S/) };
     });
 
-    // Determine max widths for each column
     const colWidths = [];
     parsed.forEach(p => {
         if (!p.parts) return;
@@ -384,7 +413,6 @@ function formatClean() {
         });
     });
 
-    // Rebuild the lines
     const rebuilt = parsed.map(p => {
         if (!p.parts) return p.raw;
 
@@ -395,14 +423,19 @@ function formatClean() {
         return " ".repeat(p.indent) + "- " + aligned;
     });
 
-    // Replace text in editor
     editor.executeEdits(null, [{
-        range: new monaco.Range(startLine, 1, endLine, editor.getModel().getLineMaxColumn(endLine)),
+        range: new monaco.Range(startLine, 1, endLine,
+            editor.getModel().getLineMaxColumn(endLine)),
         text: rebuilt.join("\n")
     }]);
 
     hideSelectionTools();
 }
+
+
+/* ============================================== */
+/*               COMPACT FORMAT                   */
+/* ============================================== */
 
 function formatCompact() {
     const { startLine, endLine } = currentSelection;
@@ -424,12 +457,18 @@ function formatCompact() {
     }
 
     editor.executeEdits(null, [{
-        range: new monaco.Range(startLine, 1, endLine, editor.getModel().getLineMaxColumn(endLine)),
+        range: new monaco.Range(startLine, 1, endLine,
+            editor.getModel().getLineMaxColumn(endLine)),
         text: lines.join("\n")
     }]);
 
     hideSelectionTools();
 }
+
+
+/* ============================================== */
+/*               HIGHLIGHT COLOR PICKER           */
+/* ============================================== */
 
 function openHighlightPicker() {
     const picker = document.getElementById("highlight-color-picker");
@@ -439,11 +478,13 @@ function openHighlightPicker() {
         applyHighlightToSelection(color);
     };
 
-    picker.click(); // Opens the native color picker
+    picker.click();
 }
 
-let HL_META = JSON.parse(localStorage.getItem("vayl_highlights") || "{}");
-let highlightDecorations = [];
+
+/* ============================================== */
+/*                  HIGHLIGHTING                  */
+/* ============================================== */
 
 function applyHighlightToSelection(color) {
     const file = currentFilePath;
@@ -466,11 +507,6 @@ function redrawHighlights(file) {
         range: new monaco.Range(Number(line), 1, Number(line), 1),
         options: {
             isWholeLine: true,
-            inlineClassName: '', // not needed but must exist
-            linesDecorationsClassName: '', // not needed but must exist
-            className: '',
-
-            // THIS is the magic:
             beforeContentClassName: 'dynamic-hl-' + Number(line)
         }
     }));
@@ -500,30 +536,3 @@ function injectDynamicHighlightCSS(meta) {
 
     style.innerHTML = css;
 }
-
-
-
-function openContextMenu(e, file) {
-    contextFile = file;
-
-    const menu = document.getElementById("context-menu");
-    menu.classList.remove("hidden");
-
-    menu.style.top = e.clientY + "px";
-    menu.style.left = e.clientX + "px";
-}
-
-window.addEventListener("click", () => {
-    document.getElementById("context-menu").classList.add("hidden");
-});
-
-function contextRename() {
-    if (!canModifyFile(contextFile)) return;
-    renameFile();
-}
-
-function contextDelete() {
-    if (!canModifyFile(contextFile)) return;
-    deleteFile();
-}
-
