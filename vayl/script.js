@@ -194,6 +194,8 @@ window.addEventListener("click", () => {
     hideEditorContextMenu();
 });
 
+
+
 function ctxAction(type) {
     if (!editor) return;
 
@@ -203,82 +205,87 @@ function ctxAction(type) {
         return;
     }
 
+    // Normalise range so Monaco never rejects edit
+    const startLine = Math.min(selection.startLineNumber, selection.endLineNumber);
+    const endLine   = Math.max(selection.startLineNumber, selection.endLineNumber);
+
+    const startCol = selection.startLineNumber < selection.endLineNumber
+        ? selection.startColumn
+        : selection.endColumn;
+
+    const endCol = selection.startLineNumber < selection.endLineNumber
+        ? selection.endColumn
+        : selection.startColumn;
+
+    const range = new monaco.Range(startLine, startCol, endLine, endCol);
+
     const model = editor.getModel();
-    const range = new monaco.Range(
-        selection.startLineNumber,
-        selection.startColumn,
-        selection.endLineNumber,
-        selection.endColumn
-    );
-
     const text = model.getValueInRange(range);
-    let newText = text;
 
-    // -------------------------------------------
-    // Helper: split left / divider / right
-    // -------------------------------------------
+    // ---------------------------------------------------------------------
+    // Splitter that safely handles whitespace, blank lines, and indentation
+    // ---------------------------------------------------------------------
     function splitDivider(line) {
+        if (!line.trim()) return null;
+        if (line.trim().startsWith("#")) return null;
+
         const match = line.match(/^(.*?)(?:\s*([;|])\s*)(.*)$/);
+
         if (!match) return null;
 
         return {
+            indent: match[1].match(/^\s*/)[0],
             left: match[1].trim(),
             divider: match[2],
             right: match[3].trim()
         };
     }
 
-    // -------------------------------------------
-    // CLEAN: align columns
-    // -------------------------------------------
+    let newText = text;
+
+    // ---------------------------------------------------------------------
+    // CLEAN
+    // ---------------------------------------------------------------------
     if (type === "clean") {
         const lines = text.split("\n");
+
         const parsed = lines.map(splitDivider);
 
-        // Bail out if any line doesn't contain a divider
-        if (parsed.some(p => p === null)) {
-            hideEditorContextMenu();
-            return;
-        }
+        // Find max left-column width among valid lines only
+        const leftWidths = parsed.filter(p => p).map(p => p.left.length);
+        const maxLeft = leftWidths.length ? Math.max(...leftWidths) : 0;
 
-        // Find the widest left part
-        const maxLeft = Math.max(...parsed.map(p => p.left.length));
+        newText = lines.map((line, i) => {
+            const p = parsed[i];
+            if (!p) return line; // leave blank/comment/invalid lines unchanged
 
-        newText = parsed
-            .map(p => {
-                const leftPadded = p.left.padEnd(maxLeft, " ");
-                return `${leftPadded} ${p.divider} ${p.right}`;
-            })
-            .join("\n");
+            const leftPadded = p.left.padEnd(maxLeft, " ");
+            return `${p.indent}${leftPadded} ${p.divider} ${p.right}`;
+        }).join("\n");
     }
 
-    // -------------------------------------------
-    // COMPACT: enforce " X ; Y " spacing
-    // -------------------------------------------
+    // ---------------------------------------------------------------------
+    // COMPACT
+    // ---------------------------------------------------------------------
     if (type === "compact") {
         const lines = text.split("\n");
         const parsed = lines.map(splitDivider);
 
-        if (parsed.some(p => p === null)) {
-            hideEditorContextMenu();
-            return;
-        }
-
-        newText = parsed
-            .map(p => `${p.left} ${p.divider} ${p.right}`)
-            .join("\n");
+        newText = lines.map((line, i) => {
+            const p = parsed[i];
+            if (!p) return line;
+            return `${p.indent}${p.left} ${p.divider} ${p.right}`;
+        }).join("\n");
     }
 
-    // -------------------------------------------
-    // HIGHLIGHT: unchanged
-    // -------------------------------------------
+    // ---------------------------------------------------------------------
+    // HIGHLIGHT (unchanged)
+    // ---------------------------------------------------------------------
     if (type === "highlight") {
         newText = `<<${text}>>`;
     }
 
-    // -------------------------------------------
     // APPLY EDIT
-    // -------------------------------------------
     model.pushEditOperations([], [
         { range, text: newText }
     ], () => null);
