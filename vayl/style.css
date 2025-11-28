@@ -329,7 +329,12 @@ body {
 
 
 
-
+#console-panel {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
 
 #console-output {
     display: flex;
@@ -338,7 +343,6 @@ body {
     padding: 10px;
     overflow-y: auto;
     height: 100%;
-	width: 100%;
     background: #111;
 }
 
