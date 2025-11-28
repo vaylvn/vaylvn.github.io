@@ -281,6 +281,7 @@ function buildSidebar(root) {
 
 const EDITABLE_DIRS = ["variables", "conditionals", "actionpacks"];
 function canModifyFile(path) {
+	return true;
     return EDITABLE_DIRS.some(dir => path.startsWith(dir + "/"));
 }
 
