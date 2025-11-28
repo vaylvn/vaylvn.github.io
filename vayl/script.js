@@ -450,15 +450,20 @@ window.addEventListener("click", (e) => {
 function toggleTagPanel() {
     const panel = document.getElementById("tag-panel");
 
-    // First-time build or rebuild of list
     buildTagList();
 
-    if (panel.classList.contains("open")) {
-        panel.classList.remove("open");
-    } else {
+    // If currently hidden → show and slide in
+    if (panel.classList.contains("hidden")) {
+        panel.classList.remove("hidden");
         panel.classList.add("open");
     }
+    // If open → close and hide
+    else {
+        panel.classList.remove("open");
+        panel.classList.add("hidden");
+    }
 }
+
 
 
 
