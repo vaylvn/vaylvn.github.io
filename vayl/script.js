@@ -143,6 +143,24 @@ function initMonaco() {
     require(["vs/editor/editor.main"], function () {
 		
 		
+		monaco.languages.getLanguages().find(l => l.id === "yaml").loader().then((yaml) => {
+
+			// Insert our rules *at the top* so they match before default YAML tokens
+			yaml.tokenizer.root.unshift(
+				// TRUE
+				[/\btrue\b/, "vayl-true"],
+
+				// FALSE
+				[/\bfalse\b/, "vayl-false"],
+
+				// DIVIDERS ( ; or | ) with optional whitespace
+				[/(\s*[;|]\s*)/, "vayl-divider"]
+			);
+
+			// Re-register YAML grammar with our injected tokens
+			monaco.languages.setMonarchTokensProvider("yaml", yaml);
+		});
+		
 		monaco.editor.defineTheme("vayl-dark", {
 			base: "vs-dark",
 			inherit: true,
@@ -150,33 +168,28 @@ function initMonaco() {
 				// Base text
 				{ token: "", foreground: "C7C7C7" },
 
-				// YAML keys
-				{ token: "key", foreground: "6EC1FF", fontStyle: "bold" },
+				// YAML keys (correct token name)
+				{ token: "key.yaml", foreground: "6EC1FF", fontStyle: "bold" },
 
-				// Values (general)
-				{ token: "string.value.yaml", foreground: "e3e3e3" },
-				
-				// Tags: [counter:x], [text:y]
-				{ token: "string", foreground: "e3e3e3" },
+				// Strings
+				{ token: "string.yaml", foreground: "E3E3E3" },
 
 				// Numbers
-				{ token: "number", foreground: "e3e3e3" },
+				{ token: "number.yaml", foreground: "E3E3E3" },
 
-				// Booleans
-				{ token: "keyword", foreground: "ffc766", fontStyle: "bold" },
+				// Booleans (default YAML token)
+				{ token: "keyword", foreground: "FFC766", fontStyle: "bold" },
 
-				// Punctuation
+				// Punctuation (colon, dash)
 				{ token: "delimiter", foreground: "888888" },
 
-				{ token: "vayl-divider", foreground: "8888FF", fontStyle: "bold" },
-				{ token: "vayl-true", foreground: "c2ff66", fontStyle: "bold" },
-				{ token: "vayl-false", foreground: "ff7066", fontStyle: "bold" },
-
 				// Comments
-				{ token: "comment", foreground: "555555", fontStyle: "italic" },
+				{ token: "comment.yaml", foreground: "555555", fontStyle: "italic" },
 
-				// Special: internal keyword or action type
-				{ token: "type.identifier", foreground: "00E6CC" },
+				// Custom Vayl tokens
+				{ token: "vayl-divider", foreground: "8888FF", fontStyle: "bold" },
+				{ token: "vayl-true", foreground: "C2FF66", fontStyle: "bold" },
+				{ token: "vayl-false", foreground: "FF7066", fontStyle: "bold" },
 			],
 			colors: {
 				"editor.background": "#0D0D0D",
@@ -190,29 +203,6 @@ function initMonaco() {
 			}
 		});
 
-		monaco.languages.setTokensProvider("yaml", {
-			tokenizer: {
-				root: [
-					// Strings (single & double quotes)
-					[/"[^"]*"/, "string"],
-					[/'[^']*'/, "string"],
-
-					// TRUE only if not in quotes
-					[/\btrue\b/, "vayl-true"],
-
-					// FALSE only if not in quotes
-					[/\bfalse\b/, "vayl-false"],
-
-					// DIVIDERS ( ; or | ) with optional whitespace around them
-					[/(\s*[;|]\s*)/, "vayl-divider"],
-
-					// fallback to default YAML tokenizer
-					[/.+/, { token: "@rematch", next: "@yaml" }]
-				],
-
-				yaml: monaco.languages.getLanguages().find(l => l.id === "yaml").loader
-			}
-		});
 
 		
 		
