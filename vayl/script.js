@@ -325,6 +325,116 @@ function loadFile(path) {
 /*                CONTEXT MENU                    */
 /* ============================================== */
 
+
+
+editor.onDidChangeCursorSelection(e => {
+    const sel = e.selection;
+    const start = sel.startLineNumber;
+    const end = sel.endLineNumber;
+
+    // Hide if no meaningful selection
+    if (start === end) {
+        hideSelectionTools();
+        return;
+    }
+
+    showSelectionTools(start, end);
+});
+
+function showSelectionTools(startLine, endLine) {
+    const pos = editor.getScrolledVisiblePosition({ lineNumber: startLine, column: 1 });
+    const box = document.getElementById("selection-tools");
+
+    box.style.left = pos.left + "px";
+    box.style.top = (pos.top - 35) + "px";
+    box.style.display = "block";
+
+    currentSelection = { startLine, endLine };
+}
+
+function hideSelectionTools() {
+    document.getElementById("selection-tools").style.display = "none";
+}
+
+
+function formatClean() {
+    const { startLine, endLine } = currentSelection;
+
+    let lines = [];
+    for (let i = startLine; i <= endLine; i++) {
+        lines.push(editor.getModel().getLineContent(i));
+    }
+
+    // Split each line by separators
+    const parsed = lines.map(line => {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("-")) return { raw: line };
+
+        // Accept both ; and |
+        let parts = trimmed.slice(1).split(/;|\|/g).map(p => p.trim());
+        return { parts, indent: line.search(/\S/) };
+    });
+
+    // Determine max widths for each column
+    const colWidths = [];
+    parsed.forEach(p => {
+        if (!p.parts) return;
+        p.parts.forEach((seg, i) => {
+            colWidths[i] = Math.max(colWidths[i] || 0, seg.length);
+        });
+    });
+
+    // Rebuild the lines
+    const rebuilt = parsed.map(p => {
+        if (!p.parts) return p.raw;
+
+        const aligned = p.parts
+            .map((seg, i) => seg.padEnd(colWidths[i]))
+            .join(" | ");
+
+        return " ".repeat(p.indent) + "- " + aligned;
+    });
+
+    // Replace text in editor
+    editor.executeEdits(null, [{
+        range: new monaco.Range(startLine, 1, endLine, editor.getModel().getLineMaxColumn(endLine)),
+        text: rebuilt.join("\n")
+    }]);
+
+    hideSelectionTools();
+}
+
+function formatCompact() {
+    const { startLine, endLine } = currentSelection;
+
+    let lines = [];
+    for (let i = startLine; i <= endLine; i++) {
+        const line = editor.getModel().getLineContent(i);
+
+        if (!line.trim().startsWith("-")) {
+            lines.push(line);
+            continue;
+        }
+
+        const indent = line.search(/\S/);
+        const content = line.trim().slice(1);
+
+        let parts = content.split(/;|\|/g).map(p => p.trim());
+        lines.push(" ".repeat(indent) + "- " + parts.join(" | "));
+    }
+
+    editor.executeEdits(null, [{
+        range: new monaco.Range(startLine, 1, endLine, editor.getModel().getLineMaxColumn(endLine)),
+        text: lines.join("\n")
+    }]);
+
+    hideSelectionTools();
+}
+
+
+
+
+
 function openContextMenu(e, file) {
     contextFile = file;
 

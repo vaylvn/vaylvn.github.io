@@ -249,3 +249,16 @@ body {
 #context-menu div:hover {
     background: #333;
 }
+
+
+
+
+#selection-tools {
+    position: absolute;
+    background: #222;
+    border: 1px solid #444;
+    padding: 6px 10px;
+    border-radius: 4px;
+    display: none;
+    z-index: 5000;
+}
