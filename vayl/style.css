@@ -139,6 +139,22 @@ body {
     margin-left: 0; /* indentation handled by JS padding */
 }
 
+#tree-search {
+    width: 100%;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    background: #1b1b1b;
+    border: 1px solid #2d2d2d;
+    color: #ccc;
+    font-size: 13px;
+}
+
+#tree-search:focus {
+    outline: none;
+    border-color: #3d3d3d;
+}
+
 
 
 

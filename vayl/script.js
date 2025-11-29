@@ -662,6 +662,42 @@ function selectTreeFile(path) {
     });
 }
 
+document.getElementById("tree-search").addEventListener("input", () => {
+    const query = document.getElementById("tree-search").value.toLowerCase();
+
+    const files = document.querySelectorAll(".tree-file");
+    const folders = document.querySelectorAll(".tree-folder");
+
+    // 1. Filter files
+    files.forEach(f => {
+        const text = f.textContent.toLowerCase();
+        const match = text.includes(query);
+
+        f.style.display = match ? "block" : "none";
+
+        // auto‐expand ancestors
+        if (match) {
+            let parent = f.parentElement;
+            while (parent && parent.classList.contains("tree-children")) {
+                parent.style.display = "block";
+                parent = parent.previousSibling; // folder element
+            }
+        }
+    });
+
+    // 2. Hide folders that contain no visible children
+    folders.forEach(folder => {
+        const container = folder.nextElementSibling; // .tree-children
+        if (!container) return;
+
+        const visible = [...container.querySelectorAll(".tree-file, .tree-folder")]
+            .some(el => el.style.display !== "none");
+
+        folder.style.display = visible ? "block" : "none";
+        container.style.display = visible ? "block" : "none";
+    });
+});
+
 
 /* ============================================== */
 
