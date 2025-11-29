@@ -43,23 +43,28 @@ function connectWebSocket(overrideURL = null) {
 }
 
 
-const params = new URLSearchParams(window.location.search);
-const code = params.get("code");
+// Auto-detect connection info from URL (?code=...)
+(function initConnection() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-if (code) {
-    try {
-        const decoded = atob(code); // "ip:port"
-        const [ip, port] = decoded.split(":");
+    if (code) {
+        try {
+            const decoded = atob(code); // "ip:port"
+            const [ip, port] = decoded.split(":");
 
-        console.log("Auto-connecting to:", `ws://${ip}:${port}`);
-        connectWebSocket(`ws://${ip}:${port}`);
-    } catch (err) {
-        console.error("Invalid code:", err);
+            console.log("Auto-connecting to WS:", `ws://${ip}:${port}`);
+            connectWebSocket(`ws://${ip}:${port}`);
+            return;
+        } catch (err) {
+            console.error("Failed to decode WS info from code:", err);
+        }
     }
-} else {
-    // Normal PC behavior
+
+    // No code → normal localhost PC mode
     connectWebSocket("ws://localhost:8765");
-}
+})();
+
 
 
 
