@@ -1,3 +1,22 @@
+// Connect to the SSE stream
+const evt = new EventSource("http://127.0.0.1:5000/spinnerstream");
+
+evt.onmessage = (ev) => {
+    try {
+        const data = JSON.parse(ev.data);
+
+        if (data.cmd === "spin") {
+            console.log("Received spin command from Vayl");
+            startSpin(); // <-- call your actual spin function
+        }
+
+    } catch (e) {
+        console.warn("Bad spinnerstream message:", e);
+    }
+};
+
+
+
 window.addEventListener("DOMContentLoaded", () => {
   const GOOGLE_FONTS = [
     "Roboto","Lato","Poppins","Montserrat","Merriweather",
