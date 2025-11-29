@@ -46,6 +46,16 @@ function connectWebSocket(overrideURL = null) {
     };
 }
 
+(function maybeForceHTTP() {
+    const params = new URLSearchParams(location.search);
+    const hasCode = params.has("code");
+
+    // Only force HTTP if using a QR connection (mobile/tablet use case)
+    if (hasCode && location.protocol === "https:") {
+        location.href = "http://" + location.host + location.pathname + location.search;
+    }
+})();
+
 
 // Auto-detect connection info from URL (?code=...)
 (function initConnection() {
