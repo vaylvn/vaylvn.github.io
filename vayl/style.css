@@ -145,7 +145,7 @@ body {
 }
 
 #tree-search {
-    width: 100%;
+    width: calc(100% - 10px);
     padding: 6px 8px;
     margin-bottom: 8px;
     border-radius: 4px;
@@ -268,7 +268,7 @@ body {
     color: #ddd;
     font-size: 13px;
     cursor: pointer;
-	width: 100%;
+	width: 50%;
 }
 
 .editor-btn:hover {
