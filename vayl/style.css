@@ -359,22 +359,26 @@ body {
 
 
 
-/* Floating panel */
 #tag-float {
     position: absolute;
-    top: 40px;
-    right: 40px;
-    width: 280px;
-    max-height: 70%;
-    background: #1c1c20;
-    border: 1px solid #34343a;
+    top: 60px;
+    right: 20px;
+
+    width: 260px;
+    max-height: 70%;           /* ⬅ keeps panel on screen */
+    overflow-y: auto;          /* ⬅ adds scroll if needed */
+
+    background: #1e1e1e;
+    border: 1px solid #444;
     border-radius: 8px;
-    z-index: 100;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.45);
-    overflow: hidden;
+    gap: 10px;
+
+    z-index: 9000;
 }
+
 
 #tag-float.hidden {
     display: none;

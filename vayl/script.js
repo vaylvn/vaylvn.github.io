@@ -541,16 +541,15 @@ function ctxAction(type) {
 
 const TAGS = {
     generic: [
-        { tag: "[user]", desc: "Name of the user who triggered the event" },
-        { tag: "[g:time]", desc: "Current system time" },
-        { tag: "[g:rfollower]", desc: "Random follower" },
-        { tag: "[g:channel]", desc: "Channel name" }
+        { tag: "[time]", desc: "Current system time" },
+        { tag: "[rfollower]", desc: "Random follower" },
+        { tag: "[channel]", desc: "Channel name" }
     ],
 
     events: {
         raid: [
-            { tag: "[e:viewers]", desc: "Viewer count in the raid" },
-            { tag: "[e:raider]", desc: "Name of the raiding streamer" }
+			{ tag: "[user]", desc: "Name of the user who triggered the event" },
+            { tag: "[viewers]", desc: "Viewer count in the raid" },
         ],
         follow: [
             { tag: "[e:follower]", desc: "Name of the follower" }
@@ -565,7 +564,7 @@ const TAGS = {
 function loadGenericTags() {
     const list = document.getElementById("tag-float-list");
 
-    list.innerHTML += `<div class="tag-section-title">Global</div>`;
+    /* list.innerHTML += `<div class="tag-section-title">Global</div>`; */
 
     TAGS.generic.forEach(t => {
         list.innerHTML += `
