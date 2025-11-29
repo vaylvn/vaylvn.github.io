@@ -103,7 +103,7 @@ body {
     opacity: 0.85;
     user-select: none;
     padding: 4px 0 4px 2px;  /* slightly more vertical space */
-    border-bottom: 1px solid rgba(255,255,255,0.07); /* subtle underline */
+    /* border-bottom: 1px solid rgba(255,255,255,0.07); /* subtle underline */
 }
 .tree-folder:hover {
     opacity: 1;
