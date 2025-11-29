@@ -239,6 +239,15 @@ body {
     flex-direction: column;
 }
 
+#editor-container {
+    flex: 1;
+    background: #1A1A1E;        /* subtle contrast behind editor */
+    border-radius: 8px;          /* nice curvature */
+    padding: 8px;                /* actual breathing room */
+    overflow: hidden;            /* keeps Monaco from spilling out */
+    box-shadow: 0 0 12px rgba(0,0,0,0.3);  /* optional, looks clean */
+}
+
 #editor-toolbar {
     height: 40px;
     background: #222228;

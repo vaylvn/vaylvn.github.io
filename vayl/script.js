@@ -293,7 +293,7 @@ function initMonaco() {
 				{ token: "comment.yaml", foreground: "555555", fontStyle: "italic" }
 			],
 			colors: {
-				"editor.background": "#0D0D0D",
+				"editor.background": "#222228",
 				"editor.foreground": "#C7C7C7",
 				"editorLineNumber.foreground": "#444444",
 				"editor.lineHighlightBackground": "#1A1A1A",
