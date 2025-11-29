@@ -616,7 +616,7 @@ function renderNode(container, node, depth) {
         const el = document.createElement("div");
         el.className = "tree-folder";
         el.style.paddingLeft = indent + "px";
-        el.textContent = "📁" + node.name;
+        el.textContent = "📁 " + node.name;
         container.appendChild(el);
 
         node.children.forEach(child =>
@@ -628,7 +628,7 @@ function renderNode(container, node, depth) {
         const el = document.createElement("div");
         el.className = "tree-file";
         el.style.paddingLeft = indent + "px";
-        el.textContent = node.name.replace(/\.[^.]+$/, "");
+        el.textContent = "📄 " + node.name.replace(/\.[^.]+$/, "");
         el.dataset.path = node.path;
 
         el.onclick = () => {
