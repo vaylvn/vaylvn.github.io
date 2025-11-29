@@ -117,6 +117,17 @@ function closeShareModal() {
     document.getElementById("share-modal").classList.add("hidden");
 }
 
+function generateQR(text) {
+    const canvas = document.getElementById("qr-canvas");
+    const qr = new QRious({
+        element: canvas,
+        value: text,
+        size: 220,
+        background: "#181818",
+        foreground: "#ffffff"
+    });
+}
+
 
 /* ============================================== */
 /*                CONSOLE OUTPUT                  */
