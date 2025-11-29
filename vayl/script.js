@@ -297,8 +297,8 @@ function initMonaco() {
 				"editor.foreground": "#C7C7C7",
 				"editorLineNumber.foreground": "#444444",
 				"editor.lineHighlightBackground": "#1A1A1E",
-				"editorCursor.foreground": "#4FDFFF",
-				"editor.selectionBackground": "#224E5A",
+				"editorCursor.foreground": "#E6E6E6",
+				"editor.selectionBackground": "#83848A",
 				"editorIndentGuide.background": "#1F1F1F",
 				"editorIndentGuide.activeBackground": "#3A3A3A"
 			}
