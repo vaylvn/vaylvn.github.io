@@ -1,6 +1,7 @@
 
 
 
+
 /* ============================================== */
 /*                GLOBAL STATE                    */
 /* ============================================== */
@@ -21,12 +22,14 @@ let serverInfo = null;
 /*                WEBSOCKET SETUP                 */
 /* ============================================== */
 
-function connectWebSocket() {
-    socket = new WebSocket("ws://localhost:8765");
+function connectWebSocket(overrideURL = null) {
+    const wsURL = overrideURL || "ws://localhost:8765";
+
+    socket = new WebSocket(wsURL);
 
     socket.onopen = () => {
         console.log("Connected to backend");
-		logMessage("success", "Connected", "Connected to Vayl");
+        logMessage("success", "Connected", "Connected to Vayl");
     };
 
     socket.onmessage = (event) => {
@@ -35,11 +38,30 @@ function connectWebSocket() {
 
     socket.onclose = () => {
         console.log("Socket closed, retrying...");
-        setTimeout(connectWebSocket, 1500);
+        setTimeout(() => connectWebSocket(overrideURL), 1500);
     };
 }
 
-connectWebSocket();
+
+const params = new URLSearchParams(window.location.search);
+const code = params.get("code");
+
+if (code) {
+    try {
+        const decoded = atob(code); // "ip:port"
+        const [ip, port] = decoded.split(":");
+
+        console.log("Auto-connecting to:", `ws://${ip}:${port}`);
+        connectWebSocket(`ws://${ip}:${port}`);
+    } catch (err) {
+        console.error("Invalid code:", err);
+    }
+} else {
+    // Normal PC behavior
+    connectWebSocket("ws://localhost:8765");
+}
+
+
 
 
 /* ============================================== */
@@ -112,9 +134,15 @@ function openShareModal() {
     const modal = document.getElementById("share-modal");
     modal.classList.remove("hidden");
 
-    const url = `http://${serverInfo.lan_ip}:${serverInfo.port}`;
+    const conn = `${serverInfo.lan_ip}:${serverInfo.port}`;
+    const encoded = btoa(conn); // base64
+
+    const url = `https://widget.vayl.uk/vayl/?code=${encoded}`;
     generateQR(url);
 }
+
+
+
 
 function closeShareModal() {
     document.getElementById("share-modal").classList.add("hidden");
