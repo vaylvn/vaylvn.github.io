@@ -594,6 +594,9 @@ function loadHelpPanel() {
 
 
 function buildSidebar(tree) {
+	
+	console.log("BUILD SIDEBAR CALLED WITH:", tree);
+	
     const sidebar = document.getElementById("sidebar");
     sidebar.innerHTML = "";
     tree.forEach(item => renderNode(sidebar, item, 0));
