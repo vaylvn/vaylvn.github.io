@@ -1,10 +1,4 @@
-// fallback if QRious fails to load from CDN
-if (typeof QRious === "undefined") {
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js";
-    s.onload = () => console.log("QRious loaded dynamically");
-    document.head.appendChild(s);
-}
+
 
 
 /* ============================================== */
@@ -127,15 +121,21 @@ function closeShareModal() {
 }
 
 function generateQR(text) {
-    const canvas = document.getElementById("qr-canvas");
-    const qr = new QRious({
-        element: canvas,
-        value: text,
-        size: 220,
-        background: "#181818",
-        foreground: "#ffffff"
+    const container = document.getElementById("qr-canvas");
+
+    // clear old QR if modal reopened
+    container.innerHTML = "";
+
+    new QRCode(container, {
+        text: text,
+        width: 220,
+        height: 220,
+        colorDark: "#ffffff",
+        colorLight: "#181818",
+        correctLevel: QRCode.CorrectLevel.H
     });
 }
+
 
 
 /* ============================================== */

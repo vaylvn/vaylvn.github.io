@@ -38,11 +38,12 @@
         <h3>Connect Another Device</h3>
         <p>Scan this QR code from your phone/tablet:</p>
 
-        <canvas id="qr-canvas"></canvas>
+        <div id="qr-canvas"></div>
 
         <div id="share-close" onclick="closeShareModal()">Close</div>
     </div>
 </div>
+
 
 
 <!-- ======================= -->
@@ -110,14 +111,9 @@
 
 
 
-<!-- QR code library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"
-        integrity="sha512-QTvX75d0uzr5Yv7FpC18JNpDutZCRa14Q6gttxyPjdvVSxGInx6O2tUqKVsP1qCfr8RNFCi5r6IuwKxwC2Jv0A=="
-        crossorigin="anonymous"
-        referrerpolicy="no-referrer"></script>
-
-<!-- Your app -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="script.js"></script>
+
 
 </body>
 </html>

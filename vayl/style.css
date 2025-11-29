@@ -207,6 +207,11 @@ body {
     background: #444;
 }
 
+#qr-canvas {
+    margin: 10px auto;
+    width: 220px;
+    height: 220px;
+}
 
 
 
