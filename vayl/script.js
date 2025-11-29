@@ -1,3 +1,12 @@
+// fallback if QRious fails to load from CDN
+if (typeof QRious === "undefined") {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js";
+    s.onload = () => console.log("QRious loaded dynamically");
+    document.head.appendChild(s);
+}
+
+
 /* ============================================== */
 /*                GLOBAL STATE                    */
 /* ============================================== */
