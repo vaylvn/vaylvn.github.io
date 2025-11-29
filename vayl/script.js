@@ -590,6 +590,68 @@ function loadHelpPanel() {
 /*                 FILE TREE RENDER               */
 /* ============================================== */
 
+
+
+
+function buildSidebar(tree) {
+    const sidebar = document.getElementById("sidebar");
+    sidebar.innerHTML = "";
+    tree.forEach(item => renderNode(sidebar, item, 0));
+}
+
+function renderNode(container, node, depth) {
+    const indent = depth * 14;
+
+    if (node.type === "folder") {
+        const el = document.createElement("div");
+        el.className = "tree-folder";
+        el.style.paddingLeft = indent + "px";
+        el.textContent = node.name + "/";
+        container.appendChild(el);
+
+        node.children.forEach(child =>
+            renderNode(container, child, depth + 1)
+        );
+    }
+
+    if (node.type === "file") {
+        const el = document.createElement("div");
+        el.className = "tree-file";
+        el.style.paddingLeft = indent + "px";
+        el.textContent = node.name.replace(/\.[^.]+$/, "");
+        el.dataset.path = node.path;
+
+        el.onclick = () => {
+            selectTreeFile(node.path);
+            requestFile(node.path);
+        };
+
+        container.appendChild(el);
+    }
+}
+
+function selectTreeFile(path) {
+    document.querySelectorAll(".tree-file").forEach(el => {
+        el.classList.toggle("selected", el.dataset.path === path);
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ============================================== */
 /*              SIDEBAR / TREE SYSTEM             */
 /* ============================================== */
