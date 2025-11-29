@@ -66,6 +66,7 @@
 
 		<div id="editor-container">
 			<div id="editor"></div>
+
 			<div id="tag-float" class="hidden">
 				<div id="tag-float-header">
 					<span>Tags</span>
@@ -74,17 +75,20 @@
 
 				<input id="tag-float-search" placeholder="Search..." />
 
-				<div class="tag-section">
-					<div class="tag-title">Generic Tags</div>
-					<div id="tag-generic"></div>
-				</div>
-
+				<!-- EVENT TAGS -->
 				<div class="tag-section" id="event-tag-section" style="display:none;">
 					<div class="tag-title">Event Tags</div>
-					<div id="tag-event"></div>
+					<div id="event-tag-list"></div>
+				</div>
+
+				<!-- GENERIC TAGS -->
+				<div class="tag-section">
+					<div class="tag-title">Generic Tags</div>
+					<div id="tag-float-list"></div>
 				</div>
 			</div>
 		</div>
+
 
 
 		<!-- <div id="tag-toggle-btn" onclick="toggleTagPanel()">Tags</div> -->

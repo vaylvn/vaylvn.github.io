@@ -535,6 +535,73 @@ function ctxAction(type) {
 
 
 
+/* ============================================== */
+/*                 TAG DEFINITIONS                */
+/* ============================================== */
+
+const TAGS = {
+    generic: [
+        { tag: "[user]", desc: "Name of the user who triggered the event" },
+        { tag: "[g:time]", desc: "Current system time" },
+        { tag: "[g:rfollower]", desc: "Random follower" },
+        { tag: "[g:channel]", desc: "Channel name" }
+    ],
+
+    events: {
+        raid: [
+            { tag: "[e:viewers]", desc: "Viewer count in the raid" },
+            { tag: "[e:raider]", desc: "Name of the raiding streamer" }
+        ],
+        follow: [
+            { tag: "[e:follower]", desc: "Name of the follower" }
+        ],
+        redemption: [
+            { tag: "[e:reward]", desc: "Reward name" },
+            { tag: "[e:message]", desc: "User message for reward" }
+        ]
+    }
+};
+
+function loadGenericTags() {
+    const list = document.getElementById("tag-float-list");
+
+    list.innerHTML += `<div class="tag-section-title">Global</div>`;
+
+    TAGS.generic.forEach(t => {
+        list.innerHTML += `
+            <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc}">
+                ${t.tag}
+            </div>
+        `;
+    });
+}
+
+function loadEventTags() {
+    const list = document.getElementById("event-tag-section");
+    const inner = document.getElementById("event-tag-list");
+
+    inner.innerHTML = "";
+
+    const file = currentFilePath?.split("/").pop();
+    if (!file) return;
+
+    const eventName = file.replace(".yml", "");
+
+    if (!TAGS.events[eventName]) {
+        list.style.display = "none";
+        return;
+    }
+
+    list.style.display = "block";
+
+    TAGS.events[eventName].forEach(t => {
+        inner.innerHTML += `
+            <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc}">
+                ${t.tag}
+            </div>
+        `;
+    });
+}
 
 
 
@@ -594,18 +661,35 @@ function toggleTagPanel() {
 document.getElementById("tag-float-close").onclick = toggleTagPanel;
 
 function refreshTagPanel() {
+    const genericList = document.getElementById("tag-float-list");
     const eventSection = document.getElementById("event-tag-section");
 
-    if (currentFilePath &&
-        currentFilePath.startsWith("configuration/event/")) {
+    // reset both areas
+    genericList.innerHTML = "";
+    eventSection.style.display = "none";
 
-        eventSection.style.display = "block";
+    // load event tags if applicable
+    if (currentFilePath?.startsWith("configuration/event/")) {
         loadEventTags();
-    } else {
-        eventSection.style.display = "none";
     }
 
+    // always load generic tags
     loadGenericTags();
+}
+
+function filterFloatTagList() {
+    const q = document.getElementById("tag-float-search").value.toLowerCase();
+    const items = document.querySelectorAll("#tag-float .tag-item");
+
+    items.forEach(item => {
+        const t = item.textContent.toLowerCase();
+        item.style.display = t.includes(q) ? "block" : "none";
+    });
+}
+
+function insertTag(tag) {
+    editor.focus();
+    editor.trigger("tagInsert", "type", { text: tag });
 }
 
 
