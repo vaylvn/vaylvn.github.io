@@ -530,117 +530,101 @@ function ctxAction(type) {
 
 
 
-// ===========================
-//        TAG SYSTEM
-// ===========================
 
-const TAGS = {
-    global: [
-        { tag: "[user]", desc: "Name of the user who triggered the event" },
-        { tag: "[g:time]", desc: "Current system time" },
-        { tag: "[g:rfollower]", desc: "Random follower" },
-        { tag: "[g:channel]", desc: "The channel name" }
-    ],
 
-    events: {
-        raid: [
-            { tag: "[e:viewers]", desc: "Number of viewers in the raid" },
-            { tag: "[e:raider]", desc: "Name of the raiding streamer" }
-        ],
-        follow: [
-            { tag: "[e:follower]", desc: "Name of the follower" }
-        ],
-        redemption: [
-            { tag: "[e:reward]", desc: "Name of the channel point reward" },
-            { tag: "[e:message]", desc: "User message for the reward" }
-        ]
-    }
-};
 
-function getEventNameFromPath(path) {
-    if (!path) return null;
 
-    const file = path.split("/").pop();
-    if (!file.endsWith(".yml")) return null;
 
-    return file.replace(".yml", "");
-}
 
-function buildTagList() {
-    const list = document.getElementById("tag-list");
-    list.innerHTML = "";
 
-    const eventName = getEventNameFromPath(currentFilePath);
 
-    // Global tags
-    list.innerHTML += `<div class="tag-header">Global Tags</div>`;
-    TAGS.global.forEach(t => {
-        list.innerHTML += `
-            <div class="tag-item" data-tag="${t.tag}" title="${t.desc}"
-                 onclick="insertTag('${t.tag}')">${t.tag}</div>
-        `;
+(function enableTagFloatDrag() {
+    const panel = document.getElementById("tag-float");
+    const container = document.getElementById("editor-container");
+    const header = document.getElementById("tag-float-header");
+
+    let isDown = false, offsetX = 0, offsetY = 0;
+
+    header.addEventListener("mousedown", (e) => {
+        isDown = true;
+        offsetX = e.clientX - panel.offsetLeft;
+        offsetY = e.clientY - panel.offsetTop;
     });
 
-    // Event tags (if applicable)
-    if (eventName && TAGS.events[eventName]) {
-        list.innerHTML += `<div class="tag-header">Event Tags (${eventName})</div>`;
+    document.addEventListener("mousemove", (e) => {
+        if (!isDown) return;
 
-        TAGS.events[eventName].forEach(t => {
-            list.innerHTML += `
-                <div class="tag-item" data-tag="${t.tag}" title="${t.desc}"
-                     onclick="insertTag('${t.tag}')">${t.tag}</div>
-            `;
-        });
-    }
-}
+        const x = e.clientX - offsetX;
+        const y = e.clientY - offsetY;
 
-function insertTag(tag) {
-    editor.focus();
-    editor.trigger("tagInsert", "type", { text: tag });
-}
+        const rect = container.getBoundingClientRect();
+        const panelRect = panel.getBoundingClientRect();
 
-function filterTagList() {
-    const search = document.getElementById("tag-search").value.toLowerCase();
-    const items = document.querySelectorAll("#tag-list .tag-item");
+        let newLeft = x;
+        let newTop = y;
 
-    items.forEach(item => {
-        const tag = item.dataset.tag.toLowerCase();
-        item.style.display = tag.includes(search) ? "block" : "none";
+        // Prevent leaving container horizontally
+        if (newLeft < 0) newLeft = 0;
+        if (newLeft + panelRect.width > rect.width)
+            newLeft = rect.width - panelRect.width;
+
+        // Prevent leaving container vertically
+        if (newTop < 0) newTop = 0;
+        if (newTop + panelRect.height > rect.height)
+            newTop = rect.height - panelRect.height;
+
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
     });
-}
 
-
-
-window.addEventListener("click", (e) => {
-    const panel = document.getElementById("tag-panel");
-    const toggle = document.getElementById("tag-toggle-btn");
-
-    // If clicked outside panel & not clicking the toggle button:
-    if (!panel.contains(e.target) && e.target !== toggle) {
-        panel.classList.remove("open");
-        panel.classList.add("hidden");
-    }
-});
-
-
-
+    document.addEventListener("mouseup", () => isDown = false);
+})();
 
 function toggleTagPanel() {
-    const panel = document.getElementById("tag-panel");
+    const p = document.getElementById("tag-float");
 
-    buildTagList();
-
-    // If currently hidden → show and slide in
-    if (panel.classList.contains("hidden")) {
-        panel.classList.remove("hidden");
-        panel.classList.add("open");
-    }
-    // If open → close and hide
-    else {
-        panel.classList.remove("open");
-        panel.classList.add("hidden");
+    if (p.classList.contains("hidden")) {
+        refreshTagPanel();
+        p.classList.remove("hidden");
+    } else {
+        p.classList.add("hidden");
     }
 }
+
+document.getElementById("tag-float-close").onclick = toggleTagPanel;
+
+function refreshTagPanel() {
+    const eventSection = document.getElementById("event-tag-section");
+
+    if (currentFilePath &&
+        currentFilePath.startsWith("configuration/event/")) {
+
+        eventSection.style.display = "block";
+        loadEventTags();
+    } else {
+        eventSection.style.display = "none";
+    }
+
+    loadGenericTags();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

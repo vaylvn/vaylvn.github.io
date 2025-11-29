@@ -243,6 +243,7 @@ body {
 
 #editor-container {
     flex: 1;
+	position: relative;
     background: #1A1A1E;        /* subtle contrast behind editor */
     border-radius: 8px;          /* nice curvature */
     padding: 8px;                /* actual breathing room */
@@ -351,57 +352,94 @@ body {
 
 
 
-#tag-toggle-btn {
-    position: absolute;
-    right: 0;
-    top: 100px;
-    width: 28px;
-    padding: 6px 0;
-    background: #2b2b2b;
-    color: #ccc;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    cursor: pointer;
-    border-left: 1px solid #444;
-    border-radius: 6px 0 0 6px;
-    z-index: 15000;
-    font-size: 12px;
-    user-select: none;
-    opacity: 0.7;
-    transition: opacity 0.1s, background 0.15s;
-}
 
-#tag-toggle-btn:hover {
-    opacity: 1;
-    background: #3a3a3a;
-    color: #fff;
-}
 
-#tag-panel {
+
+/* Floating panel */
+#tag-float {
     position: absolute;
-    top: 60px;
-    right: -300px;  /* hidden offscreen */
-    width: 260px;
-    max-height: 400px;
-    overflow-y: auto;
-    background: #1e1e1e;
-    border: 1px solid #444;
-    border-radius: 6px 0 0 6px;
-    padding: 10px;
-    z-index: 20000;
+    top: 40px;
+    right: 40px;
+    width: 280px;
+    max-height: 70%;
+    background: #1c1c20;
+    border: 1px solid #34343a;
+    border-radius: 8px;
+    z-index: 100;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    transition: right 0.20s ease-out;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.45);
+    overflow: hidden;
 }
 
-#tag-panel.open {
-    right: 20px;  /* Slide in */
+#tag-float.hidden {
+    display: none;
 }
 
-#tag-panel.hidden {
-    display: none; /* safety fallback */
+#tag-float-header {
+    background: #222228;
+    padding: 8px 12px;
+    cursor: move;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
 }
+
+#tag-float-close {
+    cursor: pointer;
+    opacity: 0.7;
+}
+#tag-float-close:hover { opacity: 1; }
+
+#tag-float-search {
+    margin: 10px;
+    padding: 6px 8px;
+    background: #2a2a30;
+    border: 1px solid #34343a;
+    border-radius: 4px;
+    color: #eaeaea;
+}
+
+.tag-section {
+    margin: 6px 12px;
+}
+
+.tag-title {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+.tag-item {
+    padding: 6px 8px;
+    background: #2d2d34;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: .9;
+}
+.tag-item:hover {
+    opacity: 1;
+    background: #3a3a42;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
