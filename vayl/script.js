@@ -9,7 +9,6 @@ let currentFilePath = null;
 let contextFile = null;
 let contextNode = null;
 
-let contextNode = null;
 
 
 /* ============================================== */
