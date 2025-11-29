@@ -142,7 +142,7 @@ function openShareModal() {
     const conn = `${serverInfo.lan_ip}:${serverInfo.port}`;
     const encoded = btoa(conn); // base64
 
-    const url = `https://widget.vayl.uk/vayl/?code=${encoded}`;
+    const url = `http://widget.vayl.uk/vayl/?code=${encoded}`;
     generateQR(url);
 }
 
