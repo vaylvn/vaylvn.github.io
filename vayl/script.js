@@ -604,10 +604,13 @@ function loadHelpPanel() {
 
 function buildSidebar(tree) {
     console.log("BUILD SIDEBAR CALLED WITH:", tree);
-    const sidebar = document.getElementById("sidebar");
-    sidebar.innerHTML = "";
-    tree.forEach(item => renderNode(sidebar, item, 0));
+
+    const container = document.getElementById("tree-container");
+    container.innerHTML = "";  // Only clears the tree, not the search bar
+
+    tree.forEach(item => renderNode(container, item, 0));
 }
+
 
 function renderNode(container, node, depth) {
     const indent = depth * 14;
