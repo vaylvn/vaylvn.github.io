@@ -85,11 +85,12 @@
 
 
 <div id="context-menu" class="hidden">
-    <div onclick="createFile()">New File</div>
-    <div onclick="createFolder()">New Folder</div>
-    <div onclick="renameNode()">Rename</div>
-    <div onclick="deleteNode()">Delete</div>
+    <div data-action="new-file"   onclick="createFile()">New File</div>
+    <div data-action="new-folder" onclick="createFolder()">New Folder</div>
+    <div data-action="rename"     onclick="renameNode()">Rename</div>
+    <div data-action="delete"     onclick="deleteNode()">Delete</div>
 </div>
+
 
 
 

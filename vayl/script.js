@@ -7,6 +7,9 @@ let editor = null;
 let monacoLoaded = false;
 let currentFilePath = null;
 let contextFile = null;
+let contextNode = null;
+
+let contextNode = null;
 
 
 /* ============================================== */
@@ -640,39 +643,38 @@ function buildSidebar(tree) {
 function renderNode(container, node, depth) {
     const indent = depth * 14;
 
-	if (node.type === "folder") {
-		const folderEl = document.createElement("div");
-		folderEl.className = "tree-folder";
-		folderEl.style.paddingLeft = indent + "px";
-		folderEl.textContent = "📁 " + node.name;
-		container.appendChild(folderEl);
+    if (node.type === "folder") {
+        const folderEl = document.createElement("div");
+        folderEl.className = "tree-folder";
+        folderEl.style.paddingLeft = indent + "px";
+        folderEl.textContent = "📁 " + node.name;
+        container.appendChild(folderEl);
 
-		// Children container
-		const childrenEl = document.createElement("div");
-		childrenEl.className = "tree-children";
-		childrenEl.style.display = "none";
-		container.appendChild(childrenEl);
+        // Children container
+        const childrenEl = document.createElement("div");
+        childrenEl.className = "tree-children";
+        childrenEl.style.display = "none";
+        container.appendChild(childrenEl);
 
-		// Toggle
-		folderEl.onclick = () => {
-			const isOpen = childrenEl.style.display === "block";
-			childrenEl.style.display = isOpen ? "none" : "block";
-			folderEl.classList.toggle("collapsed", !isOpen);
-		};
+        // Click to toggle open/closed
+        folderEl.onclick = () => {
+            const isOpen = childrenEl.style.display === "block";
+            childrenEl.style.display = isOpen ? "none" : "block";
+            folderEl.classList.toggle("collapsed", !isOpen);
+        };
 
-		folderEl.oncontextmenu = (e) => {
-			e.preventDefault();
-			showFolderContextMenu(e, node);
-		};
+        // Right-click: open context menu for this folder
+        folderEl.oncontextmenu = (e) => {
+            e.preventDefault();
+            contextNode = node;              // <── store which node was clicked
+            showTreeContextMenu(e, node);    // use shared menu
+        };
 
-
-		// Recurse
-		node.children.forEach(child =>
-			renderNode(childrenEl, child, depth + 2)
-		);
-	}
-
-
+        // Recurse into children
+        node.children.forEach(child =>
+            renderNode(childrenEl, child, depth + 2)
+        );
+    }
 
     if (node.type === "file") {
         const el = document.createElement("div");
@@ -686,54 +688,149 @@ function renderNode(container, node, depth) {
             requestFile(node.path);
         };
 
+        // Right-click: context menu for this file
+        el.oncontextmenu = (e) => {
+            e.preventDefault();
+            contextNode = node;
+            showTreeContextMenu(e, node);
+        };
+
         container.appendChild(el);
     }
 }
 
-function showFolderContextMenu(event, node) {
+
+function showTreeContextMenu(e, node) {
     const menu = document.getElementById("context-menu");
-    contextFile = node; // store the folder node
+    if (!menu) return;
 
-    // Position menu
-    menu.style.left = event.clientX + "px";
-    menu.style.top = event.clientY + "px";
+    const newFileItem   = menu.querySelector('[data-action="new-file"]');
+    const newFolderItem = menu.querySelector('[data-action="new-folder"]');
+    const renameItem    = menu.querySelector('[data-action="rename"]');
+    const deleteItem    = menu.querySelector('[data-action="delete"]');
+
+    const isFolder = node.type === "folder";
+    const isFile   = node.type === "file";
+
+    // if backend sets node.locked = true on core folders, this will work:
+    const isLocked = !!node.locked || isCoreLockedPath(node.path);
+
+    // For folders:
+    //   - show New File / New Folder (unless locked)
+    //   - show Rename/Delete unless locked
+    // For files:
+    //   - hide New File / New Folder
+    //   - show Rename/Delete always
+    if (newFileItem) {
+        newFileItem.style.display = (isFolder && !isLocked) ? "block" : "none";
+    }
+    if (newFolderItem) {
+        newFolderItem.style.display = (isFolder && !isLocked) ? "block" : "none";
+    }
+    if (renameItem) {
+        renameItem.style.display = isLocked ? "none" : "block";
+    }
+    if (deleteItem) {
+        deleteItem.style.display = isLocked ? "none" : "block";
+    }
+
+    menu.style.left = e.clientX + "px";
+    menu.style.top  = e.clientY + "px";
     menu.classList.remove("hidden");
-
-    // Enable/disable dangerous actions
-    const isProtected = PROTECTED_FOLDERS.has(node.path);
-
-    document.getElementById("ctx-new-file").style.display = "block";
-    document.getElementById("ctx-new-folder").style.display = "block";
-    document.getElementById("ctx-rename").style.display = isProtected ? "none" : "block";
-    document.getElementById("ctx-delete").style.display = isProtected ? "none" : "block";
 }
 
-function createFile() {
-    const folder = contextFile.path;
+// helper: guard core system folders if backend doesn't send node.locked
+function isCoreLockedPath(path) {
+    if (!path) return false;
+    return (
+        path === "configuration" ||
+        path === "configuration/variables" ||
+        path === "configuration/variables/boolean" ||
+        path === "configuration/variables/text" ||
+        path === "configuration/variables/list" ||
+        path === "configuration/variables/table"
+    );
+}
 
+// hide menu when clicking elsewhere
+window.addEventListener("click", () => {
+    const menu = document.getElementById("context-menu");
+    if (menu) menu.classList.add("hidden");
+});
+
+
+function createFile() {
+    if (!contextNode) return;
+    if (contextNode.type !== "folder") return;  // safety
+
+    const folderPath = contextNode.path;
     const name = prompt("File name (without extension):");
     if (!name) return;
 
-    const isTable = folder.includes("/table");
+    const isTable = folderPath.includes("/table");
     const ext = isTable ? ".yml" : ".txt";
 
     socket.send(JSON.stringify({
         type: "create",
         folder: false,
-        path: `${folder}/${name}${ext}`
+        path: `${folderPath}/${name}${ext}`
     }));
 }
 
-function createFolder() {
-    const folder = contextFile.path;
 
+
+function createFolder() {
+    if (!contextNode) return;
+    if (contextNode.type !== "folder") return;
+
+    const folderPath = contextNode.path;
     const name = prompt("Folder name:");
     if (!name) return;
 
     socket.send(JSON.stringify({
         type: "create",
         folder: true,
-        path: `${folder}/${name}`
+        path: `${folderPath}/${name}`
+    }));
+}
+
+function renameNode() {
+    if (!contextNode) return;
+
+    // Don't allow rename if locked
+    if (isCoreLockedPath(contextNode.path) || contextNode.locked) {
+        alert("This folder is locked and cannot be renamed.");
+        return;
+    }
+
+    const oldPath = contextNode.path;
+    const oldName = oldPath.split("/").pop();
+    const newName = prompt("New name:", oldName);
+    if (!newName || newName === oldName) return;
+
+    socket.send(JSON.stringify({
+        type: "rename",
+        path: oldPath,
+        new_name: newName,
+        is_folder: contextNode.type === "folder"
+    }));
+}
+
+function deleteNode() {
+    if (!contextNode) return;
+
+    if (isCoreLockedPath(contextNode.path) || contextNode.locked) {
+        alert("This folder is locked and cannot be deleted.");
+        return;
+    }
+
+    const label = contextNode.type === "folder" ? "folder" : "file";
+    if (!confirm(`Delete this ${label}? ${contextNode.path}`)) return;
+
+    socket.send(JSON.stringify({
+        type: "delete",
+        path: contextNode.path,
+        is_folder: contextNode.type === "folder"
     }));
 }
 
