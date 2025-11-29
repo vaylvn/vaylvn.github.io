@@ -55,6 +55,15 @@ function handleWebSocketMessage(msg) {
             handleFileContent(data.content);
             return;
         }
+		
+		if (data.type === "created") {
+			buildSidebar(data.virtual_tree);
+			requestFile(data.path);
+
+			setTimeout(() => selectTreeFile(data.path), 50);
+			return;
+		}
+
 
     } catch {
         // Non-JSON messages become console entries
@@ -602,6 +611,22 @@ function loadHelpPanel() {
 /*              SIDEBAR / TREE SYSTEM             */
 /* ============================================== */
 
+const PROTECTED_FOLDERS = new Set([
+    "configuration",
+    "configuration/actionpacks",
+    "configuration/conditionals",
+    "configuration/event",
+
+    "data",
+    "data/variables",
+    "data/variables/boolean",
+    "data/variables/text",
+    "data/variables/list",
+    "data/variables/number",
+    "data/variables/table"
+]);
+
+
 function buildSidebar(tree) {
     console.log("BUILD SIDEBAR CALLED WITH:", tree);
 
@@ -635,6 +660,12 @@ function renderNode(container, node, depth) {
 			folderEl.classList.toggle("collapsed", !isOpen);
 		};
 
+		folderEl.oncontextmenu = (e) => {
+			e.preventDefault();
+			showFolderContextMenu(e, node);
+		};
+
+
 		// Recurse
 		node.children.forEach(child =>
 			renderNode(childrenEl, child, depth + 2)
@@ -658,6 +689,55 @@ function renderNode(container, node, depth) {
         container.appendChild(el);
     }
 }
+
+function showFolderContextMenu(event, node) {
+    const menu = document.getElementById("context-menu");
+    contextFile = node; // store the folder node
+
+    // Position menu
+    menu.style.left = event.clientX + "px";
+    menu.style.top = event.clientY + "px";
+    menu.classList.remove("hidden");
+
+    // Enable/disable dangerous actions
+    const isProtected = PROTECTED_FOLDERS.has(node.path);
+
+    document.getElementById("ctx-new-file").style.display = "block";
+    document.getElementById("ctx-new-folder").style.display = "block";
+    document.getElementById("ctx-rename").style.display = isProtected ? "none" : "block";
+    document.getElementById("ctx-delete").style.display = isProtected ? "none" : "block";
+}
+
+function createFile() {
+    const folder = contextFile.path;
+
+    const name = prompt("File name (without extension):");
+    if (!name) return;
+
+    const isTable = folder.includes("/table");
+    const ext = isTable ? ".yml" : ".txt";
+
+    socket.send(JSON.stringify({
+        type: "create",
+        folder: false,
+        path: `${folder}/${name}${ext}`
+    }));
+}
+
+function createFolder() {
+    const folder = contextFile.path;
+
+    const name = prompt("Folder name:");
+    if (!name) return;
+
+    socket.send(JSON.stringify({
+        type: "create",
+        folder: true,
+        path: `${folder}/${name}`
+    }));
+}
+
+
 
 function selectTreeFile(path) {
     document.querySelectorAll(".tree-file").forEach(el => {
@@ -700,6 +780,8 @@ document.getElementById("tree-search").addEventListener("input", () => {
         container.style.display = visible ? "block" : "none";
     });
 });
+
+
 
 
 /* ============================================== */
