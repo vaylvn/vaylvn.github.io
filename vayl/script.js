@@ -42,6 +42,8 @@ function handleWebSocketMessage(msg) {
     try {
         const data = JSON.parse(msg);
 
+		console.log("TREE RECEIVED:", data.virtual_tree);
+
         // Directory tree
         if (data.virtual_tree) {
             buildSidebar(data.virtual_tree);
