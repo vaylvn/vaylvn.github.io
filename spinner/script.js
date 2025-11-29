@@ -5,7 +5,7 @@ async function pollSpin() {
         const data = await r.json();
         
         if (data.cmd === "spin") {
-            startSpinner(); // <---- your spinner function
+            startSpin(); // <---- your spinner function
         }
     } catch (err) {
         console.warn("pollSpin error", err);
