@@ -9,6 +9,7 @@ let currentFilePath = null;
 let contextFile = null;
 let contextNode = null;
 
+let openFolders = new Set();
 
 
 /* ============================================== */
@@ -59,12 +60,23 @@ function handleWebSocketMessage(msg) {
         }
 		
 		if (data.type === "created") {
+
+			// 1) update tree
 			buildSidebar(data.virtual_tree);
+
+			// 2) update current file path immediately
+			currentFilePath = data.path;
+
+			// 3) request the content so editor opens it
 			requestFile(data.path);
 
-			setTimeout(() => selectTreeFile(data.path), 50);
-			return;
+			// 4) highlight it visually after DOM rebuild
+			setTimeout(() => {
+				selectTreeFile(data.path);
+			}, 30);
 		}
+
+
 
 
     } catch {
@@ -636,7 +648,22 @@ function buildSidebar(tree) {
     container.innerHTML = "";  // Only clears the tree, not the search bar
 
     tree.forEach(item => renderNode(container, item, 0));
+	restoreOpenFolders();
+
 }
+
+function restoreOpenFolders() {
+    document.querySelectorAll(".tree-folder").forEach(folder => {
+        const path = folder.dataset?.path;
+        if (!path) return;
+
+        if (openFolders.has(path)) {
+            const children = folder.nextSibling;
+            children.style.display = "block";
+        }
+    });
+}
+
 
 
 function renderNode(container, node, depth) {
@@ -645,6 +672,7 @@ function renderNode(container, node, depth) {
     if (node.type === "folder") {
         const folderEl = document.createElement("div");
         folderEl.className = "tree-folder";
+		folderEl.dataset.path = node.path;
         folderEl.style.paddingLeft = indent + "px";
         folderEl.textContent = "📁 " + node.name;
         container.appendChild(folderEl);
@@ -656,11 +684,21 @@ function renderNode(container, node, depth) {
         container.appendChild(childrenEl);
 
         // Click to toggle open/closed
-        folderEl.onclick = () => {
-            const isOpen = childrenEl.style.display === "block";
-            childrenEl.style.display = isOpen ? "none" : "block";
-            folderEl.classList.toggle("collapsed", !isOpen);
-        };
+        const path = node.path;
+
+		folderEl.onclick = () => {
+			const isOpen = childrenEl.style.display === "block";
+
+			if (isOpen) {
+				openFolders.delete(path);
+				childrenEl.style.display = "none";
+			} else {
+				openFolders.add(path);
+				childrenEl.style.display = "block";
+			}
+
+			folderEl.classList.toggle("collapsed", !isOpen);
+		};
 
         // Right-click: open context menu for this folder
         folderEl.oncontextmenu = (e) => {
