@@ -49,6 +49,7 @@ body {
 .topbar-tabs {
     display: flex;
     gap: 22px;
+	padding-left: 20px;
 	float: center;
 }
 
