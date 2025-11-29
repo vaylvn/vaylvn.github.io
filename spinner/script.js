@@ -1,19 +1,21 @@
 // Connect to the SSE stream
-const evt = new EventSource("http://127.0.0.1:5000/spinnerstream");
-
-evt.onmessage = (ev) => {
+async function pollSpin() {
     try {
-        const data = JSON.parse(ev.data);
-
+        const r = await fetch("http://127.0.0.1:5000/nextspin");
+        const data = await r.json();
+        
         if (data.cmd === "spin") {
-            console.log("Received spin command from Vayl");
-            startSpin(); // <-- call your actual spin function
+            startSpinner(); // <---- your spinner function
         }
-
-    } catch (e) {
-        console.warn("Bad spinnerstream message:", e);
+    } catch (err) {
+        console.warn("pollSpin error", err);
     }
-};
+
+    setTimeout(pollSpin, 200);
+}
+
+pollSpin();
+
 
 
 
