@@ -11,6 +11,8 @@ let contextNode = null;
 
 let openFolders = new Set();
 
+let serverInfo = null;
+
 
 /* ============================================== */
 /*                WEBSOCKET SETUP                 */
@@ -52,6 +54,13 @@ function handleWebSocketMessage(msg) {
             buildSidebar(data.virtual_tree);
             return;
         }
+		
+		if (data.type === "server_info") {
+			serverInfo = data; // { lan_ip, port }
+			return;
+		}
+
+
 
         // File content
         if (data.type === "file") {
@@ -89,6 +98,24 @@ function handleWebSocketMessage(msg) {
     }
 }
 
+
+
+function openShareModal() {
+    if (!serverInfo) {
+        alert("Server info not received yet");
+        return;
+    }
+
+    const modal = document.getElementById("share-modal");
+    modal.classList.remove("hidden");
+
+    const url = `http://${serverInfo.lan_ip}:${serverInfo.port}`;
+    generateQR(url);
+}
+
+function closeShareModal() {
+    document.getElementById("share-modal").classList.add("hidden");
+}
 
 
 /* ============================================== */

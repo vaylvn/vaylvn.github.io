@@ -9,6 +9,8 @@
 
     <!-- REQUIRED FOR MONACO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
 </head>
 
 
@@ -26,6 +28,20 @@
         <div id="tab-config" class="topbar-tab" onclick="switchMode('config')">Configuration</div>
         <div id="tab-settings" class="topbar-tab" onclick="switchMode('settings')">Settings</div>
         <div id="tab-help" class="topbar-tab" onclick="switchMode('help')">Help</div>
+    </div>
+	
+	<div id="share-btn" onclick="openShareModal()">Share</div>
+	
+</div>
+
+<div id="share-modal" class="hidden">
+    <div id="share-modal-content">
+        <h3>Connect Another Device</h3>
+        <p>Scan this QR code from your phone/tablet:</p>
+
+        <canvas id="qr-canvas"></canvas>
+
+        <div id="share-close" onclick="closeShareModal()">Close</div>
     </div>
 </div>
 

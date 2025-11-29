@@ -161,6 +161,51 @@ body {
 
 
 
+#share-btn {
+    margin-left: auto;
+    padding: 6px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    opacity: .9;
+}
+#share-btn:hover { opacity: 1; }
+
+/* Modal overlay */
+#share-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+}
+#share-modal.hidden {
+    display: none;
+}
+
+#share-modal-content {
+    background: #181818;
+    padding: 20px 24px;
+    border-radius: 8px;
+    text-align: center;
+    width: 280px;
+}
+
+#share-close {
+    margin-top: 15px;
+    padding: 6px 10px;
+    background: #333;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#share-close:hover {
+    background: #444;
+}
 
 
 
