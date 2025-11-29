@@ -616,7 +616,7 @@ function renderNode(container, node, depth) {
 		const folderEl = document.createElement("div");
 		folderEl.className = "tree-folder";
 		folderEl.style.paddingLeft = indent + "px";
-		folderEl.textContent = node.name + "/";
+		folderEl.textContent = "📁 " + node.name;
 		container.appendChild(folderEl);
 
 		// Children container
