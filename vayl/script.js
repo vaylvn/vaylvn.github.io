@@ -613,16 +613,32 @@ function renderNode(container, node, depth) {
     const indent = depth * 14;
 
     if (node.type === "folder") {
-        const el = document.createElement("div");
-        el.className = "tree-folder";
-        el.style.paddingLeft = indent + "px";
-        el.textContent = "📁 " + node.name;
-        container.appendChild(el);
+		const folderEl = document.createElement("div");
+		folderEl.className = "tree-folder";
+		folderEl.style.paddingLeft = indent + "px";
+		folderEl.textContent = node.name + "/";
+		
+		container.appendChild(folderEl);
 
-        node.children.forEach(child =>
-            renderNode(container, child, depth + 1)
-        );
-    }
+		// Container for children
+		const childrenEl = document.createElement("div");
+		childrenEl.className = "tree-children";
+		childrenEl.style.display = "none"; // collapsed by default
+		container.appendChild(childrenEl);
+
+		// Toggle on click
+		folderEl.onclick = () => {
+			const visible = childrenEl.style.display === "block";
+			childrenEl.style.display = visible ? "none" : "block";
+			folderEl.classList.toggle("collapsed", !visible);
+		};
+
+		// Render children inside the wrapper
+		node.children.forEach(child =>
+			renderNode(childrenEl, child, depth + 1)
+		);
+	}
+
 
     if (node.type === "file") {
         const el = document.createElement("div");
