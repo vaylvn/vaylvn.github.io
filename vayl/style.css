@@ -90,77 +90,59 @@ body {
     display: none; /* hidden in console mode */
 }
 
-.accordion-header {
-    padding: 8px 10px;
-    margin-top: 6px;
-    cursor: pointer;
-    background: #181818;
-    border-radius: 4px;
-	border-left: solid white 3px;
-    color: #ccc;
-    font-size: 14px;
-    transition: background 0.15s;
+.tree-category {
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-weight: 700;
+    opacity: 0.8;
+    font-size: 0.8rem;
 }
 
-.accordion-header:hover {
-    background: #242424;
+.tree-folder {
+    font-weight: 600;
+    opacity: 0.85;
+    user-select: none;
+    padding: 3px 0;
 }
 
-.accordion-header.open {
-    background: #303030;
-    color: #fff;
-}
-
-.accordion-content {
-    margin-left: 8px;
-    padding-left: 6px;
-    border-left: 1px solid #333;
-    margin-top: 4px;
-    display: none;
-}
-
-.sidebar-subtitle {
-    margin-top: 6px;
-    margin-bottom: 3px;
-    padding-left: 4px;
-    font-size: 12px;
-    color: #888;
-    text-transform: uppercase;
-}
-
-.sidebar-file-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.sidebar-item {
-    padding: 5px 10px;
-    cursor: pointer;
-	width: 100%;
-    border-radius: 2px;
-    transition: background 0.15s;
-}
-
-.sidebar-item:hover {
-    background: #2a2a2a;
-}
-
-.file-menu-icon {
-    opacity: 0;
-    cursor: pointer;
-    padding: 4px;
-    color: #777;
-    transition: color 0.15s;
-}
-
-.sidebar-file-row:hover .file-menu-icon {
+.tree-folder:hover {
     opacity: 1;
 }
 
-.file-menu-icon:hover {
-    color: #fff;
+.tree-file {
+    cursor: pointer;
+    opacity: 0.9;
+    padding: 3px 0 3px 2px;
+    user-select: none;
 }
+
+.tree-file:hover {
+    opacity: 1;
+}
+
+.tree-file.selected {
+    background: rgba(255,255,255,0.05);
+    opacity: 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* ========================= */

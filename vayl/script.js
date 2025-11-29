@@ -579,117 +579,131 @@ function loadHelpPanel() {
 }
 
 
+
+
+
+
+
 /* ============================================== */
-/*             SIDEBAR (ACCORDION)                */
+/*                 FILE TREE RENDER               */
 /* ============================================== */
 
-function buildSidebar(root) {
+/* ============================================== */
+/*              SIDEBAR / TREE SYSTEM             */
+/* ============================================== */
+
+/**
+ * Called when backend sends data.virtual_tree.
+ */
+function buildSidebar(virtualTree) {
     const sidebar = document.getElementById("sidebar");
+    if (!sidebar) {
+        console.error("Sidebar element missing (#sidebar)");
+        return;
+    }
+
     sidebar.innerHTML = "";
 
-    root.forEach((group) => {
-        const header = document.createElement("div");
-        header.className = "accordion-header";
-        header.textContent = group.name;
-
-        const content = document.createElement("div");
-        content.className = "accordion-content";
-
-        sidebar.appendChild(header);
-        sidebar.appendChild(content);
-
-        header.onclick = () => toggleAccordion(header, content);
-
-        if (group.files) {
-            group.files.forEach(f => addFileEntry(content, f));
+    if (virtualTree.variables) {
+        for (const [categoryName, items] of Object.entries(virtualTree.variables)) {
+            renderCategoryHeader(sidebar, categoryName.toUpperCase());
+            renderTreeRecursive(sidebar, items, 1);
         }
-        if (group.dynamic) {
-            group.dynamic.forEach(f => addFileEntry(content, f));
-        }
-        if (group.groups) {
-            group.groups.forEach(sub => {
-                const subtitle = document.createElement("div");
-                subtitle.className = "sidebar-subtitle";
-                subtitle.textContent = sub.type;
-                content.appendChild(subtitle);
+    }
 
-                sub.files.forEach(f => addFileEntry(content, f));
-            });
-        }
-    });
+    // In future:
+    // if (virtualTree.actionpacks) ...
+    // if (virtualTree.conditionals) ...
 }
 
-function toggleAccordion(header, content) {
-    const isOpen = content.style.display === "block";
-    closeAllAccordions();
 
-    if (!isOpen) {
-        content.style.display = "block";
-        header.classList.add("open");
+/** Render the category header: BOOLEAN, TEXT, LIST, etc */
+function renderCategoryHeader(container, name) {
+    const header = document.createElement("div");
+    header.classList.add("tree-category");
+    header.textContent = name;
+    container.appendChild(header);
+}
+
+
+/** Recursively render folders + files */
+function renderTreeRecursive(container, items, depth) {
+    if (!Array.isArray(items)) return;
+
+    const folders = items.filter(i => i.type === "folder");
+    const files = items.filter(i => i.type === "file");
+
+    // Folders first
+    for (const folder of folders) {
+        renderFolder(container, folder.name, depth);
+        renderTreeRecursive(container, folder.children, depth + 1);
+    }
+
+    // Then files
+    for (const file of files) {
+        renderFile(container, file.name, file.path, depth);
     }
 }
 
-function closeAllAccordions() {
-    document.querySelectorAll(".accordion-content")
-        .forEach(c => c.style.display = "none");
 
-    document.querySelectorAll(".accordion-header")
-        .forEach(h => h.classList.remove("open"));
+/** Render a folder */
+function renderFolder(container, folderName, depth) {
+    const el = document.createElement("div");
+    el.classList.add("tree-folder");
+    el.textContent = folderName + "/";
+    el.style.paddingLeft = `${depth * 14}px`;
+    container.appendChild(el);
 }
 
 
-/* ============================================== */
-/*           SIDEBAR FILE ENTRIES                 */
-/* ============================================== */
+/** Render a file entry */
+function renderFile(container, filename, path, depth) {
+    const el = document.createElement("div");
+    el.classList.add("tree-file");
+    el.textContent = stripExtension(filename);
+    el.dataset.path = path;
+    el.style.paddingLeft = `${depth * 14}px`;
 
-function addFileEntry(container, file) {
-    const row = document.createElement("div");
-    row.className = "sidebar-file-row";
-
-    const label = document.createElement("div");
-    label.className = "sidebar-item";
-    label.textContent = file.display;
-    label.onclick = () => requestFile(file.path);
-
-    const menu = document.createElement("div");
-    menu.className = "file-menu-icon";
-    menu.innerHTML = "⋮";
-    menu.onclick = (e) => {
-        e.stopPropagation();
-        openContextMenu(e, file);
+    el.onclick = () => {
+        selectTreeFile(path);
+        requestFile(path);
     };
 
-    row.appendChild(label);
-    row.appendChild(menu);
-    container.appendChild(row);
+    container.appendChild(el);
+}
+
+
+/** Remove extension for display only */
+function stripExtension(filename) {
+    return filename.replace(/\.[^.]+$/, "");
+}
+
+
+/** Highlight selected file in tree */
+function selectTreeFile(path) {
+    document.querySelectorAll(".tree-file").forEach(el => {
+        el.classList.toggle("selected", el.dataset.path === path);
+    });
 }
 
 
 /* ============================================== */
-/*                CONTEXT MENU                    */
-/* ============================================== */
 
-function openContextMenu(e, file) {
-    contextFile = file;
 
-    const menu = document.getElementById("context-menu");
-    menu.classList.remove("hidden");
 
-    menu.style.top = e.clientY + "px";
-    menu.style.left = e.clientX + "px";
-}
 
-window.addEventListener("click", () => {
-    document.getElementById("context-menu").classList.add("hidden");
-});
 
-function contextRename() {
-    renameFile(contextFile);
-}
 
-function contextDelete() {
-    deleteFile(contextFile);
-}
+
+
+
+
+
+
+
+
+
+
 
 
 
