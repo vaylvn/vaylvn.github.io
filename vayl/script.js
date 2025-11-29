@@ -60,21 +60,21 @@ function handleWebSocketMessage(msg) {
         }
 		
 		if (data.type === "created") {
-
-			// 1) update tree
 			buildSidebar(data.virtual_tree);
 
-			// 2) update current file path immediately
-			currentFilePath = data.path;
+			currentFilePath = data.path;      // track new file
+			requestFile(data.path);           // load into editor
 
-			// 3) request the content so editor opens it
-			requestFile(data.path);
-
-			// 4) highlight it visually after DOM rebuild
+			// WAIT for DOM → THEN select file
 			setTimeout(() => {
 				selectTreeFile(data.path);
-			}, 30);
+
+				// also auto-open parent folder path if needed
+				autoOpenFolderFor(data.path);
+
+			}, 60);
 		}
+
 
 
 
