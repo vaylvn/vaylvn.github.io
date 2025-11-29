@@ -634,7 +634,7 @@ function renderNode(container, node, depth) {
 
 		// Recurse
 		node.children.forEach(child =>
-			renderNode(childrenEl, child, depth + 1)
+			renderNode(childrenEl, child, depth + 2)
 		);
 	}
 
