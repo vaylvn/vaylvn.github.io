@@ -125,6 +125,7 @@ body {
 
 .tree-file.selected {
     background: #2C2C30;
+	color: #ECECED;
     opacity: 1;
 }
 
@@ -240,7 +241,7 @@ body {
 
 #editor-toolbar {
     height: 40px;
-    background: #121212;
+    background: #222228;
     border-bottom: 1px solid #2a2a2a;
     display: flex;
     align-items: center;
