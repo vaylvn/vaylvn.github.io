@@ -1,20 +1,4 @@
-// Connect to the SSE stream
-async function pollSpin() {
-    try {
-        const r = await fetch("http://127.0.0.1:5000/nextspin");
-        const data = await r.json();
-        
-        if (data.cmd === "spin") {
-            startSpin(); // <---- your spinner function
-        }
-    } catch (err) {
-        console.warn("pollSpin error", err);
-    }
 
-    setTimeout(pollSpin, 200);
-}
-
-pollSpin();
 
 
 
@@ -321,4 +305,26 @@ window.addEventListener("DOMContentLoaded", () => {
       if(config.autoSpin)setTimeout(startSpin,(config.spinDelay??0)*1000);
     }catch{document.body.innerHTML="<h3>Invalid or corrupted spinner data.</h3>";}
   }
+  
+  
+	// Connect to the SSE stream
+	async function pollSpin() {
+		try {
+			const r = await fetch("http://127.0.0.1:5000/nextspin");
+			const data = await r.json();
+			
+			if (data.cmd === "spin") {
+				startSpin(); // <---- your spinner function
+			}
+		} catch (err) {
+			console.warn("pollSpin error", err);
+		}
+
+		setTimeout(pollSpin, 200);
+	}
+
+	pollSpin();
+  
+  
+  
 });
