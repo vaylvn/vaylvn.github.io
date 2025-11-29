@@ -49,21 +49,29 @@ function connectWebSocket(overrideURL = null) {
     const code = params.get("code");
 
     if (code) {
+        debug("QR", `code param detected: ${code}`);
+
         try {
-            const decoded = atob(code); // "ip:port"
+            const decoded = atob(code);  // "ip:port"
+            debug("QR", `decoded: ${decoded}`);
+
             const [ip, port] = decoded.split(":");
 
-            console.log("Auto-connecting to WS:", `ws://${ip}:${port}`);
-            connectWebSocket(`ws://${ip}:${port}`);
+            const wsURL = `ws://${ip}:${port}`;
+            debug("WS", `connecting to ${wsURL}`);
+
+            connectWebSocket(wsURL);
             return;
         } catch (err) {
-            console.error("Failed to decode WS info from code:", err);
+            debug("QR Error", err.toString());
         }
     }
 
-    // No code → normal localhost PC mode
+    // Fallback (PC)
+    debug("WS", "no code param, using localhost");
     connectWebSocket("ws://localhost:8765");
 })();
+
 
 
 
@@ -1017,6 +1025,10 @@ document.getElementById("tree-search").addEventListener("input", () => {
 
 
 
+
+function debug(header, msg) {
+    logMessage("info", header, msg);
+}
 
 
 function logMessage(type, header, detail) {
