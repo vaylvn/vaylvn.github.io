@@ -35,9 +35,13 @@ function connectWebSocket(overrideURL = null) {
     socket.onmessage = (event) => {
         handleWebSocketMessage(event.data);
     };
+	
+	socket.onerror = (err) => {
+		debug("WS Error", err.toString());
+	};
 
     socket.onclose = () => {
-        console.log("Socket closed, retrying...");
+        debug("WS Closed", "retrying...");
         setTimeout(() => connectWebSocket(overrideURL), 1500);
     };
 }
