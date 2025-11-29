@@ -586,17 +586,24 @@ function loadHelpPanel() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 /* ============================================== */
-/*                 FILE TREE RENDER               */
+/*              SIDEBAR / TREE SYSTEM             */
 /* ============================================== */
-
-
-
 
 function buildSidebar(tree) {
-	
-	console.log("BUILD SIDEBAR CALLED WITH:", tree);
-	
+    console.log("BUILD SIDEBAR CALLED WITH:", tree);
     const sidebar = document.getElementById("sidebar");
     sidebar.innerHTML = "";
     tree.forEach(item => renderNode(sidebar, item, 0));
@@ -633,120 +640,6 @@ function renderNode(container, node, depth) {
     }
 }
 
-function selectTreeFile(path) {
-    document.querySelectorAll(".tree-file").forEach(el => {
-        el.classList.toggle("selected", el.dataset.path === path);
-    });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ============================================== */
-/*              SIDEBAR / TREE SYSTEM             */
-/* ============================================== */
-
-/**
- * Called when backend sends data.virtual_tree.
- */
-function buildSidebar(virtualTree) {
-    const sidebar = document.getElementById("sidebar");
-    if (!sidebar) {
-        console.error("Sidebar element missing (#sidebar)");
-        return;
-    }
-
-    sidebar.innerHTML = "";
-
-    if (virtualTree.variables) {
-        for (const [categoryName, items] of Object.entries(virtualTree.variables)) {
-            renderCategoryHeader(sidebar, categoryName.toUpperCase());
-            renderTreeRecursive(sidebar, items, 1);
-        }
-    }
-
-    // In future:
-    // if (virtualTree.actionpacks) ...
-    // if (virtualTree.conditionals) ...
-}
-
-
-/** Render the category header: BOOLEAN, TEXT, LIST, etc */
-function renderCategoryHeader(container, name) {
-    const header = document.createElement("div");
-    header.classList.add("tree-category");
-    header.textContent = name;
-    container.appendChild(header);
-}
-
-
-/** Recursively render folders + files */
-function renderTreeRecursive(container, items, depth) {
-    if (!Array.isArray(items)) return;
-
-    const folders = items.filter(i => i.type === "folder");
-    const files = items.filter(i => i.type === "file");
-
-    // Folders first
-    for (const folder of folders) {
-        renderFolder(container, folder.name, depth);
-        renderTreeRecursive(container, folder.children, depth + 1);
-    }
-
-    // Then files
-    for (const file of files) {
-        renderFile(container, file.name, file.path, depth);
-    }
-}
-
-
-/** Render a folder */
-function renderFolder(container, folderName, depth) {
-    const el = document.createElement("div");
-    el.classList.add("tree-folder");
-    el.textContent = folderName + "/";
-    el.style.paddingLeft = `${depth * 14}px`;
-    container.appendChild(el);
-}
-
-
-/** Render a file entry */
-function renderFile(container, filename, path, depth) {
-    const el = document.createElement("div");
-    el.classList.add("tree-file");
-    el.textContent = stripExtension(filename);
-    el.dataset.path = path;
-    el.style.paddingLeft = `${depth * 14}px`;
-
-    el.onclick = () => {
-        selectTreeFile(path);
-        requestFile(path);
-    };
-
-    container.appendChild(el);
-}
-
-
-/** Remove extension for display only */
-function stripExtension(filename) {
-    return filename.replace(/\.[^.]+$/, "");
-}
-
-
-/** Highlight selected file in tree */
 function selectTreeFile(path) {
     document.querySelectorAll(".tree-file").forEach(el => {
         el.classList.toggle("selected", el.dataset.path === path);
