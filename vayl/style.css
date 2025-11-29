@@ -261,7 +261,7 @@ body {
     padding: 0 12px;
 }
 
-.editor-btn {
+.editor-btn, .editor-btn-tag  {
     padding: 6px 12px;
     background: #303030;
     border: none;
@@ -269,18 +269,22 @@ body {
     color: #ddd;
     font-size: 13px;
     cursor: pointer;
-	width: 50%;
+	width: 80%;
 }
 
-.editor-btn:hover {
+.editor-btn-tag {
+	width: 20%;
+}
+
+.editor-btn:hover, .editor-btn-tag:hover {
     background: #444;
 }
 
-.editor-btn.danger {
+.editor-btn.danger, .editor-btn-tag.danger {
     background: #552222;
 }
 
-.editor-btn.danger:hover {
+.editor-btn.danger:hover, .editor-btn-tag.danger:hover {
     background: #883333;
 }
 
