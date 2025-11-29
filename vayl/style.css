@@ -126,6 +126,18 @@ body {
     opacity: 1;
 }
 
+.tree-children {
+    display: none; /* collapsed by default */
+}
+
+.tree-folder.collapsed {
+    opacity: 0.65;
+}
+
+.tree-children .tree-folder,
+.tree-children .tree-file {
+    margin-left: 0; /* indentation handled by JS padding */
+}
 
 
 

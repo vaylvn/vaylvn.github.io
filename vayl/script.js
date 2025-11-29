@@ -612,32 +612,32 @@ function buildSidebar(tree) {
 function renderNode(container, node, depth) {
     const indent = depth * 14;
 
-    if (node.type === "folder") {
+	if (node.type === "folder") {
 		const folderEl = document.createElement("div");
 		folderEl.className = "tree-folder";
 		folderEl.style.paddingLeft = indent + "px";
 		folderEl.textContent = node.name + "/";
-		
 		container.appendChild(folderEl);
 
-		// Container for children
+		// Children container
 		const childrenEl = document.createElement("div");
 		childrenEl.className = "tree-children";
-		childrenEl.style.display = "none"; // collapsed by default
+		childrenEl.style.display = "none";
 		container.appendChild(childrenEl);
 
-		// Toggle on click
+		// Toggle
 		folderEl.onclick = () => {
-			const visible = childrenEl.style.display === "block";
-			childrenEl.style.display = visible ? "none" : "block";
-			folderEl.classList.toggle("collapsed", !visible);
+			const isOpen = childrenEl.style.display === "block";
+			childrenEl.style.display = isOpen ? "none" : "block";
+			folderEl.classList.toggle("collapsed", !isOpen);
 		};
 
-		// Render children inside the wrapper
+		// Recurse
 		node.children.forEach(child =>
 			renderNode(childrenEl, child, depth + 1)
 		);
 	}
+
 
 
     if (node.type === "file") {
