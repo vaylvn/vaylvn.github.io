@@ -677,6 +677,11 @@ function createHighlightCssClass(color) {
 /* ============================================== */
 
 const ACTIONS = [
+	{ action: "obs:scene", desc: "Switch to an OBS scene", template: "obs:scene | <scene>"}, 
+	{ action: "obs:show", desc: "Show an OBS source", template: "obs:show | <source>"}, 
+	{ action: "obs:hide", desc: "Hide an OBS source", template: "obs:hide | <source>"}, 
+	{ action: "obs:toggle", desc: "Toggle an OBS source", template: "obs:toggle | <source>"}, 
+	{ action: "obs:label", desc: "Modify an OBS label", template: "obs:label | <source> | <text> | <color>"}, 
     { action: "chat", desc: "Send a chat message", template: "chat | <message>"},
     { action: "announce", desc: "Send a chat announcement", template: "announce | <message>" },
 ];
@@ -793,8 +798,18 @@ document.getElementById("action-float-close").onclick = toggleActionPanel;
 const TAGS = {
     generic: [
         { tag: "[time]", desc: "Current system time" },
-        { tag: "[rfollower]", desc: "Random follower" },
-        { tag: "[channel]", desc: "Channel name" }
+        { tag: "[channel]", desc: "Channel name" },
+		{ tag: "[followers]", desc: "Total follower count" },
+		{ tag: "[rfollower]", desc: "Random follower" },
+		{ tag: "[subscribers]", desc: "Total subscriber count" },
+		{ tag: "[rsubscriber]", desc: "Random subscriber" },
+		{ tag: "[viewers]", desc: "Total viewer count" },
+		{ tag: "[ruser]", desc: "Random viewer username" },
+		{ tag: "[system:dateus]", desc: "Current date (US)" },
+		{ tag: "[system:dateuk]", desc: "Current date (UK)" },
+		{ tag: "[system:time]", desc: "Current time" },
+		{ tag: "[uptime:seconds]", desc: "Total stream uptime" },
+		{ tag: "[rnumber:min-max]", desc: "Random number" },
     ],
 
     events: {
