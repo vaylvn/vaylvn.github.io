@@ -393,7 +393,7 @@ body {
 
 #tag-float-header {
     background: #222228;
-    padding: 8px 12px;
+    /* padding: 8px 12px; */
     cursor: move;
     user-select: none;
     display: flex;
@@ -472,7 +472,7 @@ body {
 
 #action-float-header {
     background: #222228;
-    padding: 8px 12px;
+    /* padding: 8px 12px; */
     cursor: move;
     user-select: none;
     display: flex;
