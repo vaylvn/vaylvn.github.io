@@ -320,6 +320,10 @@ function initMonaco() {
 			fontSize: 14,
 		});
 
+		editor.onDidChangeModelContent(() => {
+			applyHighlightDecorations();
+		});
+
 
         monacoLoaded = true;
         setTimeout(() => editor.layout(), 50);
@@ -514,8 +518,18 @@ function ctxAction(type) {
     // HIGHLIGHT (unchanged)
     // ---------------------------------------------------------------------
     if (type === "highlight") {
-        newText = `<<${text}>>`;
-    }
+		const picker = document.getElementById("highlight-color-picker");
+
+		picker.onchange = () => {
+			const color = picker.value; // #rrggbb
+
+			insertHighlightBlock(startLine, endLine, color);
+			applyHighlightDecorations(); // re-scan & apply
+		};
+
+		picker.click();
+	}
+
 
     // APPLY EDIT
     model.pushEditOperations([], [
@@ -525,7 +539,88 @@ function ctxAction(type) {
     hideEditorContextMenu();
 }
 
+function insertHighlightBlock(startLine, endLine, color) {
+    const model = editor.getModel();
 
+    model.pushEditOperations([], [
+        // Insert start tag BEFORE the block
+        {
+            range: new monaco.Range(startLine, 1, startLine, 1),
+            text: `# @highlight: ${color}\n`
+        },
+
+        // Insert end tag AFTER the block
+        {
+            range: new monaco.Range(endLine + 2, 1, endLine + 2, 1),
+            text: `# @endhighlight\n`
+        }
+    ], () => null);
+}
+
+let highlightDecorations = [];
+
+function applyHighlightDecorations() {
+    const model = editor.getModel();
+    const lines = model.getLinesContent();
+
+    let decorations = [];
+    let activeColor = null;
+    let blockStart = null;
+
+    for (let i = 0; i < lines.length; i++) {
+        const lineNo = i + 1;
+        const line = lines[i];
+
+        // detect start tag: # @highlight: COLOR
+        const startMatch = line.match(/^#\s*@highlight:\s*(.+)$/);
+        if (startMatch) {
+            activeColor = startMatch[1].trim();
+            blockStart = lineNo;
+            continue;
+        }
+
+        // detect end: # @endhighlight
+        if (line.match(/^#\s*@endhighlight/)) {
+            activeColor = null;
+            blockStart = null;
+            continue;
+        }
+
+        // apply decoration if inside block
+        if (activeColor) {
+            const color = activeColor;
+            const className = createHighlightCssClass(color);
+
+            decorations.push({
+                range: new monaco.Range(lineNo, 1, lineNo, 1),
+                options: {
+                    isWholeLine: true,
+                    className: className
+                }
+            });
+        }
+    }
+
+    highlightDecorations = editor.deltaDecorations(highlightDecorations, decorations);
+}
+
+function createHighlightCssClass(color) {
+    const safe = color.replace(/[^a-z0-9]/gi, "");
+    const className = "hl_" + safe;
+
+    if (!document.querySelector(`style[data-hl="${className}"]`)) {
+        const style = document.createElement("style");
+        style.dataset.hl = className;
+        style.innerHTML = `
+            .${className} {
+                background-color: ${color} !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    return className;
+}
 
 
 
@@ -846,6 +941,8 @@ function handleFileContent(content) {
 
     // Ensure visible in case the panel resized
     setTimeout(() => editor.layout(), 50);
+	
+	setTimeout(() => applyHighlightDecorations(), 60);
 }
 
 function saveFile() {
