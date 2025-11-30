@@ -233,6 +233,14 @@ function switchMode(mode) {
         return;
     }
 
+	if (mode === "macro") {
+		consolePanel.style.display = "none";
+        sidebar.style.display = "none";
+        editorPanel.style.display = "none";
+        loadMacroPanel();
+        return;
+	}
+
     if (mode === "settings") {
         consolePanel.style.display = "none";
         sidebar.style.display = "none";
@@ -251,6 +259,17 @@ function switchMode(mode) {
         return;
     }
 }
+
+
+/* ============================================== */
+/*                MONACO SETUP                    */
+/* ============================================== */
+function loadMacroPanel() {
+	return
+}
+/* ============================================== */
+
+
 
 
 /* ============================================== */
