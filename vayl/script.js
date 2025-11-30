@@ -543,7 +543,7 @@ const ACTIONS = [
 
 function loadActions() {
     const list = document.getElementById("action-float-list");
-
+	list.innerHTML = ""; 
     ACTIONS.forEach(t => {
         list.innerHTML += `
             <div class="action-item" onclick="insertAction('${t.template}')" title="${t.desc}">
