@@ -962,7 +962,7 @@ function insertTag(tag) {
     editor.trigger("tagInsert", "type", { text: tag });
 }
 
-
+document.getElementById("tag-float-search").addEventListener("input", filterFloatTagList);
 
 
 
