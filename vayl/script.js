@@ -608,12 +608,19 @@ function createHighlightCssClass(color) {
     const safe = color.replace(/[^a-z0-9]/gi, "");
     const className = "hl_" + safe;
 
+    // Convert #rrggbb → r,g,b
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+
+    const alpha = 0.25; // ← adjust to taste
+
     if (!document.querySelector(`style[data-hl="${className}"]`)) {
         const style = document.createElement("style");
         style.dataset.hl = className;
         style.innerHTML = `
             .${className} {
-                background-color: ${color} !important;
+                background-color: rgba(${r}, ${g}, ${b}, ${alpha}) !important;
             }
         `;
         document.head.appendChild(style);
@@ -621,6 +628,7 @@ function createHighlightCssClass(color) {
 
     return className;
 }
+
 
 
 
