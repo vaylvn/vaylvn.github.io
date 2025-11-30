@@ -814,7 +814,7 @@ const TAGS = {
 
 function loadGenericTags() {
     const list = document.getElementById("tag-float-list");
-
+	list.innerHTML = ""; 
     /* list.innerHTML += `<div class="tag-section-title">Global</div>`; */
 
     TAGS.generic.forEach(t => {
