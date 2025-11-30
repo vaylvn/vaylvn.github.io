@@ -694,11 +694,15 @@ document.getElementById("action-float-search").addEventListener("input", filterA
 function toggleActionPanel() {
     const p = document.getElementById("action-float");
 
+	const b = document.getElementById("editor-btn-tag");
+
     if (p.classList.contains("hidden")) {
         loadActions();
         p.classList.remove("hidden");
+		b.value = "Hide Actions";
     } else {
         p.classList.add("hidden");
+		b.value = "Show Actions";
     }
 }
 
@@ -877,11 +881,16 @@ function loadEventTags() {
 function toggleTagPanel() {
     const p = document.getElementById("tag-float");
 
+	const b = document.getElementById("editor-btn-tag");
+	
+
     if (p.classList.contains("hidden")) {
         refreshTagPanel();
         p.classList.remove("hidden");
+		b.value = "Hide Tags";
     } else {
         p.classList.add("hidden");
+		b.value = "Show Tags";
     }
 }
 

@@ -419,13 +419,14 @@ body {
 }
 
 .tag-section {
-    margin: 6px 12px;
+	margin: 0px 0px;
 }
 
 .tag-title {
     font-size: 0.8rem;
     margin-bottom: 4px;
     opacity: 0.8;
+	text-align: center;
 }
 
 .tag-item {
