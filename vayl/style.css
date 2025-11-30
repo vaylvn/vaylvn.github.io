@@ -261,7 +261,7 @@ body {
     padding: 0 12px;
 }
 
-.editor-btn, .editor-btn-tag  {
+.editor-btn, .editor-btn-tag, .editor-btn-action {
     padding: 6px 12px;
     background: #303030;
     border: none;
@@ -269,10 +269,10 @@ body {
     color: #ddd;
     font-size: 13px;
     cursor: pointer;
-	width: 80%;
+	width: 60%;
 }
 
-.editor-btn-tag {
+.editor-btn-tag, .editor-btn-action {
 	width: 20%;
 }
 
