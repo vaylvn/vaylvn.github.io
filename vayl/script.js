@@ -17,6 +17,8 @@ let openFolders = new Set();
 
 let serverInfo = null;
 
+let lastSavedContent = "";
+
 
 /* ============================================== */
 /*                WEBSOCKET SETUP                 */
@@ -322,6 +324,7 @@ function initMonaco() {
 
 		editor.onDidChangeModelContent(() => {
 			applyHighlightDecorations();
+			updateSaveButtonState();
 		});
 
 
@@ -343,6 +346,21 @@ function initMonaco() {
     });
 }
 
+function updateSaveButtonState() {
+    const btn = document.querySelector(".editor-btn");
+
+    if (!btn) return;
+
+    const current = editor.getValue();
+
+    if (current === lastSavedContent) {
+        btn.disabled = true;
+        btn.classList.add("disabled");
+    } else {
+        btn.disabled = false;
+        btn.classList.remove("disabled");
+    }
+}
 
 
 
@@ -546,13 +564,13 @@ function insertHighlightBlock(startLine, endLine, color) {
         // Insert start tag BEFORE the block
         {
             range: new monaco.Range(startLine, 1, startLine, 1),
-            text: `# @highlight: ${color}\n`
+            text: `# [hl:${color}]\n`
         },
 
         // Insert end tag AFTER the block
         {
             range: new monaco.Range(endLine + 2, 1, endLine + 2, 1),
-            text: `# @endhighlight\n`
+            text: `# [hl]\n`
         }
     ], () => null);
 }
@@ -946,7 +964,10 @@ function handleFileContent(content) {
     document.getElementById("editor-toolbar").style.display = "flex";
 
     editor.setValue(content);
+	lastSavedContent = content;
+	updateSaveButtonState();
 
+	
     // Ensure visible in case the panel resized
     setTimeout(() => editor.layout(), 50);
 	
@@ -961,6 +982,10 @@ function saveFile() {
         path: currentFilePath,
         content: editor.getValue()
     }));
+	
+	lastSavedContent = editor.getValue();
+	updateSaveButtonState();
+	
 }
 
 function renameFile(fileObj) {

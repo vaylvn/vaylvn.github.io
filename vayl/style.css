@@ -272,6 +272,13 @@ body {
 	width: 60%;
 }
 
+.editor-btn.disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+}
+
+
 .editor-btn-tag, .editor-btn-action {
 	width: 20%;
 }
