@@ -90,6 +90,7 @@ body {
     overflow-y: auto;
     padding: 10px;
     display: none; /* hidden in console mode */
+	padding-right: 20px;
 }
 
 .tree-category {
