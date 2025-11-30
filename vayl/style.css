@@ -175,6 +175,7 @@ body {
     cursor: pointer;
     user-select: none;
     opacity: .9;
+	margin-bottom: 8px;
 }
 #share-btn:hover { opacity: 1; }
 
