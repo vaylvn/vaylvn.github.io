@@ -532,6 +532,113 @@ function ctxAction(type) {
 
 
 
+/* ============================================== */
+/*                     ACTIONS                    */
+/* ============================================== */
+
+const ACTIONS = [
+    { action: "chat", desc: "Send a chat message", template: "chat | <message>"},
+    { action: "announce", desc: "Send a chat announcement", template: "announce | <message>" },
+];
+
+function loadActions() {
+    const list = document.getElementById("action-float-list");
+
+    ACTIONS.forEach(t => {
+        list.innerHTML += `
+            <div class="action-item" onclick="insertAction('${t.template}')" title="${t.desc}">
+                ${t.action}
+            </div>
+        `;
+    });
+}
+
+function insertAction(action) {
+    editor.focus();
+    editor.trigger("actionInsert", "type", { text: action});
+}
+
+function filterActionList() {
+    const q = document.getElementById("action-float-search").value.toLowerCase();
+    const items = document.querySelectorAll("#action-float .action-item");
+
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "block" : "none";
+    });
+}
+
+document.getElementById("action-float-search").addEventListener("input", filterActionList);
+
+function toggleActionPanel() {
+    const p = document.getElementById("action-float");
+
+    if (p.classList.contains("hidden")) {
+        loadActions();
+        p.classList.remove("hidden");
+    } else {
+        p.classList.add("hidden");
+    }
+}
+
+document.getElementById("action-float-close").onclick = toggleActionPanel;
+
+(function enableActionFloatDrag() {
+    const panel = document.getElementById("action-float");
+    const container = document.getElementById("editor-container");
+    const header = document.getElementById("action-float-header");
+
+    let isDown = false, offsetX = 0, offsetY = 0;
+
+    header.addEventListener("mousedown", (e) => {
+        isDown = true;
+        offsetX = e.clientX - panel.offsetLeft;
+        offsetY = e.clientY - panel.offsetTop;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (!isDown) return;
+
+        const x = e.clientX - offsetX;
+        const y = e.clientY - offsetY;
+
+        const rect = container.getBoundingClientRect();
+        const panelRect = panel.getBoundingClientRect();
+
+        let newLeft = x;
+        let newTop = y;
+
+        // Prevent leaving container horizontally
+        if (newLeft < 0) newLeft = 0;
+        if (newLeft + panelRect.width > rect.width)
+            newLeft = rect.width - panelRect.width;
+
+        // Prevent leaving container vertically
+        if (newTop < 0) newTop = 0;
+        if (newTop + panelRect.height > rect.height)
+            newTop = rect.height - panelRect.height;
+
+        panel.style.left = newLeft + "px";
+        panel.style.top = newTop + "px";
+    });
+
+    document.addEventListener("mouseup", () => isDown = false);
+})();
+
+/* ============================================== */
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

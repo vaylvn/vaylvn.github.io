@@ -435,6 +435,81 @@ body {
 
 
 
+/* ------------------ ACTIONS ----------------- */
+
+
+#action-float {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+
+    width: 260px;
+    max-height: 70%;           /* ⬅ keeps panel on screen */
+    overflow-y: auto;          /* ⬅ adds scroll if needed */
+
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    z-index: 9000;
+}
+
+
+#action-float.hidden {
+    display: none;
+}
+
+#action-float-header {
+    background: #222228;
+    padding: 8px 12px;
+    cursor: move;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+}
+
+#action-float-close {
+    cursor: pointer;
+    opacity: 0.7;
+}
+#action-float-close:hover { opacity: 1; }
+
+#action-float-search {
+    margin: 10px;
+    padding: 6px 8px;
+    background: #2a2a30;
+    border: 1px solid #34343a;
+    border-radius: 4px;
+    color: #eaeaea;
+}
+
+.action-section {
+    margin: 6px 12px;
+}
+
+.action-title {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+.action-item {
+    padding: 6px 8px;
+    background: #2d2d34;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: .9;
+}
+.action-item:hover {
+    opacity: 1;
+    background: #3a3a42;
+}
 
 
 
