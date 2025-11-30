@@ -255,6 +255,8 @@ window.addEventListener("DOMContentLoaded", () => {
         document.getElementById("soundSelect").value=config.sound||"none";
         document.getElementById("customSoundUrl").value=config.customSound||"";
         document.getElementById("tickDensityVal").textContent=config.tickDensity;
+		document.getElementById("spinnerNameInput").value = config.spinnerName || "default";
+
         config.segments.forEach(addRow);update();
       }catch{alert("Invalid URL");}
     };
@@ -287,6 +289,8 @@ window.addEventListener("DOMContentLoaded", () => {
       config.sound=document.getElementById("soundSelect").value;
       config.customSound=document.getElementById("customSoundUrl").value.trim();
       config.tickDensity=parseFloat(document.getElementById("tickDensity").value)||30;
+	  config.spinnerName = document.getElementById("spinnerNameInput").value;
+
       drawSpinner(config);
       const sounds={click:"sounds/click.mp3",tick:"sounds/tick.mp3",boop:"sounds/boop.mp3",beep:"sounds/beep.mp3"};
       const chosen=config.customSound||sounds[config.sound];
@@ -310,7 +314,11 @@ window.addEventListener("DOMContentLoaded", () => {
 	// Connect to the SSE stream
 	async function pollSpin() {
 		try {
-			const r = await fetch("http://127.0.0.1:5000/nextspin");
+			
+			
+			
+			const r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.spinnerName)}`)
+
 			const data = await r.json();
 			
 			if (data.cmd === "spin") {
