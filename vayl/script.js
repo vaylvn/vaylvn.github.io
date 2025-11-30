@@ -572,15 +572,15 @@ function applyHighlightDecorations() {
         const line = lines[i];
 
         // detect start tag: # @highlight: COLOR
-        const startMatch = line.match(/^#\s*@highlight:\s*(.+)$/);
+        const startMatch = line.match(/^#\s*\[hl\s*:\s*#?([0-9a-fA-F]{6})\s*\]/i);
         if (startMatch) {
-            activeColor = startMatch[1].trim();
+            activeColor = "#" + startMatch[1].trim();
             blockStart = lineNo;
             continue;
         }
 
         // detect end: # @endhighlight
-        if (line.match(/^#\s*@endhighlight/)) {
+        if (line.match(/^#\s*\[hl\s*\]/i)) {
             activeColor = null;
             blockStart = null;
             continue;
