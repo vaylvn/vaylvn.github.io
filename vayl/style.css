@@ -558,7 +558,7 @@ body {
 /* Base log card */
 .log-card {
     background: #121214;
-    border-radius: 4px;
+    border-radius: 5px;
     border-left: 4px solid #555;
     padding: 8px 12px;
     display: flex;
