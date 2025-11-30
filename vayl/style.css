@@ -378,7 +378,6 @@ body {
     background: #1e1e1e;
     border: 1px solid #444;
     border-radius: 8px;
-    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -393,7 +392,7 @@ body {
 
 #tag-float-header {
     background: #222228;
-    /* padding: 8px 12px; */
+    padding: 8px 12px;
     cursor: move;
     user-select: none;
     display: flex;
@@ -409,7 +408,7 @@ body {
 #tag-float-close:hover { opacity: 1; }
 
 #tag-float-search {
-    margin: 10px;
+    margin: 0px 10px;
     padding: 6px 8px;
     background: #2a2a30;
     border: 1px solid #34343a;
@@ -457,7 +456,6 @@ body {
     background: #1e1e1e;
     border: 1px solid #444;
     border-radius: 8px;
-    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -472,7 +470,7 @@ body {
 
 #action-float-header {
     background: #222228;
-    /* padding: 8px 12px; */
+    padding: 8px 12px;
     cursor: move;
     user-select: none;
     display: flex;
@@ -488,7 +486,7 @@ body {
 #action-float-close:hover { opacity: 1; }
 
 #action-float-search {
-    margin: 10px;
+    margin: 0px 10px;
     padding: 6px 8px;
     background: #2a2a30;
     border: 1px solid #34343a;
