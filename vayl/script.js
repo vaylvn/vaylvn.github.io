@@ -139,7 +139,7 @@ function handleWebSocketMessage(msg) {
 		}
 
 		if (data.type === "log") {
-            logMessage(data.type, data.title, data.message);
+            logMessage(data.category, data.message);
             return;
         }
 
@@ -1395,7 +1395,7 @@ function debug(header, msg) {
 }
 
 
-function logMessage(type, header, detail) {
+function logMessage(type, detail) {
     const out = document.getElementById("console-output");
 
     // Detect if user is currently at (or very near) the bottom
@@ -1407,7 +1407,7 @@ function logMessage(type, header, detail) {
 
     const h = document.createElement("div");
     h.className = "log-header";
-    h.textContent = header;
+    h.textContent = "TEMPLATE";
 
     const d = document.createElement("div");
     d.className = "log-detail";
