@@ -1398,6 +1398,10 @@ function debug(header, msg) {
 function logMessage(type, header, detail) {
     const out = document.getElementById("console-output");
 
+    // Detect if user is currently at (or very near) the bottom
+    const isAtBottom =
+        out.scrollTop + out.clientHeight >= out.scrollHeight - 10;
+
     const card = document.createElement("div");
     card.className = `log-card log-${type}`;
 
@@ -1413,5 +1417,10 @@ function logMessage(type, header, detail) {
     card.appendChild(d);
 
     out.appendChild(card);
-    out.scrollTop = out.scrollHeight;
+
+    // Only autoscroll if user hasn't scrolled up
+    if (isAtBottom) {
+        out.scrollTop = out.scrollHeight;
+    }
 }
+
