@@ -596,6 +596,12 @@ body {
 
 
 
+.welcome-logo {
+    height: 100px;
+    width: auto;
+    margin-right: 10px;
+}
+
 .bootmodal {
     position: fixed;
     inset: 0;
@@ -617,3 +623,16 @@ body {
     width: 320px;
     text-align: center;
 }
+
+#welcome-btn {
+    margin-left: auto;
+    padding: 6px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    opacity: .9;
+	margin-bottom: 8px;
+}
+#welcome-btn:hover { opacity: 1; }
