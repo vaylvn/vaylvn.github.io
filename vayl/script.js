@@ -138,7 +138,10 @@ function handleWebSocketMessage(msg) {
 			}, 60);
 		}
 
-
+		if (data.type === "log") {
+            logMessage(data.type, data.title, data.message);
+            return;
+        }
 
 
 

@@ -582,12 +582,14 @@ body {
 }
 
 /* Type colors */
-.log-info   { border-color: #2196F3; }  /* blue */
-.log-event  { border-color: #9C27B0; }  /* purple */
-.log-warn   { border-color: #FFC107; }  /* amber */
-.log-error  { border-color: #E53935; }  /* red */
-.log-debug  { border-color: #757575; }  /* grey */
+.log-info    { border-color: #2196F3; }  /* blue */
+.log-misc    { border-color: #757575; }  /* grey */
+.log-event   { border-color: #9C27B0; }  /* purple */
+.log-warn    { border-color: #FFC107; }  /* amber */
+.log-error   { border-color: #E53935; }  /* red */
+.log-debug   { border-color: #757575; }  /* grey */
 .log-connect { border-color: #00BCD4; } /* cyan */
 .log-success { border-color: #00d455; } /* cyan */
+.log-blank   { border-color: #757575; }  /* grey */
 
 
