@@ -627,7 +627,7 @@ body {
 .welcome-btn {
     margin-left: auto;
     padding: 6px 12px;
-    background: #222;
+    background: #333;
     border: 1px solid #333;
     border-radius: 4px;
     cursor: pointer;
