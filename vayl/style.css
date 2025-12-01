@@ -593,3 +593,27 @@ body {
 .log-blank   { border-color: #757575; }  /* grey */
 
 
+
+
+
+.bootmodal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+}
+
+.bootmodal.hidden {
+    display: none;
+}
+
+.bootmodal-content {
+    background: #222;
+    padding: 20px 30px;
+    border-radius: 8px;
+    width: 320px;
+    text-align: center;
+}

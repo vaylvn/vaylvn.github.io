@@ -139,7 +139,7 @@ function handleWebSocketMessage(msg) {
 		}
 
 		if (data.type === "log") {
-            logMessage(data.category, data.message);
+            logMessage(data.category, data.header, data.message);
             return;
         }
 
@@ -990,9 +990,6 @@ document.getElementById("tag-float-search").addEventListener("input", filterFloa
 
 
 
-
-
-
 /* ============================================== */
 /*              FILE I/O HANDLING                 */
 /* ============================================== */
@@ -1423,4 +1420,20 @@ function logMessage(type, header, detail) {
         out.scrollTop = out.scrollHeight;
     }
 }
+
+
+
+
+
+
+window.addEventListener("load", () => {
+    const modal = document.getElementById("welcome-modal");
+    const closeBtn = document.getElementById("welcome-close");
+
+    modal.classList.remove("hidden");
+
+    closeBtn.onclick = () => {
+        modal.classList.add("hidden");
+    };
+});
 
