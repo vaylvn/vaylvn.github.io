@@ -24,6 +24,8 @@ let lastSavedContent = "";
 /*                WEBSOCKET SETUP                 */
 /* ============================================== */
 
+let retries = 0;
+let max_retries = 3;
 function connectWebSocket(overrideURL = null) {
     const wsURL = overrideURL || "ws://localhost:8765";
 
@@ -38,13 +40,19 @@ function connectWebSocket(overrideURL = null) {
         handleWebSocketMessage(event.data);
     };
 	
-	socket.onerror = (err) => {
-		debug("WS Error", err.toString());
-	};
+	
+	// socket.onerror = (err) => {
+	// 	debug("WS Error", err.toString());
+	// };
 
     socket.onclose = () => {
-        debug("WS Closed", "retrying...");
-        setTimeout(() => connectWebSocket(overrideURL), 1500);
+		retries += 1;
+		if (retries > max_retries) {
+			debug("WS Closed", `Max Retries Reached - Reload webpage.`);
+		} else {
+			debug("WS Closed", `retrying... [${retries}/${max_retries}]`);
+			setTimeout(() => connectWebSocket(overrideURL), 1500);
+		}
     };
 }
 
