@@ -1395,7 +1395,7 @@ function debug(header, msg) {
 }
 
 
-function logMessage(type, detail) {
+function logMessage(type, header, detail) {
     const out = document.getElementById("console-output");
 
     // Detect if user is currently at (or very near) the bottom
@@ -1407,7 +1407,7 @@ function logMessage(type, detail) {
 
     const h = document.createElement("div");
     h.className = "log-header";
-    h.textContent = "TEMPLATE";
+    h.textContent = header;
 
     const d = document.createElement("div");
     d.className = "log-detail";
