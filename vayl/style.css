@@ -620,7 +620,7 @@ body {
     background: #222;
     padding: 20px 30px;
     border-radius: 8px;
-    width: 400px;
+    width: 500px;
     text-align: center;
 }
 
@@ -634,5 +634,6 @@ body {
     user-select: none;
     opacity: .9;
 	margin-bottom: 8px;
+	width: calc(100% - 10px);
 }
 .welcome-btn:hover { opacity: 1; }
