@@ -620,11 +620,11 @@ body {
     background: #222;
     padding: 20px 30px;
     border-radius: 8px;
-    width: 320px;
+    width: 400px;
     text-align: center;
 }
 
-#welcome-btn {
+.welcome-btn {
     margin-left: auto;
     padding: 6px 12px;
     background: #222;
@@ -635,4 +635,4 @@ body {
     opacity: .9;
 	margin-bottom: 8px;
 }
-#welcome-btn:hover { opacity: 1; }
+.welcome-btn:hover { opacity: 1; }
