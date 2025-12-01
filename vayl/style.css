@@ -635,5 +635,6 @@ body {
     opacity: .9;
 	margin-bottom: 8px;
 	width: calc(100% - 10px);
+	color: white;
 }
 .welcome-btn:hover { opacity: 1; }
