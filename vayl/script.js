@@ -21,6 +21,9 @@ let lastSavedContent = "";
 
 let virtualTree = null;
 
+const GRID = 50;
+
+
 
 /* ============================================== */
 /*                WEBSOCKET SETUP                 */
@@ -323,9 +326,85 @@ function renderMacroPanel(macroData) {
             item.classList.add("editing");
         }
 
+        /* ==========================================================
+           MOVE HANDLER (with grid snap)
+        ========================================================== */
+        item.onmousedown = (e) => {
+            if (!macroEditMode) return;
+
+            const startX = e.clientX;
+            const startY = e.clientY;
+
+            const origX = macro.x;
+            const origY = macro.y;
+
+            function move(ev) {
+				const dx = ev.clientX - startX;
+				const dy = ev.clientY - startY;
+
+				// snap each movement
+				macro.x = Math.round((origX + dx) / GRID) * GRID;
+				macro.y = Math.round((origY + dy) / GRID) * GRID;
+
+				item.style.left = macro.x + "px";
+				item.style.top = macro.y + "px";
+			}
+
+
+			function stop() {
+				window.removeEventListener("mousemove", move);
+				window.removeEventListener("mouseup", stop);
+			}
+
+
+            window.addEventListener("mousemove", move);
+            window.addEventListener("mouseup", stop);
+        };
+
+        /* ==========================================================
+           RESIZE HANDLER (with grid snap)
+        ========================================================== */
+        const resize = document.createElement("div");
+        resize.className = "macro-resize";
+        item.appendChild(resize);
+
+        resize.onmousedown = (e) => {
+            if (!macroEditMode) return;
+            e.stopPropagation();
+
+            const startX = e.clientX;
+            const startY = e.clientY;
+
+            const origW = macro.width;
+            const origH = macro.height;
+
+			function resizeMove(ev) {
+				const dx = ev.clientX - startX;
+				const dy = ev.clientY - startY;
+
+				// snap sizes while dragging
+				macro.width  = Math.max(GRID, Math.round((origW + dx) / GRID) * GRID);
+				macro.height = Math.max(GRID, Math.round((origH + dy) / GRID) * GRID);
+
+				item.style.width = macro.width + "px";
+				item.style.height = macro.height + "px";
+			}
+
+
+			function stopResize() {
+				window.removeEventListener("mousemove", resizeMove);
+				window.removeEventListener("mouseup", stopResize);
+			}
+
+
+            window.addEventListener("mousemove", resizeMove);
+            window.addEventListener("mouseup", stopResize);
+        };
+
         container.appendChild(item);
     }
 }
+
 
 
 
