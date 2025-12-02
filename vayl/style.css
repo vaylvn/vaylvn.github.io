@@ -904,8 +904,20 @@ input:checked + .slider:before {
     padding: 6px 12px;
     color: #eee;
     cursor: pointer;
+
+    /* this is the important part */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .ap-menu-item:hover {
     background: #3c3c3c;
 }
+
+.ap-menu-tick {
+    color: white;
+    font-size: 14px;
+    margin-left: 12px;
+}
+

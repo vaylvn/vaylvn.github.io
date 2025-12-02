@@ -387,37 +387,47 @@ function renderMacroPanel(macroData) {
 			e.stopPropagation();
 
 			const menu = document.getElementById("ap-menu");
-			menu.innerHTML = "";
+			menu.innerHTML = ""; // clear previous
 
-			// none option
-			const noneOption = document.createElement("div");
-			noneOption.className = "ap-menu-item";
-			noneOption.innerText = "(none)";
-			noneOption.onclick = () => {
-				macro.actionpack = "";
-				closeApMenu();
-			};
-			menu.appendChild(noneOption);
-
-			// list all actionpacks
-			for (const ap of window.currentActionpacks) {
+			// helper to make a menu item
+			function makeItem(text, value) {
 				const item = document.createElement("div");
 				item.className = "ap-menu-item";
-				item.innerText = ap.path.replace(/\.(yaml|yml)$/i, "");
+				item.innerText = text;
+
+				// tick if selected
+				if (macro.actionpack === value) {
+					const tick = document.createElement("span");
+					tick.className = "ap-menu-tick";
+					tick.innerText = "✔";
+					item.appendChild(tick);
+				}
+
 				item.onclick = () => {
-					macro.actionpack = ap.path;
+					macro.actionpack = value;
 					closeApMenu();
 				};
-				menu.appendChild(item);
+
+				return item;
 			}
 
-			// position
+			// (none) option
+			menu.appendChild(makeItem("(none)", ""));
+
+			// actionpack items
+			for (const ap of window.currentActionpacks) {
+				const name = ap.path.replace(/\.(yaml|yml)$/i, "");
+				menu.appendChild(makeItem(name, ap.path));
+			}
+
+			// position menu
 			const rect = apBtn.getBoundingClientRect();
 			menu.style.left = rect.left + "px";
 			menu.style.top = rect.bottom + "px";
 
 			menu.classList.remove("hidden");
 		};
+
 
 		function closeApMenu() {
 			document.getElementById("ap-menu").classList.add("hidden");
