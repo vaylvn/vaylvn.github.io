@@ -352,6 +352,30 @@ function renderMacroPanel(macroData) {
 
 
 
+		const colorBtn = document.createElement("div");
+		colorBtn.className = "macro-color";
+		colorBtn.style.background = macro.color;
+		item.appendChild(colorBtn);
+
+		const colorInput = document.createElement("input");
+		colorInput.type = "color";
+		colorInput.className = "macro-color-input";
+		colorInput.value = macro.color;
+		item.appendChild(colorInput);
+
+		colorBtn.onclick = (e) => {
+			if (!macroEditMode) return;
+			e.stopPropagation();
+			colorInput.click();
+		};
+
+		colorInput.oninput = () => {
+			macro.color = colorInput.value;
+			item.style.background = macro.color;
+			colorBtn.style.background = macro.color;
+		};
+
+
 
 		const apSelect = document.createElement("select");
 		apSelect.className = "macro-select";
