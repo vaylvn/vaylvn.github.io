@@ -859,7 +859,17 @@ input:checked + .slider:before {
     border: 2px solid rgba(255,255,255,0.9);
     cursor: pointer;
     display: none;
+	background: conic-gradient(
+        red,
+        yellow,
+        lime,
+        cyan,
+        blue,
+        magenta,
+        red
+    );
 }
+
 
 .macro-item.editing .macro-color {
     display: block;

@@ -354,7 +354,6 @@ function renderMacroPanel(macroData) {
 
 		const colorBtn = document.createElement("div");
 		colorBtn.className = "macro-color";
-		colorBtn.style.background = macro.color;
 		item.appendChild(colorBtn);
 
 		const colorInput = document.createElement("input");
