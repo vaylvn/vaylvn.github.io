@@ -163,7 +163,8 @@ function handleWebSocketMessage(msg) {
 
 		if (data.type == "macro-data") {
 			window.currentMacros = data.macro;
-			renderMacroPanel(data.macro, data.actionpacks);
+			window.currentActionpacks = data.actionpacks;
+			renderMacroPanel(data.macro);
 		}
 		
 
