@@ -286,7 +286,7 @@ async function loadMacroPanel() {
 let macroEditMode = false;
 
 function renderMacroPanel(macroData, actionpackData) {
-    const panel = document.getElementById("macro-panel");
+    const panel = document.getElementById("macro-screen");
     panel.innerHTML = ""; // clear
 
     for (const macro of macroData.macros) {
