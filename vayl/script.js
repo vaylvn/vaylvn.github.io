@@ -371,7 +371,6 @@ function renderMacroPanel(macroData) {
 		colorInput.oninput = () => {
 			macro.color = colorInput.value;
 			item.style.background = macro.color;
-			colorBtn.style.background = macro.color;
 		};
 
 
