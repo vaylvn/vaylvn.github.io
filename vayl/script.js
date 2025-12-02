@@ -341,18 +341,33 @@ async function loadMacroPanel() {
 }
 
 
-function virtualFileExists(tree, targetPath, currentPath = "") {
-    for (const child of tree.children || []) {
-        const newPath = currentPath ? `${currentPath}/${child.name}` : child.name;
+function virtualFileExists(tree, targetPath) {
+    // Normalize target slashes and strip leading "/"
+    targetPath = targetPath.replace(/^\/+/, "");
 
-        if (newPath === targetPath) return true;
+    // Internal recursive search
+    function search(node, currentPath) {
+        const fullPath = currentPath ? `${currentPath}/${node.name}` : node.name;
 
-        if (child.children) {
-            if (virtualFileExists(child, targetPath, newPath)) return true;
+        // Strip the root folder from path for comparison
+        const relativePath = fullPath.replace(new RegExp(`^${tree.name}/`), "");
+
+        if (relativePath === targetPath) {
+            return true;
         }
+
+        if (node.children) {
+            for (const child of node.children) {
+                if (search(child, fullPath)) return true;
+            }
+        }
+
+        return false;
     }
-    return false;
+
+    return search(tree, "");
 }
+
 
 function scanActionpacks(tree, targetFolder, currentPath = "", results = []) {
     const path = currentPath ? `${currentPath}/${tree.name}` : tree.name;
