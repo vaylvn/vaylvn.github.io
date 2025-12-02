@@ -280,7 +280,7 @@ function switchMode(mode) {
 
 
 /* ============================================== */
-/*                MONACO SETUP                    */
+/*                  MACRO SETUP                   */
 /* ============================================== */
 async function loadMacroPanel() {
 	socket.send(JSON.stringify({
