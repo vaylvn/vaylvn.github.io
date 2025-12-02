@@ -377,6 +377,9 @@ function renderMacroPanel(macroData) {
 
 
 
+
+
+
 		const apSelect = document.createElement("select");
 		apSelect.className = "macro-select";
 
@@ -386,7 +389,10 @@ function renderMacroPanel(macroData) {
 			opt.innerText = ap.path;
 			if (macro.actionpack === ap.path) opt.selected = true;
 			apSelect.appendChild(opt);
+			
 		}
+		item.appendChild(apSelect);
+
 
 		apSelect.onchange = () => {
 			macro.actionpack = apSelect.value;
