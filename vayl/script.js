@@ -285,27 +285,32 @@ async function loadMacroPanel() {
 
 let macroEditMode = false;
 
-function renderMacroPanel(macroData, actionpackData) {
-    const panel = document.getElementById("macro-screen");
-    panel.innerHTML = ""; // clear
+document.getElementById("macro-edit-toggle").addEventListener("change", (e) => {
+    macroEditMode = e.target.checked;
+    renderMacroPanel(window.currentMacros); 
+});
+
+
+function renderMacroPanel(macroData) {
+    const container = document.getElementById("macro-items");
+    container.innerHTML = ""; // clear only items
 
     for (const macro of macroData.macros) {
         const item = document.createElement("div");
+
         item.className = "macro-item";
         item.style.background = macro.color;
         item.style.left = macro.x + "px";
         item.style.top = macro.y + "px";
         item.style.width = macro.width + "px";
         item.style.height = macro.height + "px";
-        item.setAttribute("data-id", macro.id);
-
-        // text
         item.innerText = macro.label;
 
         // delete button
         const del = document.createElement("div");
         del.className = "macro-delete";
         del.innerText = "✕";
+
         del.onclick = (e) => {
             e.stopPropagation();
             deleteMacro(macro.id);
@@ -313,23 +318,16 @@ function renderMacroPanel(macroData, actionpackData) {
 
         item.appendChild(del);
 
-        // if edit mode -> show delete buttons
         if (macroEditMode) {
             item.classList.add("editing");
         }
 
-        panel.appendChild(item);
+        container.appendChild(item);
     }
 }
 
-document.getElementById("macro-edit-toggle").onclick = () => {
-    macroEditMode = !macroEditMode;
-    document.getElementById("macro-edit-toggle").innerText =
-        `Edit Mode: ${macroEditMode ? "ON" : "OFF"}`;
 
-    // re-render to show/hide delete buttons
-    renderMacroPanel(window.currentMacros);
-};
+
 
 function deleteMacro(id) {
     window.currentMacros.macros =
