@@ -341,21 +341,36 @@ async function loadMacroPanel() {
 
 
 function virtualFileExists(tree, targetPath) {
-    function search(node) {
-        if (!node) return false;
+    // Normalize target path
+    targetPath = targetPath.replace(/^\/+/, "");
 
-        // THIS is the authoritative path directly from the server
-        if (node.path === targetPath) return true;
+    function search(node, currentPath) {
+        if (!node || typeof node.name !== "string") return false;
+
+        // Build full path as seen in the virtual tree
+        const fullPath = currentPath
+            ? `${currentPath}/${node.name}`
+            : node.name;
+
+        // Strip root name (e.g. "vayl/")
+        const relativePath = fullPath.replace(new RegExp(`^${tree.name}/`), "");
+
+        if (relativePath === targetPath) {
+            return true;
+        }
 
         if (Array.isArray(node.children)) {
             for (const child of node.children) {
-                if (search(child)) return true;
+                if (search(child, fullPath)) return true;
             }
         }
+
         return false;
     }
-    return search(tree);
+
+    return search(tree, "");
 }
+
 
 
 
