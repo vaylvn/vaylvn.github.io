@@ -638,3 +638,45 @@ body {
 	color: white;
 }
 .welcome-btn:hover { opacity: 1; }
+
+
+
+
+
+
+
+
+#macro-panel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.macro-item {
+    position: absolute;
+    border-radius: 16px;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    user-select: none;
+}
+
+.macro-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border-radius: 8px;
+    padding: 3px 6px;
+    font-size: 14px;
+    display: none;
+}
+
+.macro-item.editing .macro-delete {
+    display: block;
+}

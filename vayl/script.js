@@ -156,6 +156,17 @@ function handleWebSocketMessage(msg) {
 
 
 
+
+		if (data.type == "macro-data") {
+			renderMacroPanel(data.macro, data.actionpacks);
+		}
+		
+
+
+
+
+
+
     } catch {
         // Non-JSON messages become console entries
         if (msg.toLowerCase().includes("error")) {
@@ -279,113 +290,67 @@ function switchMode(mode) {
 /*                MONACO SETUP                    */
 /* ============================================== */
 async function loadMacroPanel() {
-
-    console.log("[MACRO] Loading panel...");
-
-    // 1. Find the actionpacks folder
-    const ap = findFolder(virtualTree, "actionpacks");
-    if (!ap) {
-        console.error("[MACRO] Couldn't find actionpacks folder.");
-        return;
-    }
-
-    // 2. Scan it
-    const actionpacks = scanActionpacks(ap.node);
-    console.log("[MACRO] Found actionpacks:", actionpacks);
-
-    // 3. Find "dashboard" folder
-    const dash = findFolder(virtualTree, "dashboard");
-    if (!dash) {
-        console.error("[MACRO] No dashboard folder in tree!");
-        return;
-    }
-
-    // 4. Look for macros.json inside dashboard
-    const macrosPath = findFile(dash.node, "macros.json") 
-        || `${dash.path}/macros.json`;
-
-    let macrosData = null;
-
-    // If macros.json doesn't exist → create it
-    if (!findFile(dash.node, "macros.json")) {
-        console.log("[MACRO] macros.json not found, creating it...");
-
-        await sendWSRequest({
-            type: "create",
-            folder: false,
-            path: macrosPath
-        });
-
-        macrosData = { macros: [] };
-    } else {
-        // 5. Load existing macros.json
-        const raw = await sendWSRequest({
-            type: "read_file",
-            path: macrosPath
-        });
-
-        try {
-            macrosData = JSON.parse(raw);
-        } catch {
-            macrosData = { macros: [] };
-        }
-    }
-
-    console.log("[MACRO] Loaded macro config:", macrosData);
-
-    // Next step will be rendering
+	socket.send(JSON.stringify({
+        type: "getMacro"
+    }));
 }
 
-function findFolder(tree, targetName, currentPath = "") {
-    for (const node of tree) {
-        if (node.type === "folder") {
-            const nodePath = currentPath ? `${currentPath}/${node.name}` : node.name;
+let macroEditMode = false;
 
-            if (node.name === targetName) {
-                return { node, path: nodePath };
-            }
+function renderMacroPanel(macroData, actionpackData) {
+    const panel = document.getElementById("macro-panel");
+    panel.innerHTML = ""; // clear
 
-            if (Array.isArray(node.children)) {
-                const found = findFolder(node.children, targetName, nodePath);
-                if (found) return found;
-            }
+    for (const macro of macroData.macros) {
+        const item = document.createElement("div");
+        item.className = "macro-item";
+        item.style.background = macro.color;
+        item.style.left = macro.x + "px";
+        item.style.top = macro.y + "px";
+        item.style.width = macro.width + "px";
+        item.style.height = macro.height + "px";
+        item.setAttribute("data-id", macro.id);
+
+        // text
+        item.innerText = macro.label;
+
+        // delete button
+        const del = document.createElement("div");
+        del.className = "macro-delete";
+        del.innerText = "✕";
+        del.onclick = (e) => {
+            e.stopPropagation();
+            deleteMacro(macro.id);
+        };
+
+        item.appendChild(del);
+
+        // if edit mode -> show delete buttons
+        if (macroEditMode) {
+            item.classList.add("editing");
         }
+
+        panel.appendChild(item);
     }
-    return null;
 }
 
-function findFile(node, targetName, currentPath = "") {
-    const nodePath = currentPath ? `${currentPath}/${node.name}` : node.name;
+document.getElementById("macro-edit-toggle").onclick = () => {
+    macroEditMode = !macroEditMode;
+    document.getElementById("macro-edit-toggle").innerText =
+        `Edit Mode: ${macroEditMode ? "ON" : "OFF"}`;
 
-    if (node.type === "file" && node.name === targetName) {
-        return nodePath;
-    }
+    // re-render to show/hide delete buttons
+    renderMacroPanel(window.currentMacros);
+};
 
-    if (Array.isArray(node.children)) {
-        for (const child of node.children) {
-            const result = findFile(child, targetName, nodePath);
-            if (result) return result;
-        }
-    }
+function deleteMacro(id) {
+    window.currentMacros.macros =
+        window.currentMacros.macros.filter(m => m.id !== id);
 
-    return null;
+    renderMacroPanel(window.currentMacros);
 }
 
-function scanActionpacks(node, currentPath = "", results = []) {
-    if (node.type === "file" && node.name.endsWith(".yml")) {
-        results.push(currentPath ? `${currentPath}/${node.name}` : node.name);
-        return results;
-    }
 
-    if (Array.isArray(node.children)) {
-        for (const child of node.children) {
-            const childPath = currentPath ? `${currentPath}/${node.name}` : node.name;
-            scanActionpacks(child, childPath, results);
-        }
-    }
-
-    return results;
-}
 /* ============================================== */
 
 
