@@ -383,14 +383,25 @@ function renderMacroPanel(macroData) {
 		const apSelect = document.createElement("select");
 		apSelect.className = "macro-select";
 
+		const placeholder = document.createElement("option");
+		placeholder.value = "";
+		placeholder.innerText = "(none)";
+		if (!macro.actionpack) placeholder.selected = true;
+		apSelect.appendChild(placeholder);
+
 		for (const ap of window.currentActionpacks) {
 			const opt = document.createElement("option");
-			opt.value = ap.path;
-			opt.innerText = ap.path;
+
+			const displayName = ap.path.replace(/\.(yaml|yml)$/i, "");
+
+			opt.value = ap.path;       // logical value = full path WITH extension
+			opt.innerText = displayName;  // user sees name without extension
+
 			if (macro.actionpack === ap.path) opt.selected = true;
+
 			apSelect.appendChild(opt);
-			
 		}
+
 		item.appendChild(apSelect);
 
 
