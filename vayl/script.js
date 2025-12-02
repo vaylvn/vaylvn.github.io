@@ -279,10 +279,112 @@ function switchMode(mode) {
 /*                MONACO SETUP                    */
 /* ============================================== */
 async function loadMacroPanel() {
-	console.log(virtualTree);
-	
-	
-	return;
+
+    console.log("[MACRO] Loading panel...");
+
+    // 1. Find the actionpacks folder
+    const ap = findFolder(virtualTree, "actionpacks");
+    if (!ap) {
+        console.error("[MACRO] Couldn't find actionpacks folder.");
+        return;
+    }
+
+    // 2. Scan it
+    const actionpacks = scanActionpacks(ap.node);
+    console.log("[MACRO] Found actionpacks:", actionpacks);
+
+    // 3. Find "dashboard" folder
+    const dash = findFolder(virtualTree, "dashboard");
+    if (!dash) {
+        console.error("[MACRO] No dashboard folder in tree!");
+        return;
+    }
+
+    // 4. Look for macros.json inside dashboard
+    const macrosPath = findFile(dash.node, "macros.json") 
+        || `${dash.path}/macros.json`;
+
+    let macrosData = null;
+
+    // If macros.json doesn't exist → create it
+    if (!findFile(dash.node, "macros.json")) {
+        console.log("[MACRO] macros.json not found, creating it...");
+
+        await sendWSRequest({
+            type: "create",
+            folder: false,
+            path: macrosPath
+        });
+
+        macrosData = { macros: [] };
+    } else {
+        // 5. Load existing macros.json
+        const raw = await sendWSRequest({
+            type: "read_file",
+            path: macrosPath
+        });
+
+        try {
+            macrosData = JSON.parse(raw);
+        } catch {
+            macrosData = { macros: [] };
+        }
+    }
+
+    console.log("[MACRO] Loaded macro config:", macrosData);
+
+    // Next step will be rendering
+}
+
+function findFolder(tree, targetName, currentPath = "") {
+    for (const node of tree) {
+        if (node.type === "folder") {
+            const nodePath = currentPath ? `${currentPath}/${node.name}` : node.name;
+
+            if (node.name === targetName) {
+                return { node, path: nodePath };
+            }
+
+            if (Array.isArray(node.children)) {
+                const found = findFolder(node.children, targetName, nodePath);
+                if (found) return found;
+            }
+        }
+    }
+    return null;
+}
+
+function findFile(node, targetName, currentPath = "") {
+    const nodePath = currentPath ? `${currentPath}/${node.name}` : node.name;
+
+    if (node.type === "file" && node.name === targetName) {
+        return nodePath;
+    }
+
+    if (Array.isArray(node.children)) {
+        for (const child of node.children) {
+            const result = findFile(child, targetName, nodePath);
+            if (result) return result;
+        }
+    }
+
+    return null;
+}
+
+function scanActionpacks(node, currentPath = "", results = []) {
+    if (node.type === "file" && node.name.endsWith(".yml")) {
+        results.push(currentPath ? `${currentPath}/${node.name}` : node.name);
+        return results;
+    }
+
+    if (Array.isArray(node.children)) {
+        for (const child of node.children) {
+            const childPath = currentPath ? `${currentPath}/${node.name}` : node.name;
+            scanActionpacks(child, childPath, results);
+        }
+    }
+
+    return results;
 }
 /* ============================================== */
 
