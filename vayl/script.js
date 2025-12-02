@@ -288,15 +288,14 @@ async function loadMacroPanel() {
 
     let macrosData = { macros: [] };
 
-    if (!macrosExists) {
-        // Create empty default file
-        console.log("[MACRO] macros.json not found, creating a new one...");
+	const macrosPath = `${virtualTree.name}/dashboard/macros.json`;
 
-        await sendWSRequest({
-            type: "create_file",
-            path: macrosPath,
-            content: JSON.stringify(macrosData, null, 2)
-        });
+	if (!virtualFileExists(virtualTree, macrosPath)) {
+		await sendWSRequest({
+			type: "create",
+			folder: false,
+			path: macrosPath
+		});
     } else {
         // Load existing macros
         console.log("[MACRO] macros.json found, loading...");
@@ -342,36 +341,22 @@ async function loadMacroPanel() {
 
 
 function virtualFileExists(tree, targetPath) {
-    if (!tree || !targetPath) return false;
+    function search(node) {
+        if (!node) return false;
 
-    // Normalize relative target
-    targetPath = targetPath.replace(/^\/+/, "");
+        // THIS is the authoritative path directly from the server
+        if (node.path === targetPath) return true;
 
-    function search(node, currentPath) {
-        // Skip nodes missing a valid name
-        if (!node || typeof node.name !== "string") return false;
-
-        const fullPath = currentPath ? `${currentPath}/${node.name}` : node.name;
-
-        // Strip root prefix
-        const relativePath = fullPath.replace(new RegExp(`^${tree.name}/`), "");
-
-        if (relativePath === targetPath) {
-            return true;
-        }
-
-        // Recurse into children if present
         if (Array.isArray(node.children)) {
             for (const child of node.children) {
-                if (search(child, fullPath)) return true;
+                if (search(child)) return true;
             }
         }
-
         return false;
     }
-
-    return search(tree, "");
+    return search(tree);
 }
+
 
 
 
