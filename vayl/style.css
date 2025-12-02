@@ -175,10 +175,10 @@ body {
     border-radius: 4px;
     cursor: pointer;
     user-select: none;
-    opacity: .9;
+    opacity: 1;
 	margin-bottom: 8px;
 }
-#share-btn:hover { opacity: 1; }
+#share-btn:hover { opacity: 0.7; }
 
 /* Modal overlay */
 #share-modal {
@@ -681,6 +681,20 @@ body {
     overflow: hidden;
 }
 
+
+
+#macro-add {
+    margin-left: auto;
+    padding: 6px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    opacity: 1;
+	margin-bottom: 8px;
+}
+#macro-add :hover { opacity: 0.7; }
 
 /* ===========================
    MACRO TILE
