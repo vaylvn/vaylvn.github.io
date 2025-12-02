@@ -21,7 +21,7 @@ let lastSavedContent = "";
 
 let virtualTree = null;
 
-const GRID = 50;
+const GRID = 20;
 
 
 
