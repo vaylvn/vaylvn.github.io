@@ -19,6 +19,8 @@ let serverInfo = null;
 
 let lastSavedContent = "";
 
+let virtualTree = null;
+
 
 /* ============================================== */
 /*                WEBSOCKET SETUP                 */
@@ -114,6 +116,7 @@ function handleWebSocketMessage(msg) {
         // Directory tree
         if (data.virtual_tree) {
             buildSidebar(data.virtual_tree);
+			virtualTree = data.virtual_tree;
             return;
         }
 		
@@ -275,9 +278,166 @@ function switchMode(mode) {
 /* ============================================== */
 /*                MONACO SETUP                    */
 /* ============================================== */
-function loadMacroPanel() {
-	return
+async function loadMacroPanel() {
+    console.log("[MACRO] Loading macro panel...");
+
+    // ----- 1. Locate dashboard/macros.json in the virtual tree -----
+
+    const macrosPath = "dashboard/macros.json";
+    const macrosExists = virtualFileExists(virtualTree, macrosPath);
+
+    let macrosData = { macros: [] };
+
+    if (!macrosExists) {
+        // Create empty default file
+        console.log("[MACRO] macros.json not found, creating a new one...");
+
+        await sendWSRequest({
+            type: "create_file",
+            path: macrosPath,
+            content: JSON.stringify(macrosData, null, 2)
+        });
+    } else {
+        // Load existing macros
+        console.log("[MACRO] macros.json found, loading...");
+
+        const fileContent = await readFileFromServer(macrosPath);
+
+        try {
+            macrosData = JSON.parse(fileContent || "{}");
+            if (!macrosData.macros) macrosData.macros = [];
+        } catch (err) {
+            console.error("[MACRO] Failed to parse macros.json:", err);
+            macrosData = { macros: [] };
+        }
+    }
+
+    // ----- 2. Recursively scan actionpacks folder -----
+
+    const actionpacks = scanActionpacks(virtualTree, "configuration/actionpacks");
+    console.log("[MACRO] Actionpacks found:", actionpacks);
+
+    // ----- 3. Render macro buttons -----
+
+    const container = document.getElementById("macro-container");
+    if (!container) {
+        console.error("[MACRO] Missing #macro-container in HTML");
+        return;
+    }
+
+    container.innerHTML = ""; // wipe old content
+
+    for (const macro of macrosData.macros) {
+        renderMacroButton(container, macro);
+    }
+
+    // Now macrosData + actionpacks are ready for:
+    // - Edit Mode
+    // - Add Macro modal
+    // - Dragging/resizing
+    // We can attach UI handlers once those components are built.
+
+    console.log("[MACRO] Macro panel loaded.");
 }
+
+
+function virtualFileExists(tree, targetPath, currentPath = "") {
+    for (const child of tree.children || []) {
+        const newPath = currentPath ? `${currentPath}/${child.name}` : child.name;
+
+        if (newPath === targetPath) return true;
+
+        if (child.children) {
+            if (virtualFileExists(child, targetPath, newPath)) return true;
+        }
+    }
+    return false;
+}
+
+function scanActionpacks(tree, targetFolder, currentPath = "", results = []) {
+    const path = currentPath ? `${currentPath}/${tree.name}` : tree.name;
+
+    if (path === targetFolder || path.startsWith(targetFolder + "/")) {
+        if (!tree.children) return results;
+
+        for (const child of tree.children) {
+            const childPath = `${path}/${child.name}`;
+
+            if (child.children) {
+                // Dive deeper into folders
+                scanActionpacks(child, targetFolder, path, results);
+            } else if (child.name.endsWith(".yml")) {
+                const rel = childPath.replace(targetFolder + "/", "");
+                results.push(rel);
+            }
+        }
+        return results;
+    }
+
+    // keep searching deeper until we find the target folder
+    for (const child of tree.children || []) {
+        scanActionpacks(child, targetFolder, path, results);
+    }
+
+    return results;
+}
+
+function sendWSRequest(payload) {
+    return new Promise((resolve) => {
+        const requestId = "req_" + Math.random().toString(36).slice(2);
+        payload.requestId = requestId;
+
+        function handler(event) {
+            const data = JSON.parse(event.data);
+            if (data.requestId === requestId) {
+                socket.removeEventListener("message", handler);
+                resolve(data.response || null);
+            }
+        }
+
+        socket.addEventListener("message", handler);
+        socket.send(JSON.stringify(payload));
+    });
+}
+
+async function readFileFromServer(path) {
+    const res = await sendWSRequest({
+        type: "read_file",
+        path
+    });
+    return res; // assuming res is raw file text
+}
+
+function renderMacroButton(container, macro) {
+    const btn = document.createElement("div");
+    btn.className = "macro-btn";
+    btn.textContent = macro.label || macro.id;
+
+    // absolute layout support
+    btn.style.position = "absolute";
+    btn.style.left = (macro.x ?? 50) + "px";
+    btn.style.top = (macro.y ?? 50) + "px";
+    btn.style.width = (macro.width ?? 120) + "px";
+    btn.style.height = (macro.height ?? 120) + "px";
+    btn.style.background = macro.color || "#444";
+
+    // click → trigger macro
+    btn.addEventListener("click", () => {
+        if (window.editMode) {
+            // later: open edit modal
+            return;
+        }
+
+        // trigger actionpack
+        socket.send(JSON.stringify({
+            type: "macro_trigger",
+            actionpack: macro.actionpack
+        }));
+    });
+
+    container.appendChild(btn);
+}
+
 /* ============================================== */
 
 
