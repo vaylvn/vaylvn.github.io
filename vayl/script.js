@@ -342,21 +342,26 @@ async function loadMacroPanel() {
 
 
 function virtualFileExists(tree, targetPath) {
-    // Normalize target slashes and strip leading "/"
+    if (!tree || !targetPath) return false;
+
+    // Normalize relative target
     targetPath = targetPath.replace(/^\/+/, "");
 
-    // Internal recursive search
     function search(node, currentPath) {
+        // Skip nodes missing a valid name
+        if (!node || typeof node.name !== "string") return false;
+
         const fullPath = currentPath ? `${currentPath}/${node.name}` : node.name;
 
-        // Strip the root folder from path for comparison
+        // Strip root prefix
         const relativePath = fullPath.replace(new RegExp(`^${tree.name}/`), "");
 
         if (relativePath === targetPath) {
             return true;
         }
 
-        if (node.children) {
+        // Recurse into children if present
+        if (Array.isArray(node.children)) {
             for (const child of node.children) {
                 if (search(child, fullPath)) return true;
             }
@@ -367,6 +372,7 @@ function virtualFileExists(tree, targetPath) {
 
     return search(tree, "");
 }
+
 
 
 function scanActionpacks(tree, targetFolder, currentPath = "", results = []) {
