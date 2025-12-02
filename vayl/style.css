@@ -650,6 +650,14 @@ body {
    LAYOUT STRUCTURE
    =========================== */
 
+#macro-panel {
+    flex: 1;
+    display: none; /* hidden in console mode */
+    background: #222228;
+    overflow: hidden;
+    flex-direction: column;
+}
+
 #macro-wrapper {
     position: relative;
     width: 100%;
