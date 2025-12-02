@@ -776,21 +776,41 @@ body {
    RESIZE HANDLE (edit mode)
    =========================== */
 
+
+
 .macro-resize {
     position: absolute;
-    width: 12px;
-    height: 12px;
     right: 4px;
     bottom: 4px;
-    background: rgba(255,255,255,0.8);
-    border-radius: 3px;
-    cursor: se-resize;
-    display: none;
+    width: 18px;
+    height: 18px;
+    pointer-events: all;
 }
 
-.macro-item.editing .macro-resize {
-    display: block;
+.macro-resize::before {
+    content: "";
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 12px;
+    height: 12px;
+
+    background: linear-gradient(
+        135deg,
+        transparent 0%,
+        transparent 50%,
+        rgba(255,255,255,0.7) 50%,
+        rgba(255,255,255,0.7) 100%
+    );
+    border-radius: 2px;
+    transition: opacity 0.2s;
+    opacity: 0.6;
 }
+
+.macro-item.editing:hover .macro-resize::before {
+    opacity: 1;
+}
+
 
 
 /* ===========================
