@@ -283,12 +283,12 @@ async function loadMacroPanel() {
 
     // ----- 1. Locate dashboard/macros.json in the virtual tree -----
 
-    const macrosPath = "dashboard/macros.json";
+    // const macrosPath = "dashboard/macros.json";
     const macrosExists = virtualFileExists(virtualTree, macrosPath);
 
     let macrosData = { macros: [] };
 
-	const macrosPath = `${virtualTree.name}/dashboard/macros.json`;
+	const macrosPath = `dashboard/macros.json`;
 
 	if (!virtualFileExists(virtualTree, macrosPath)) {
 		await sendWSRequest({
