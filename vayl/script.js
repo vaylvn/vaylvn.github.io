@@ -290,9 +290,19 @@ async function loadMacroPanel() {
 
 let macroEditMode = false;
 
-document.getElementById("macro-edit-toggle").addEventListener("change", (e) => {
+const editToggle = document.getElementById("macro-edit-toggle");
+editToggle.addEventListener("change", (e) => {
     macroEditMode = e.target.checked;
-    renderMacroPanel(window.currentMacros); 
+
+    renderMacroPanel(window.currentMacros);
+
+    if (!macroEditMode) {
+        // save automatically
+        socket.send(JSON.stringify({
+            type: "setMacro",
+            data: window.currentMacros
+        }));
+    }
 });
 
 
@@ -309,7 +319,60 @@ function renderMacroPanel(macroData) {
         item.style.top = macro.y + "px";
         item.style.width = macro.width + "px";
         item.style.height = macro.height + "px";
-        item.innerText = macro.label;
+        
+		const label = document.createElement("div");
+		label.className = "macro-label";
+		label.innerText = macro.label;
+		item.appendChild(label);
+
+		
+		label.onclick = (e) => {
+			if (!macroEditMode) return;
+
+			e.stopPropagation();
+
+			const input = document.createElement("input");
+			input.value = macro.label;
+
+			label.replaceWith(input);
+			input.focus();
+
+			function finish() {
+				macro.label = input.value.trim() || "Untitled";
+				renderMacroPanel(window.currentMacros); // refresh UI
+			}
+
+			input.onblur = finish;
+			input.onkeydown = (ev) => {
+				if (ev.key === "Enter") finish();
+				if (ev.key === "Escape") renderMacroPanel(window.currentMacros);
+			};
+		};
+
+
+
+
+		const apSelect = document.createElement("select");
+		apSelect.className = "macro-select";
+
+		for (const ap of window.currentActionpacks) {
+			const opt = document.createElement("option");
+			opt.value = ap.path;
+			opt.innerText = ap.path;
+			if (macro.actionpack === ap.path) opt.selected = true;
+			apSelect.appendChild(opt);
+		}
+
+		apSelect.onchange = () => {
+			macro.actionpack = apSelect.value;
+		};
+
+
+
+
+
+
+
 
         // delete button
         const del = document.createElement("div");
@@ -420,6 +483,22 @@ function deleteMacro(id) {
 
     renderMacroPanel(window.currentMacros);
 }
+
+document.getElementById("macro-add").onclick = () => {
+    const newMacro = {
+        id: "macro_" + Date.now(),
+        label: "New Macro",
+        actionpack: "",
+        x: 100,
+        y: 100,
+        width: 100,
+        height: 100,
+        color: "#888888"
+    };
+
+    window.currentMacros.macros.push(newMacro);
+    renderMacroPanel(window.currentMacros);
+};
 
 
 /* ============================================== */

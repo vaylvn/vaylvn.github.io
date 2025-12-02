@@ -749,3 +749,52 @@ input:checked + .slider:before {
 .macro-item.editing .macro-resize {
     display: block;
 }
+
+.macro-label {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    pointer-events: auto;
+    user-select: none;
+}
+
+.macro-label input {
+    width: 90%;
+    padding: 4px;
+    border-radius: 6px;
+    border: none;
+    text-align: center;
+}
+
+.macro-select {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    opacity: 0.9;
+    display: none;
+}
+
+.macro-item.editing .macro-select {
+    display: block;
+}
+
+#macro-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#macro-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    position: relative;
+    z-index: 10; /* stays above tiles */
+}
+
+#macro-items {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
