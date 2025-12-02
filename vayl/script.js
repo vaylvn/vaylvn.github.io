@@ -22,6 +22,7 @@ let lastSavedContent = "";
 let virtualTree = null;
 
 const GRID = 20;
+const MIN_BOUND = 20;
 
 
 
@@ -346,6 +347,10 @@ function renderMacroPanel(macroData) {
 				macro.x = Math.round((origX + dx) / GRID) * GRID;
 				macro.y = Math.round((origY + dy) / GRID) * GRID;
 
+				macro.x = Math.max(MIN_BOUND, macro.x);
+				macro.y = Math.max(MIN_BOUND, macro.y);
+
+	
 				item.style.left = macro.x + "px";
 				item.style.top = macro.y + "px";
 			}
