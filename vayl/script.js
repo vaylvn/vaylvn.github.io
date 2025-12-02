@@ -412,7 +412,7 @@ function renderMacroPanel(macroData) {
 			}
 
 			// (none) option
-			menu.appendChild(makeItem("(none)", ""));
+			menu.appendChild(makeItem(" ", ""));
 
 			// actionpack items
 			for (const ap of window.currentActionpacks) {
