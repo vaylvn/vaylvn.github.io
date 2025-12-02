@@ -242,11 +242,13 @@ function switchMode(mode) {
     const consolePanel = document.getElementById("console-panel");
     const sidebar = document.getElementById("sidebar");
     const editorPanel = document.getElementById("editor-panel");
+	const macroPanel = document.getElementById("macro-panel");
 
     if (mode === "console") {
         consolePanel.style.display = "block";
         sidebar.style.display = "none";
         editorPanel.style.display = "none";
+		macroPanel.style.display = "none";
         return;
     }
 
@@ -254,11 +256,13 @@ function switchMode(mode) {
         consolePanel.style.display = "none";
         sidebar.style.display = "block";
         editorPanel.style.display = "flex";
+		macroPanel.style.display = "none";
         initMonaco();
         return;
     }
 
 	if (mode === "macro") {
+		macroPanel.style.display = "flex";
 		consolePanel.style.display = "none";
         sidebar.style.display = "none";
         editorPanel.style.display = "none";
@@ -266,23 +270,7 @@ function switchMode(mode) {
         return;
 	}
 
-    if (mode === "settings") {
-        consolePanel.style.display = "none";
-        sidebar.style.display = "none";
-        editorPanel.style.display = "flex";
-        initMonaco();
-        loadSettingsPanel();
-        return;
-    }
 
-    if (mode === "help") {
-        consolePanel.style.display = "none";
-        sidebar.style.display = "none";
-        editorPanel.style.display = "flex";
-        initMonaco();
-        loadHelpPanel();
-        return;
-    }
 }
 
 
