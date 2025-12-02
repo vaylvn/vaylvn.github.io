@@ -376,41 +376,59 @@ function renderMacroPanel(macroData) {
 		};
 
 
+		const apBtn = document.createElement("div");
+		apBtn.className = "macro-ap-btn";
+		apBtn.innerHTML = "⋮"; // the menu icon
+		item.appendChild(apBtn);
 
 
+		apBtn.onclick = (e) => {
+			if (!macroEditMode) return;
+			e.stopPropagation();
 
+			const menu = document.getElementById("ap-menu");
+			menu.innerHTML = "";
 
-		const apSelect = document.createElement("select");
-		apSelect.className = "macro-select";
+			// none option
+			const noneOption = document.createElement("div");
+			noneOption.className = "ap-menu-item";
+			noneOption.innerText = "(none)";
+			noneOption.onclick = () => {
+				macro.actionpack = "";
+				closeApMenu();
+			};
+			menu.appendChild(noneOption);
 
-		const placeholder = document.createElement("option");
-		placeholder.value = "";
-		placeholder.innerText = "(none)";
-		if (!macro.actionpack) placeholder.selected = true;
-		apSelect.appendChild(placeholder);
+			// list all actionpacks
+			for (const ap of window.currentActionpacks) {
+				const item = document.createElement("div");
+				item.className = "ap-menu-item";
+				item.innerText = ap.path.replace(/\.(yaml|yml)$/i, "");
+				item.onclick = () => {
+					macro.actionpack = ap.path;
+					closeApMenu();
+				};
+				menu.appendChild(item);
+			}
 
-		for (const ap of window.currentActionpacks) {
-			const opt = document.createElement("option");
+			// position
+			const rect = apBtn.getBoundingClientRect();
+			menu.style.left = rect.left + "px";
+			menu.style.top = rect.bottom + "px";
 
-			const displayName = ap.path.replace(/\.(yaml|yml)$/i, "");
-
-			opt.value = ap.path;       // logical value = full path WITH extension
-			opt.innerText = displayName;  // user sees name without extension
-
-			if (macro.actionpack === ap.path) opt.selected = true;
-
-			apSelect.appendChild(opt);
-		}
-
-		item.appendChild(apSelect);
-
-
-		apSelect.onchange = () => {
-			macro.actionpack = apSelect.value;
+			menu.classList.remove("hidden");
 		};
 
+		function closeApMenu() {
+			document.getElementById("ap-menu").classList.add("hidden");
+		}
+
+		// close when clicking outside
+		document.addEventListener("click", closeApMenu);
 
 
+
+		
 
 
 
