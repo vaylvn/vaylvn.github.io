@@ -469,6 +469,8 @@ function renderMacroPanel(macroData) {
 				actionpack: macro.actionpack,
 				label: macro.label   // optional, but nice for logging
 			}));
+			
+			console.log(`Sending Actionpack: ${macro.label}`); 
 		};
 
 
