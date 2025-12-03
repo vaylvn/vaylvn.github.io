@@ -458,6 +458,21 @@ function renderMacroPanel(macroData) {
             item.classList.add("editing");
         }
 
+
+
+		item.onclick = () => {
+			if (macroEditMode) return;
+
+			socket.send(JSON.stringify({
+				type: "runMacro",
+				id: macro.id,
+				actionpack: macro.actionpack,
+				label: macro.label   // optional, but nice for logging
+			}));
+		};
+
+
+
         /* ==========================================================
            MOVE HANDLER (with grid snap)
         ========================================================== */
