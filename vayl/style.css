@@ -934,7 +934,7 @@ input:checked + .slider:before {
     padding: 6px 12px;
     color: #eee;
     cursor: pointer;
-
+	font-size: 12px !important;
     /* this is the important part */
     display: flex;
     justify-content: space-between;
