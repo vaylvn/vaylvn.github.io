@@ -701,7 +701,7 @@ body {
 
 .macro-item {
     position: absolute;
-    border-radius: 16px;
+    border-radius: 8px;
     color: white;
     font-weight: bold;
     display: flex;
