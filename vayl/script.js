@@ -1751,5 +1751,31 @@ window.addEventListener("load", () => {
     closeBtn.onclick = () => {
         modal.classList.add("hidden");
     };
+	
+	
+	
+	
+	// Update
+	const params = new URLSearchParams(location.search);
+    const latest = params.get("update");
+
+    if (latest) {
+        const modal = document.getElementById("update-modal");
+        document.getElementById("update-version").textContent = latest;
+
+        modal.classList.remove("hidden");
+
+        document.getElementById("update-download").onclick = () => {
+            window.location.href = "https://github.com/vaylvn/vaylbot/releases/latest/download/Vayl.exe";
+        };
+
+        document.getElementById("update-ignore").onclick = () => {
+            modal.classList.add("hidden");
+        };
+    }
+	
+	
+	
+	
 });
 
