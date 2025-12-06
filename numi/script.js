@@ -97,6 +97,11 @@ document.addEventListener('keydown', e => {
   if (!gameVisible) return;
   if (!running) return startRun();
 
+	if (e.key === '/' || e.key === '*' || (e.ctrlKey && e.key.toLowerCase() === 'f') || e.key === 'F3') {
+		e.preventDefault();
+		return;
+	}
+
   if (e.key === 'Backspace') {
     input = input.slice(0, -1);
   } else if (/^[0-9]$/.test(e.key)) {
