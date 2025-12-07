@@ -206,6 +206,7 @@ async function loadLeaderboard(mode) {
       let name = r.name;
       if (name.startsWith("AGL")) name += " 🍪";
       if (name.startsWith("MEL")) name += " 🪸";
+	  if (name.startsWith("SWA")) name += " 🌿";
 
 		if (i === 0) name = "🏆 " + name;
 
