@@ -369,6 +369,16 @@ function downloadRunCSV(run){
         ]);
     });
 
+	rows.push([""]);   
+	
+	rows.push(["--- APS ---"]);
+	rows.push(["second", "APS"]);
+	apsS.forEach((v,i)=>{
+		rows.push([i, v.toFixed(3)]);
+	});
+
+	
+
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], {type:"text/csv"});
     const url = URL.createObjectURL(blob);
