@@ -281,26 +281,51 @@ function renderGraph(run){
  });
  
  
-	 cvs.onmousemove = e => {
-	   const b = cvs.getBoundingClientRect();
-	   const x = e.clientX - b.left;
-	   const y = e.clientY - b.top;
+	cvs.onmousemove = e => {
+		const r = cvs.getBoundingClientRect();
+		const x = e.clientX - r.left;
+		const y = e.clientY - r.top;
 
-	   const hit = dots.find(p => ((x-p.x)**2 + (y-p.y)**2) < 64);
+		// Check dot hover first (priority)
+		const hit = dots.find(p => ((x-p.x)**2 + (y-p.y)**2) < 64);
 
-	   if(hit){
-		 tip.style.display = "block";
-		 tip.style.left = (b.left + x + 14) + "px";   // relative to canvas
-		 tip.style.top  = (b.top + y - 18) + "px";
-		 tip.innerHTML = `${hit.r.a}×${hit.r.b}<br>${hit.r.time.toFixed(2)}s`;
-	   } else {
-		 tip.style.display = "none";
-	   }
+		if(hit){
+			// DOT TOOLTIP
+			tip.style.display = "block";
+			tip.style.left = (r.left + x + 14) + "px";
+			tip.style.top  = (r.top  + y - 18) + "px";
+			tip.innerHTML = `
+				<b>${hit.r.a} × ${hit.r.b}</b><br>
+				Time: ${hit.r.time.toFixed(2)}s<br>
+				${hit.r.correct ? "✔ Correct" : "❌ Wrong"}
+			`;
+			return;
+		}
+
+		// Otherwise → APS LINE HOVER
+		const idx = Math.round((x - pad) / (gW / (pts.length - 1)));
+		if (idx >= 0 && idx < pts.length){
+			const apsValue = apsS[idx];
+			tip.style.display = "block";
+			tip.style.left = (r.left + x + 14) + "px";
+			tip.style.top  = (r.top  + y - 18) + "px";
+			tip.innerHTML = `
+				<b>APS:</b> ${apsValue.toFixed(2)}<br>
+				Second: ${idx}s<br>
+				Speed Trend Line
+			`;
+			return;
+		}
+
+		// No hover target
+		tip.style.display = "none";
 	};
 
+	cvs.onmouseleave = () => tip.style.display = "none";
 
 
-	cvs.onmouseleave=()=>tip.style.display="none";
+
+
 }
 
 
