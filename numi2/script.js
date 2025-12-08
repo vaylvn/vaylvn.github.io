@@ -300,7 +300,30 @@ function renderGraph(run){
 			`;
 			return;
 		}
+		
+		
+		
+		
+		// Get index from mouse X
+		const idx = Math.round((x - pad) / (gW / (pts.length - 1)));
 
+		if (idx >= 0 && idx < pts.length) {
+			const p = pts[idx];  // <-- exact point ON the APS curve
+
+			tip.style.display = "block";
+			tip.style.left = (r.left + p.x + 12) + "px";  // tooltip follows LINE X
+			tip.style.top  = (r.top  + p.y - 12) + "px";  // tooltip follows LINE Y
+
+			tip.innerHTML = `
+				<b>APS:</b> ${apsS[idx].toFixed(2)}<br>
+				Second: ${idx}s<br>
+				Trend Line
+			`;
+			return;
+		}
+			
+		
+		/*
 		// APS HOVER
 		const idx = Math.round((x - pad) / (gW / (pts.length - 1)));
 		if (idx >= 0 && idx < pts.length){
@@ -315,6 +338,7 @@ function renderGraph(run){
 			`;
 			return;
 		}
+		*/
 
 		tip.style.display = "none";
 	};
@@ -326,6 +350,39 @@ function renderGraph(run){
 
 
 }
+
+
+function downloadRunCSV(run){
+    const rows = [
+        ["tEnd","a","b","time","correct"]
+    ];
+
+    run.results.forEach(r=>{
+        rows.push([
+            r.tEnd.toFixed(3),
+            r.a,
+            r.b,
+            r.time.toFixed(3),
+            r.correct ? 1 : 0
+        ]);
+    });
+
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "numi_run.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById("downloadBtn").onclick = () => downloadRunCSV(runData);
+
 
 
 /* ---- Leaderboards ---- */
