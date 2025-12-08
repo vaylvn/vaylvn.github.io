@@ -370,9 +370,10 @@ function renderGraph(run){
 
 function downloadRunCSV(run){
     const rows = [
+		["","","","GAME","DATA","","",""],
         ["tEnd","a","b","time","correct", "answer", "guess", "difference"]
     ];
-
+	
     run.results.forEach(r=>{
         rows.push([
             r.tEnd.toFixed(3),
@@ -388,7 +389,7 @@ function downloadRunCSV(run){
 
 	// Add APS data
     rows.push([]);
-    rows.push(["---","APS","---"]);
+    rows.push(["","APS",""]);
     rows.push(["second","aps_raw","aps_smoothed"]);
 
     if (lastAPS && lastAPSSmoothed){
