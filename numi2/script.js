@@ -329,7 +329,7 @@ function renderGraph(run){
 			tip.style.left = (r.left + x + 12) + "px";
 			tip.style.top  = (r.top  + y - 12) + "px";
 
-			ans = (hit.r.a * hit.r.b);
+			const ans = (hit.r.a * hit.r.b);
 
 			tip.innerHTML = `
 				<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>Speed: ${hit.r.time.toFixed(2)}s<br><br>
