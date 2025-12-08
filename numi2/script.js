@@ -21,6 +21,10 @@ let questionStartTime = 0;
 let gameStartTime = 0;
 let globalRunData = null;
 
+let lastAPS = null;
+let lastAPSSmoothed = null;
+
+
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 function show(id) {
@@ -238,11 +242,15 @@ function renderGraph(run){
  const R=run.results,d=run.duration,pad=20,gW=cvs.width-pad*2,gH=cvs.height-pad*2,baseY=cvs.height-pad;
 
  // APS bins
- const bins=Math.ceil(d);const aps=new Array(bins).fill(0);
+ const bins = Math.ceil(d);
+ const aps = new Array(bins).fill(0);
  R.forEach(r=>r.correct&&aps[Math.min(bins-1,Math.floor(r.tEnd))]++);
 
  const smooth=a=>a.map((v,i)=>a.slice(Math.max(0,i-2),i+1).reduce((x,y)=>x+y)/Math.min(i+1,3));
  const apsS=smooth(aps),maxAPS=Math.max(...apsS,1);
+
+	lastAPS = aps;
+	lastAPSSmoothed = apsS;
 
  // Points for curve
  const pts=apsS.map((v,i)=>({x:pad+(i/(bins-1))*gW,y:baseY-(v/maxAPS)*gH}));
@@ -368,6 +376,22 @@ function downloadRunCSV(run){
             r.correct ? 1 : 0
         ]);
     });
+
+	// Add APS data
+    rows.push([]);
+    rows.push(["--- APS ---"]);
+    rows.push(["second","aps_raw","aps_smoothed"]);
+
+    if (lastAPS && lastAPSSmoothed){
+        for (let i = 0; i < lastAPS.length; i++){
+            rows.push([
+                i,
+                lastAPS[i],
+                lastAPSSmoothed[i].toFixed(3)
+            ]);
+        }
+    }
+
 
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], {type:"text/csv"});
