@@ -285,14 +285,9 @@ button.small {
   font-weight: 600 !important;
 }
 
-
-
-.icon-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent url("screenshot.png") no-repeat center center;
-    background-size: 20px 20px;
-    cursor: pointer;
+.icon-btn img {
+    width: 100%;     /* whatever size you want */
+    height: 100%;
+    display: block;  /* removes inline spacing */
 }
 
