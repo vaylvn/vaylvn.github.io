@@ -24,10 +24,16 @@ let globalRunData = null;
 let lastAPS = null;
 let lastAPSSmoothed = null;
 
+let isCustom = false;
 
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 function show(id) {
+	
+	if (id === "screen-home") {
+		isCustom = false;
+	}
+	
   screens.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
@@ -56,6 +62,7 @@ startCustomBtn.onclick = () => {
   max = Math.max(min, parseInt(maxInput.value) || 12);
   selectedMode = Math.max(5, parseInt(timeInput.value) || 30);
   time = selectedMode;
+  isCustom = true;
   startGame();
 };
 
@@ -232,16 +239,25 @@ function updateSummary(run){
   const acc = Math.round(correct/r.length*100);
   const apm = (correct/run.duration*60).toFixed(1);
   
+	if (isCustom) {
+		document.getElementById("summary").innerHTML = `
+			<div><b style="font-size:28px;color:#ffd642">custom</b><br>Mode<br>(${selectedMode}s / ${parseInt(minInput.value)} - ${parseInt(maxInput.value)})</div>
+			<div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
+			<div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
+			<div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
+			<div><b style="font-size:28px;color:#ffd642">${streak}</b><br>Streak</div>
+		  `;
+	} else {
+		document.getElementById("summary").innerHTML = `
+			<div><b style="font-size:28px;color:#ffd642">${selectedMode}s</b><br>Mode</div>
+			<div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
+			<div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
+			<div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
+			<div><b style="font-size:28px;color:#ffd642">${streak}</b><br>Streak</div>
+		  `;
+	}
 
-  document.getElementById("summary").innerHTML = `
   
-  
-	<div><b style="font-size:28px;color:#ffd642">${selectedMode}s</b><br>Mode</div>
-    <div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
-    <div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
-    <div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
-    <div><b style="font-size:28px;color:#ffd642">${streak}</b><br>Streak</div>
-  `;
 }
 
 
@@ -607,6 +623,9 @@ document.getElementById('backBtnGame').onclick = () => {
   } else {
     show('screen-home');
   }
+  
+  isCustom = false;
+  
 };
 
 
