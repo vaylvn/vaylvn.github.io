@@ -139,7 +139,10 @@ document.addEventListener('keydown', e => {
       b: current.b,
       time: timeTaken,
       correct: true,
-      tEnd: (now - gameStartTime) / 1000
+      tEnd: (now - gameStartTime) / 1000,
+	  answer: current.ans,
+	  guess: parseInt(input, 10),
+	  agDifference: 0
     });
 
     questionStartTime = now; // reset timing for next question
@@ -166,7 +169,10 @@ document.addEventListener('keydown', e => {
       b: current.b,
       time: timeTaken,
       correct: false,
-      tEnd: (now - gameStartTime) / 1000
+      tEnd: (now - gameStartTime) / 1000,
+	  answer: current.ans,
+	  guess: parseInt(input, 10),
+	  agDifference: (answer - guess)
     });
 
     questionStartTime = now;
@@ -364,7 +370,7 @@ function renderGraph(run){
 
 function downloadRunCSV(run){
     const rows = [
-        ["tEnd","a","b","time","correct"]
+        ["tEnd","a","b","time","correct", "answer", "guess", "difference"]
     ];
 
     run.results.forEach(r=>{
@@ -373,13 +379,16 @@ function downloadRunCSV(run){
             r.a,
             r.b,
             r.time.toFixed(3),
-            r.correct ? 1 : 0
+            r.correct ? 1 : 0,
+			r.answer,
+			r.guess,
+			r.agDifference,
         ]);
     });
 
 	// Add APS data
     rows.push([]);
-    rows.push(["--- APS ---"]);
+    rows.push(["---","APS","---"]);
     rows.push(["second","aps_raw","aps_smoothed"]);
 
     if (lastAPS && lastAPSSmoothed){
