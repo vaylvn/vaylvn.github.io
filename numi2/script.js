@@ -19,7 +19,7 @@ const modeButtons = document.querySelectorAll('.mode-tabs button');
 let gameHistory = []; // ← stores answer events for summary + graph
 let questionStartTime = 0;
 let gameStartTime = 0;
-
+let globalRunData = null;
 
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
@@ -192,6 +192,8 @@ document.addEventListener('keydown', e => {
 		duration: selectedMode,    // 15/30/60/custom
 		results: gameHistory       // <-- list of answers you already track
 	  };
+
+		globalRunData = runData;
 
 	  updateSummary(runData);       // <── new
 	  renderGraph(runData);         // <── new
@@ -381,7 +383,7 @@ function downloadRunCSV(run){
     URL.revokeObjectURL(url);
 }
 
-document.getElementById("downloadBtn").onclick = () => downloadRunCSV(runData);
+document.getElementById("downloadBtn").onclick = () => downloadRunCSV(globalRunData);
 
 
 
