@@ -231,8 +231,12 @@ function updateSummary(run){
   const streak = (()=>{let s=0,b=0;for(const x of r){if(x.correct) s++; else{b=Math.max(b,s);s=0}}return Math.max(b,s)})();
   const acc = Math.round(correct/r.length*100);
   const apm = (correct/run.duration*60).toFixed(1);
+  
 
   document.getElementById("summary").innerHTML = `
+  
+  
+	<div><b style="font-size:28px;color:#ffd642">${selectedMode}s</b><br>Mode</div>
     <div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
     <div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
     <div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
