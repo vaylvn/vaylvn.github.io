@@ -9,6 +9,7 @@
 	<link rel="icon" href="numi.png" type="image/png">
 
 	
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -77,19 +78,39 @@
 
 
 	<section id="screen-results" class="screen">
-	  <h2>Score: <span id="finalScore"></span></h2>
+	
+		<div id="resultCapture">   <!-- everything inside this gets screenshotted -->
 
-	  <!-- NEW summary bar -->
-	  <div id="summary" style="display:flex;justify-content:center;gap:35px;margin:10px 0 20px;font-size:14px;text-align:center;"></div>
+			  <h2>Score: <span id="finalScore"></span></h2>
 
-	  <!-- NEW graph -->
-	  <canvas id="resultGraph" width="600" height="200" style="max-width:100%;margin-bottom:20px;"></canvas>
+			  <!-- NEW summary bar -->
+			  <div id="summary" style="display:flex;justify-content:center;gap:35px;margin:10px 0 20px;font-size:14px;text-align:center;"></div>
+
+			  <!-- NEW graph -->
+			  <canvas id="resultGraph" width="600" height="200" style="max-width:100%;margin-bottom:20px;"></canvas>
+				
+				<div id="watermark" style="
+					text-align:right;
+					color:#555;
+					font-family: 'IBM Plex Mono', monospace;
+					font-size:14px;
+					margin-top:6px;
+					padding-right:4px;
+				">
+					numi
+				</div>
+
+
+	  </div>
 		
+	
+
 
 	  <!-- your existing leaderboard input -->
 	  <input id="nameInput" maxlength="3" placeholder="AAA" />
 
 	  <div class="row">
+		<button id="screenshotBtn" class="icon-btn"></button>
 		<button id="downloadBtn">Download</button>
 		<button id="submitBtn">Submit</button>
 		<button id="playAgainBtn">Play Again</button>
@@ -143,6 +164,8 @@
   </script>
 
   <!-- Main logic -->
+  
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script type="module" src="script.js"></script>
 </body>
 </html>

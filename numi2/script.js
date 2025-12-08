@@ -420,6 +420,36 @@ function downloadRunCSV(run){
 document.getElementById("downloadBtn").onclick = () => downloadRunCSV(globalRunData);
 
 
+document.getElementById("screenshotBtn").addEventListener("click", async (e) => {
+    const download = e.shiftKey;
+    await takeScreenshot(download);
+});
+
+
+async function takeScreenshot(download) {
+    const target = document.getElementById("resultCapture");
+
+    const canvas = await html2canvas(target, {
+        backgroundColor: "#0d0d0d",
+        scale: 2
+    });
+
+    if (download) {
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = "numi_result.png";
+        link.click();
+        return;
+    }
+
+    canvas.toBlob(async (blob) => {
+        await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob })
+        ]);
+    });
+}
+
+
 
 /* ---- Leaderboards ---- */
 

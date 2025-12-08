@@ -284,3 +284,15 @@ button.small {
   color: #f5c542 !important;
   font-weight: 600 !important;
 }
+
+
+
+.icon-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent url("assets/screenshot.png") no-repeat center center;
+    background-size: 20px 20px;
+    cursor: pointer;
+}
+
