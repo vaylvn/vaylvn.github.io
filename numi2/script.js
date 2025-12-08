@@ -92,8 +92,8 @@ function startRun(){
   
   
 	gameHistory = [];
-    gameStart = performance.now();
-    questionStart = performance.now();
+    gameStartTime = performance.now();
+    questionStartTime = performance.now();
   
   msgEl.textContent = '';
   newQ();
