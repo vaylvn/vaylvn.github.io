@@ -255,7 +255,8 @@ function renderGraph(run){
                   q1*p0.y+q2*p1.y+q3*p2.y+q4*p3.y);
      }
    }
-   ctx.strokeStyle=varAccent="#ffd642";ctx.lineWidth=2;
+   ctx.strokeStyle = "#ffd642";
+   ctx.lineWidth=2;
    ctx.shadowColor="rgba(255,214,66,.45)";ctx.shadowBlur=10;
    ctx.stroke();ctx.shadowBlur=0;
  }
