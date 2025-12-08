@@ -183,6 +183,8 @@ document.addEventListener('keydown', e => {
 	  running = false;
 	  clearInterval(timerInt);
 
+		show('screen-results');
+
 	  finalScoreEl.textContent = score;
 
 	  // generate final session data
@@ -206,7 +208,7 @@ document.addEventListener('keydown', e => {
 		playAgain.textContent = 'Main Menu';
 	  }
 
-	  show('screen-results');
+	  
 	}
 
 
