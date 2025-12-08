@@ -1,0 +1,272 @@
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  background:#1b1b1b;
+  color:#eaeaea;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.03em;
+  display:flex; justify-content:center; align-items:center;
+  min-height:100vh;
+}
+
+main { width:100%; max-width:600px; text-align:center; }
+
+.screen {
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:2rem;
+  animation:fade 0.3s ease;
+}
+.screen.active { display:flex; }
+
+h1 { font-size:2.4rem; }
+h2 { font-size:1.6rem; }
+.desc, .hint { opacity:0.6; font-size:1rem; }
+
+.mode-select, .row {
+  display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;
+}
+
+button {
+  background:none;
+  border:1px solid #555;
+  color:#eaeaea;
+  padding:0.6rem 1.4rem;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+  font-family:inherit;
+  font-size:1rem;
+}
+button:hover { border-color:#f5c542; color:#f5c542; }
+
+button.small {
+  position:absolute;
+  left:1rem;
+  top:1rem;
+  font-size:0.9rem;
+}
+
+input {
+  background:none;
+  border:none;
+  border-bottom:1px solid #555;
+  color:#f5c542;
+  text-transform:uppercase;
+  font-family:inherit;
+  font-size:2rem;
+  text-align:center;
+  width:100px;
+  outline:none;
+}
+
+#hud {
+  display:flex;
+  gap:0.6rem;
+  opacity:0.7;
+  font-size:1.4rem;
+}
+
+#equation {
+  font-size:4rem;
+  letter-spacing:1px;
+  min-height:4rem;
+}
+
+#answer {
+  font-size:3rem;
+  min-height:3.5rem;
+  max-height:3.5rem;
+  line-height: 3.5rem; 
+  border-bottom:2px solid rgba(255,255,255,0.2);
+  width:6ch;
+  margin:auto;
+}
+
+/* Custom Panel */
+.hidden { display:none !important; }
+
+#customPanel {
+  margin-top:1rem;
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.8rem 1rem;
+  justify-content:center;
+  align-items:center;
+  animation:fade 0.25s ease;
+}
+
+#customPanel label {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:0.9rem;
+  opacity:0.8;
+}
+
+#customPanel input {
+  background:none;
+  border:1px solid #555;
+  color:#f5c542;
+  width:4rem;
+  text-align:center;
+  border-radius:6px;
+  font-family:inherit;
+  font-size:1rem;
+  padding:0.2rem 0.4rem;
+}
+
+/* Leaderboard */
+.mode-tabs {
+  display:flex;
+  gap:0.8rem;
+  justify-content:center;
+  margin-top:-1rem;
+  margin-bottom:1rem;
+}
+
+.mode-tabs button {
+  background:none;
+  border:1px solid #555;
+  color:#eaeaea;
+  padding:0.3rem 0.9rem;
+  border-radius:6px;
+  font-family:inherit;
+  cursor:pointer;
+  transition:all 0.2s;
+  font-size:0.95rem;
+}
+.mode-tabs button:hover { border-color:#f5c542; color:#f5c542; }
+
+.mode-tabs button.active {
+  background:#f5c542;
+  color:#1b1b1b;
+  border-color:#f5c542;
+  font-weight:bold;
+}
+
+
+/* #leaderboardList {
+  list-style:none;
+  width:100%;
+  max-width:300px;
+  margin:auto;
+  padding:0;
+  text-align:left;
+}
+#leaderboardList li {
+  display:flex; justify-content:space-between;
+  margin:0.3rem 0;
+}
+*/
+
+.smallLink { opacity:0.7; font-size:0.9rem; margin-top:1rem; }
+.linkBtn {
+  background:none;
+  border:none;
+  color:#f5c542;
+  cursor:pointer;
+  font-size:1rem;
+  padding:0.2rem 0.5rem;
+  transition:opacity 0.2s;
+}
+.linkBtn:hover { opacity:0.8; text-decoration:underline; }
+
+@keyframes fade {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+
+.screen {
+  position: relative; /* establish containing block for absolute children */
+}
+
+button.small {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  font-size: 0.9rem;
+  transform: translateZ(0); /* optional: force GPU compositing, smooths reflow */
+}
+
+
+
+#mobileKeypad {
+  margin-top: 1.2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 140px);
+  gap: 0.6rem;
+}
+
+.keypad-grid button {
+  height: 70px;
+  background: #222;
+  border: 1px solid #555;
+  border-radius: 8px;
+  color: #f5c542;
+  font-size: 1.4rem;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.keypad-grid button:active {
+  background: #444;
+}
+
+
+#leaderboardList li.highlight,
+#leaderboardList li.highlight span {
+  color: #f5c542 !important;
+  font-weight: 600 !important;
+}
+
+
+.hidden { display: none; }
+.device-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.device-tabs button.active {
+  background: #f5c542;
+  color: #111;
+  font-weight: 600;
+}
+
+#lbCombined,
+#lbPC,
+#lbMobile {
+  list-style: none;
+  width: 100%;
+  max-width: 300px;
+  margin: auto;
+  padding: 0;
+  text-align: left;
+}
+
+#lbCombined li,
+#lbPC li,
+#lbMobile li {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.3rem 0;
+}
+
+
+#lbCombined li.highlight,
+#lbPC li.highlight,
+#lbMobile li.highlight,
+#lbCombined li.highlight span,
+#lbPC li.highlight span,
+#lbMobile li.highlight span {
+  color: #f5c542 !important;
+  font-weight: 600 !important;
+}
