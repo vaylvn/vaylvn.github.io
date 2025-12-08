@@ -329,9 +329,10 @@ function renderGraph(run){
 			tip.style.left = (r.left + x + 12) + "px";
 			tip.style.top  = (r.top  + y - 12) + "px";
 
+			ans = (hit.r.a * hit.r.b)
+
 			tip.innerHTML = `
-				<b>${hit.r.a} × ${hit.r.b}</b><br>
-				${hit.r.time.toFixed(2)}s<br>
+				<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>Speed: ${hit.r.time.toFixed(2)}s<br><br>
 				${hit.r.correct ? "✔ Correct" : "❌ Wrong"}
 			`;
 			return;
