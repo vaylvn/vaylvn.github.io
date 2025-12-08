@@ -79,7 +79,7 @@
 
 	<section id="screen-results" class="screen">
 	
-		<div id="resultCapture">   <!-- everything inside this gets screenshotted -->
+		<div id="resultCapture" style="padding: 16px; box-sizing: border-box;">   <!-- everything inside this gets screenshotted -->
 
 			  <h2>Score: <span id="finalScore"></span></h2>
 
@@ -87,14 +87,13 @@
 			  <div id="summary" style="display:flex;justify-content:center;gap:35px;margin:10px 0 20px;font-size:14px;text-align:center;"></div>
 
 			  <!-- NEW graph -->
-			  <canvas id="resultGraph" width="600" height="200" style="max-width:100%;margin-bottom:20px;"></canvas>
+			  <canvas id="resultGraph" width="600" height="200" style="max-width:100%;"></canvas>
 				
 				<div id="watermark" style="
 					text-align:right;
 					color:#555;
 					font-family: 'IBM Plex Mono', monospace;
-					font-size:14px;
-					margin-top:6px;
+					font-size:30px;
 					padding-right:4px;
 				">
 					numi

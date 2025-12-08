@@ -430,7 +430,7 @@ async function takeScreenshot(download) {
     const target = document.getElementById("resultCapture");
 
     const canvas = await html2canvas(target, {
-        backgroundColor: "#0d0d0d",
+        backgroundColor: "#1B1B1B",
         scale: 2
     });
 
