@@ -286,8 +286,8 @@ button.small {
 }
 
 .icon-btn img {
-    width: 100%;     /* whatever size you want */
-    height: 100%;
+    width: 40px;     /* whatever size you want */
+    height: 40px;
     display: block;  /* removes inline spacing */
 }
 
