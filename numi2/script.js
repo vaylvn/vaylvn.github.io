@@ -128,7 +128,7 @@ document.addEventListener('keydown', e => {
   // ========== CORRECT ==========
   if (parseInt(input, 10) === current.ans) {
     const now = performance.now();
-    const timeTaken = (now - questionStart) / 1000;
+    const timeTaken = (now - questionStartTime) / 1000;
 
     gameHistory.push({
       a: current.a,
@@ -138,7 +138,7 @@ document.addEventListener('keydown', e => {
       tEnd: (now - gameStart) / 1000
     });
 
-    questionStart = now; // reset timing for next question
+    questionStartTime = now; // reset timing for next question
 
     score++;
     scoreEl.textContent = score;
@@ -155,7 +155,7 @@ document.addEventListener('keydown', e => {
   // ========== INCORRECT FULL INPUT ==========
   if (input.length >= String(current.ans).length) {
     const now = performance.now();
-    const timeTaken = (now - questionStart) / 1000;
+    const timeTaken = (now - questionStartTime) / 1000;
 
     gameHistory.push({
       a: current.a,
@@ -165,7 +165,7 @@ document.addEventListener('keydown', e => {
       tEnd: (now - gameStart) / 1000
     });
 
-    questionStart = now;
+    questionStartTime = now;
 
     q.style.transition = 'color 0.1s ease';
     q.style.color = '#f55';
