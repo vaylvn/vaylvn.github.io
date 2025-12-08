@@ -285,9 +285,5 @@ button.small {
   font-weight: 600 !important;
 }
 
-.icon-btn img {
-    width: 30px;     /* whatever size you want */
-    height: 30px;
-    display: block;  /* removes inline spacing */
-}
+
 
