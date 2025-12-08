@@ -241,7 +241,7 @@ function updateSummary(run){
   
 	if (isCustom) {
 		document.getElementById("summary").innerHTML = `
-			<div><b style="font-size:28px;color:#ffd642">custom</b><br>Mode<br>(${selectedMode}s / ${parseInt(minInput.value)} - ${parseInt(maxInput.value)})</div>
+			<div><b style="font-size:28px;color:#ffd642">custom</b><br>Mode<br>(${selectedMode}s | ${parseInt(minInput.value)} - ${parseInt(maxInput.value)})</div>
 			<div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
 			<div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
 			<div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
