@@ -280,21 +280,27 @@ function renderGraph(run){
    dots.push({x,y,r});
  });
  
-
  
+	 cvs.onmousemove = e => {
+	   const b = cvs.getBoundingClientRect();
+	   const x = e.clientX - b.left;
+	   const y = e.clientY - b.top;
 
- // Hover Logic
- cvs.onmousemove=e=>{
-   const b=cvs.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;
-   const hit=dots.find(p=>((x-p.x)**2+(y-p.y)**2)<64);
-   if(hit){
-     tip.style.display="block";
-     tip.style.left=(e.pageX+10)+"px";
-     tip.style.top=(e.pageY-10)+"px";
-     tip.innerHTML=`${hit.r.a}×${hit.r.b}<br>${hit.r.time.toFixed(2)}s`;
-   } else tip.style.display="none";
- };
- cvs.onmouseleave=()=>tip.style.display="none";
+	   const hit = dots.find(p => ((x-p.x)**2 + (y-p.y)**2) < 64);
+
+	   if(hit){
+		 tip.style.display = "block";
+		 tip.style.left = (b.left + x + 14) + "px";   // relative to canvas
+		 tip.style.top  = (b.top + y - 18) + "px";
+		 tip.innerHTML = `${hit.r.a}×${hit.r.b}<br>${hit.r.time.toFixed(2)}s`;
+	   } else {
+		 tip.style.display = "none";
+	   }
+	};
+
+
+
+	cvs.onmouseleave=()=>tip.style.display="none";
 }
 
 
