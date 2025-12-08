@@ -135,7 +135,7 @@ document.addEventListener('keydown', e => {
       b: current.b,
       time: timeTaken,
       correct: true,
-      tEnd: (now - gameStart) / 1000
+      tEnd: (now - gameStartTime) / 1000
     });
 
     questionStartTime = now; // reset timing for next question
@@ -162,7 +162,7 @@ document.addEventListener('keydown', e => {
       b: current.b,
       time: timeTaken,
       correct: false,
-      tEnd: (now - gameStart) / 1000
+      tEnd: (now - gameStartTime) / 1000
     });
 
     questionStartTime = now;
