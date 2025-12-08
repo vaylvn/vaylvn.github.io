@@ -281,7 +281,6 @@ function renderGraph(run){
  });
  
 	 
-	 /*
 	cvs.onmousemove = e => {
 		const r = cvs.getBoundingClientRect();
 		const x = e.clientX - r.left;
@@ -291,8 +290,8 @@ function renderGraph(run){
 		const hit = dots.find(p => (x-p.x)**2 + (y-p.y)**2 < 64);
 		if(hit){
 			tip.style.display = "block";
-			tip.style.left = (e.clientX + 12) + "px";     // <── FIXED
-			tip.style.top  = (e.clientY - 12) + "px";
+			tip.style.left = (e.pageX + 12) + "px";     // <── FIXED
+			tip.style.top  = (e.pageY - 12) + "px";
 			tip.innerHTML = `
 				<b>${hit.r.a} × ${hit.r.b}</b><br>
 				${hit.r.time.toFixed(2)}s<br>
@@ -305,8 +304,8 @@ function renderGraph(run){
 		const idx = Math.round((x - pad) / (gW / (pts.length - 1)));
 		if (idx >= 0 && idx < pts.length){
 			tip.style.display = "block";
-			tip.style.left = (e.clientX + 12) + "px";     // <── FIXED
-			tip.style.top  = (e.clientY - 12) + "px";
+			tip.style.left = (e.pageX + 12) + "px";     // <── FIXED
+			tip.style.top  = (e.pageY - 12) + "px";
 			tip.innerHTML = `
 				<b>APS:</b> ${apsS[idx].toFixed(2)}<br>
 				Second: ${idx}s<br>
@@ -320,20 +319,7 @@ function renderGraph(run){
 
 
 	cvs.onmouseleave = () => tip.style.display = "none";
-	*/
-	
-	 // Hover Logic
-	 cvs.onmousemove=e=>{
-	   const b=cvs.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;
-	   const hit=dots.find(p=>((x-p.x)**2+(y-p.y)**2)<64);
-	   if(hit){
-		 tip.style.display="block";
-		 tip.style.left=(e.pageX+10)+"px";
-		 tip.style.top=(e.pageY-10)+"px";
-		 tip.innerHTML=`${hit.r.a}×${hit.r.b}<br>${hit.r.time.toFixed(2)}s`;
-	   } else tip.style.display="none";
-	 };
-	 cvs.onmouseleave=()=>tip.style.display="none";
+
 
 
 
