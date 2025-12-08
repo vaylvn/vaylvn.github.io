@@ -172,7 +172,7 @@ document.addEventListener('keydown', e => {
       tEnd: (now - gameStartTime) / 1000,
 	  answer: current.ans,
 	  guess: parseInt(input, 10),
-	  agDifference: (answer - guess)
+	  agDifference: (answer - parseInt(input, 10))
     });
 
     questionStartTime = now;
