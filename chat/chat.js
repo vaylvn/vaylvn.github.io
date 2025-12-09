@@ -28,15 +28,9 @@ function addChatMessage(tags, message) {
   const line = document.createElement("div");
   line.className = "chat-line";
 
-  // Store data for isolation
   line.dataset.username = tags["display-name"] || tags.username || "";
   line.dataset.color = tags.color || "#ffffff";
   line.dataset.message = message;
-
-  // Optional timestamp
-  const ts = document.createElement("span");
-  ts.className = "chat-meta";
-  ts.textContent = formatTime(new Date());
 
   const usernameSpan = document.createElement("span");
   usernameSpan.className = "chat-username";
@@ -49,26 +43,24 @@ function addChatMessage(tags, message) {
   msgSpan.className = "chat-message";
   msgSpan.textContent = message;
 
-  line.appendChild(ts);
-  line.appendChild(usernameSpan);
-  line.appendChild(msgSpan);
+  // ⬇⬇ WRAPPER FOR VERTICAL LAYOUT
+  const inner = document.createElement("div");
+  inner.className = "chat-inner";
+
+  inner.appendChild(usernameSpan);
+  inner.appendChild(msgSpan);
+
+  line.appendChild(inner);
 
   // Click to isolate
-  line.addEventListener("click", () => {
-    showIsolatedMessage(line);
-  });
+  line.addEventListener("click", () => showIsolatedMessage(line));
 
   chatContainer.appendChild(line);
-
-  // Auto-scroll only if we're near bottom
   autoScroll();
 }
 
-function formatTime(date) {
-  const h = date.getHours().toString().padStart(2, "0");
-  const m = date.getMinutes().toString().padStart(2, "0");
-  return ``;
-}
+
+
 
 function autoScroll() {
   const threshold = 80; // px from bottom to still auto-scroll
