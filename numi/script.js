@@ -247,6 +247,7 @@ async function submitDataToServer(run) {
             timestamp: gameStartTimeTS,
             duration: selectedMode,
             modeType: (isCustom) ? "custom" : "timed",
+			isMobile: (isMobile) ? "mobile" : "pc",
             min: min,
             max: max,
             score: score,

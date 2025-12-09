@@ -79,7 +79,7 @@ async function downloadFullCSV() {
         "max",
         "score",
         "attempts",
-        "a","b","answer","guess","correct","tEnd","tTaken"
+        "a","b","answer","guess","correct","tEnd","tTaken","isMobile"
     ]];
 
     for (const s of sessions) {
@@ -110,7 +110,8 @@ async function downloadFullCSV() {
                 a.guess,
                 a.correct ? 1 : 0,
                 a.tEnd,
-                a.tTaken
+                a.tTaken,
+				s.isMobile
             ]);
         }
     }
