@@ -61,37 +61,54 @@
     const sessionsSnap = await getDocs(collection(db, "sessions"));
 
     const rows = [
-      ["sessionId","timestamp","duration","modeType","min","max","score","attempts","a","b","answer","guess","correct","tEnd","tTaken"]
+        [
+            "sessionId",
+            "timestamp_ms",
+            "timestamp_iso",
+            "duration",
+            "modeType",
+            "min",
+            "max",
+            "score",
+            "attempts",
+            "a", "b", "answer", "guess", "correct", "tEnd", "tTaken"
+        ]
     ];
 
     for (const session of sessionsSnap.docs) {
-      const s = session.data();
-      const answersSnap = await getDocs(collection(db, `sessions/${session.id}/answers`));
+        const s = session.data();
+        const answersSnap = await getDocs(collection(db, `sessions/${session.id}/answers`));
 
-      answersSnap.forEach(aDoc => {
-        const a = aDoc.data();
-        rows.push([
-          session.id,
-          s.timestamp,
-          s.duration,
-          s.modeType,
-          s.min,
-          s.max,
-          s.score,
-          s.attempts,
-          a.a,
-          a.b,
-          a.answer,
-          a.guess,
-          a.correct ? 1 : 0,
-          a.tEnd,
-          a.tTaken
-        ]);
-      });
+        // prepare timestamp data
+        const ts = s.timestamp;
+        const ts_text = "'" + ts;                // forces Excel to treat as text
+        const ts_iso = new Date(ts).toISOString();
+
+        answersSnap.forEach(aDoc => {
+            const a = aDoc.data();
+            rows.push([
+                session.id,
+                ts_text,       // text-formatted timestamp
+                ts_iso,        // human readable timestamp
+                s.duration,
+                s.modeType,
+                s.min,
+                s.max,
+                s.score,
+                s.attempts,
+                a.a,
+                a.b,
+                a.answer,
+                a.guess,
+                a.correct ? 1 : 0,
+                a.tEnd,
+                a.tTaken
+            ]);
+        });
     }
 
     const csv = rows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type:"text/csv" });
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
@@ -99,7 +116,8 @@
     a.download = "numi_all_sessions.csv";
     a.click();
     URL.revokeObjectURL(url);
-  }
+}
+
 
   document.getElementById("downloadAll").onclick = downloadFullCSV;
 </script>
