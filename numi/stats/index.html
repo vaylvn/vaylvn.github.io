@@ -35,9 +35,13 @@
     initializeApp 
   } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 
-  import { 
-    getFirestore, collection, getDocs 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  	import {
+	  getFirestore, collection, addDoc, getDocs, query,
+	  orderBy, limit, doc, writeBatch
+	} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+
+
 
   // --- SAME CONFIG AS MAIN PAGE ---
   const firebaseConfig = {
