@@ -279,19 +279,6 @@ function renderGraph(run){
 	lastAPS = aps;
 	lastAPSSmoothed = apsS;
 
-
-	// Dashed baseline for answer dots
-	ctx.save();
-	ctx.strokeStyle = "#333";
-	ctx.lineWidth = 1;
-	ctx.setLineDash([5, 5]);
-	ctx.beginPath();
-	ctx.moveTo(pad, dotBaseY);
-	ctx.lineTo(cvs.width - pad, dotBaseY);
-	ctx.stroke();
-	ctx.restore();
-
-
  // Points for curve
  const pts=apsS.map((v,i)=>({x:pad+(i/(bins-1))*gW,y:baseY-(v/maxAPS)*gH}));
 
@@ -321,7 +308,16 @@ function renderGraph(run){
  spline(pts);
 
 
-
+// Dashed baseline for answer dots
+ctx.save();
+ctx.strokeStyle = "#333";
+ctx.lineWidth = 1;
+ctx.setLineDash([5, 5]);
+ctx.beginPath();
+ctx.moveTo(pad, dotBaseY);
+ctx.lineTo(cvs.width - pad, dotBaseY);
+ctx.stroke();
+ctx.restore();
 
 
  // Dots
@@ -334,7 +330,7 @@ function renderGraph(run){
    ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
    
    ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
-   dots.push({x,baseY,r});
+   dots.push({x,y,r});
  });
  
 	 
