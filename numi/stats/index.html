@@ -88,7 +88,7 @@
             const a = aDoc.data();
             rows.push([
                 session.id,
-                ts_text,       // text-formatted timestamp
+                `"${s.timestamp}"`,       // text-formatted timestamp
                 ts_iso,        // human readable timestamp
                 s.duration,
                 s.modeType,
