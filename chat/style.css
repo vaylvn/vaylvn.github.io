@@ -34,6 +34,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  background: #1B1B1B;
 }
 
 /* Single message line */
@@ -71,7 +72,7 @@ body {
 #isolate-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.96);
+  background: #1B1B1B;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -98,12 +99,12 @@ body {
 
 /* Isolated message formatting */
 #isolate-content .chat-username {
-  font-size: 26px;
+  font-size: 25px;
   margin-bottom: 8px;
 }
 
 #isolate-content .chat-message {
-  font-size: 28px;
+  font-size: 40px;
 }
 
 /* Scrollbar (optional, subtle) */
