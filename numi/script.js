@@ -280,28 +280,20 @@ function renderGraph(run){
 	lastAPSSmoothed = apsS;
 
 
-
-	 // Dots
-	 const dots=[];
-	 R.forEach(r=>{
-	   const sp=1/r.time, maxSp=Math.max(...R.map(z=>1/z.time));
-	   const x=pad+(r.tEnd/d)*gW;
-	   const y=baseY-(sp/maxSp)*(gH*0.55);
-	   
-	   ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
-	   
-	   ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
-	   dots.push({x,baseY,r});
-	 });
-
-
+	// Dashed baseline for answer dots
+	ctx.save();
+	ctx.strokeStyle = "#333";
+	ctx.lineWidth = 1;
+	ctx.setLineDash([5, 5]);
+	ctx.beginPath();
+	ctx.moveTo(pad, dotBaseY);
+	ctx.lineTo(cvs.width - pad, dotBaseY);
+	ctx.stroke();
+	ctx.restore();
 
 
  // Points for curve
  const pts=apsS.map((v,i)=>({x:pad+(i/(bins-1))*gW,y:baseY-(v/maxAPS)*gH}));
-
-
-
 
  function spline(p,t=0.5){
    ctx.beginPath();
@@ -329,24 +321,24 @@ function renderGraph(run){
  spline(pts);
 
 
-	// Dashed baseline for answer dots
-	ctx.save();
-	ctx.strokeStyle = "#333";
-	ctx.lineWidth = 1;
-	ctx.setLineDash([5, 5]);
-	ctx.beginPath();
-	ctx.moveTo(pad, dotBaseY);
-	ctx.lineTo(cvs.width - pad, dotBaseY);
-	ctx.stroke();
-	ctx.restore();
 
 
 
+ // Dots
+ const dots=[];
+ R.forEach(r=>{
+   const sp=1/r.time, maxSp=Math.max(...R.map(z=>1/z.time));
+   const x=pad+(r.tEnd/d)*gW;
+   const y=baseY-(sp/maxSp)*(gH*0.55);
+   
+   ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
+   
+   ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
+   dots.push({x,baseY,r});
+ });
  
 	 
 	cvs.onmousemove = e => {
-		
-		
 		const r = cvs.getBoundingClientRect();
 		const x = e.clientX - r.left;
 		const y = e.clientY - r.top;
