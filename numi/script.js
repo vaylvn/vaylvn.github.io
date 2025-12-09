@@ -244,7 +244,7 @@ async function submitDataToServer(run) {
     const sessionRef = await addDoc(
         collection(window.db, "sessions"),
         {
-            timestamp: gameStartTime,
+            timestamp: gameStartTimeTS,
             duration: selectedMode,
             modeType: (isCustom) ? "custom" : "timed",
             min: min,
