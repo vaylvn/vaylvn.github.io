@@ -119,3 +119,31 @@ body {
   background: #333;
   border-radius: 3px;
 }
+
+
+.chat-line {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border-radius: 6px;
+  gap: 2px;
+}
+
+.chat-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-username {
+  display: block;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.chat-message {
+  display: block;
+  font-size: 15px;
+  line-height: 1.3;
+  word-break: break-word;
+}
