@@ -330,7 +330,8 @@ ctx.restore();
    ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
    
    ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
-   dots.push({x,y,r});
+   dots.push({ x, y: dotBaseY, r });
+
  });
  
 	 
