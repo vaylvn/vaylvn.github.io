@@ -349,10 +349,21 @@ ctx.restore();
 
 			const ans = (hit.r.a * hit.r.b);
 
-			tip.innerHTML = `
-				<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>Speed: ${hit.r.time.toFixed(2)}s<br><br>
-				${hit.r.correct ? "✔ Correct" : "❌ Wrong"}
-			`;
+			
+			
+			if (hit.r.correct) {
+				tip.innerHTML = `
+					<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>Speed: ${hit.r.time.toFixed(2)}s<br><br>
+					${hit.r.correct ? "✔ Correct" : "❌ Wrong"}
+				`;
+			} else {
+				tip.innerHTML = `
+					<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>  Guessed: ${hit.r.guess} (${(hit.r.guess - ans)}) <br>   Speed: ${hit.r.time.toFixed(2)}s<br><br>
+					"❌ Wrong"
+				`;
+			}
+			
+			
 			return;
 		}
 		
