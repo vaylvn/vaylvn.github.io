@@ -19,6 +19,7 @@ const modeButtons = document.querySelectorAll('.mode-tabs button');
 let gameHistory = []; // ← stores answer events for summary + graph
 let questionStartTime = 0;
 let gameStartTime = 0;
+let gameStartTimeTS = Date.now();
 let globalRunData = null;
 
 let lastAPS = null;
@@ -105,6 +106,7 @@ function startRun(){
 	gameHistory = [];
     gameStartTime = performance.now();
     questionStartTime = performance.now();
+	gameStartTimeTS = Date.now();
   
   msgEl.textContent = '';
   newQ();
