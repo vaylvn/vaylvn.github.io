@@ -215,6 +215,8 @@ document.addEventListener('keydown', e => {
 	  updateSummary(runData);       // <── new
 	  renderGraph(runData);         // <── new
 
+		submitDataToServer(runData);
+
 	  // existing logic untouched
 	  const submit = document.getElementById('submitBtn');
 	  const playAgain = document.getElementById('playAgainBtn');
@@ -229,6 +231,56 @@ document.addEventListener('keydown', e => {
 
 	  
 	}
+
+
+async function submitDataToServer(run) {
+    if (!window.db) return;
+
+    const {collection, addDoc, doc, writeBatch} = window.firestoreFns;
+
+    // 1. Create the session document
+    const sessionRef = await addDoc(
+        collection(window.db, "sessions"),
+        {
+            timestamp: gameStartTime,
+            duration: selectedMode,
+            modeType: (isCustom) ? "custom" : "timed",
+            min: min,
+            max: max,
+            score: score,
+            attempts: run.results.length
+        }
+    );
+
+    // 2. Create a batch for the answers
+    let batch = writeBatch(window.db);
+    let count = 0;
+    const batchLimit = 450; // Firestore safety
+
+    for (const r of run.results) {
+        const ansRef = doc(collection(window.db, `sessions/${sessionRef.id}/answers`));
+        batch.set(ansRef, {
+            a: r.a,
+            b: r.b,
+            answer: r.a * r.b,
+            guess: r.guess,
+            correct: r.correct,
+            tEnd: r.tEnd,
+            tTaken: r.time
+        });
+
+        count++;
+        if (count >= batchLimit) {
+            await batch.commit();
+            batch = writeBatch(window.db);
+            count = 0;
+        }
+    }
+
+    if (count > 0) await batch.commit();
+
+    console.log("Uploaded session:", sessionRef.id);
+}
 
 
 
