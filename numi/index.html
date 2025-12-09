@@ -6,6 +6,10 @@
   <title>Numi</title>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 	
+	<link rel="icon" href="numi.png" type="image/png">
+
+	
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -72,15 +76,50 @@
 	  
     </section>
 
-    <!-- Screen: Results -->
-    <section id="screen-results" class="screen">
-      <h2>Score: <span id="finalScore"></span></h2>
-      <input id="nameInput" maxlength="3" placeholder="AAA" />
-      <div class="row">
-        <button id="submitBtn">Submit</button>
-        <button id="playAgainBtn">Play Again</button>
-      </div>
-    </section>
+
+	<section id="screen-results" class="screen">
+	
+		<div id="resultCapture" style="padding: 16px; box-sizing: border-box;">   <!-- everything inside this gets screenshotted -->
+
+			  <h2>Score: <span id="finalScore"></span></h2>
+
+			  <!-- NEW summary bar -->
+			  <div id="summary" style="display:flex;justify-content:center;gap:35px;margin:10px 0 20px;font-size:14px;text-align:center;"></div>
+
+			  <!-- NEW graph -->
+			  <canvas id="resultGraph" width="600" height="200" style="max-width:100%;"></canvas>
+				
+				<div id="watermark" style="
+					text-align:right;
+					color:#555;
+					font-family: 'IBM Plex Mono', monospace;
+					font-size:30px;
+					padding-right:4px;
+				">
+					numi
+				</div>
+
+
+	  </div>
+		
+	
+
+
+	  <!-- your existing leaderboard input -->
+	  <input id="nameInput" maxlength="3" placeholder="AAA" />
+
+	  <div class="row">
+		<button id="screenshotBtn" class="icon-btn">
+			<img src="screenshot.png" alt="Screenshot">
+		</button>
+
+		<button id="downloadBtn">Download</button>
+		<button id="submitBtn">Submit</button>
+		<button id="playAgainBtn">Play Again</button>
+	  </div>
+	</section>
+
+	<div id="tooltip"></div>
 
     <!-- Screen: Leaderboard -->
     <section id="screen-leaderboard" class="screen">
@@ -127,6 +166,8 @@
   </script>
 
   <!-- Main logic -->
+  
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script type="module" src="script.js"></script>
 </body>
 </html>

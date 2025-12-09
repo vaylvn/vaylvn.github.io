@@ -161,6 +161,20 @@ input {
 }
 */
 
+#tooltip {
+  position:absolute;
+  background:#202020;
+  padding:6px 10px;
+  font-size:12px;
+  border-radius:6px;
+  border:1px solid #444;
+  color:#fff;
+  display:none;
+  pointer-events:none;
+  white-space:nowrap;
+  z-index:999;
+}
+
 .smallLink { opacity:0.7; font-size:0.9rem; margin-top:1rem; }
 .linkBtn {
   background:none;
@@ -270,3 +284,10 @@ button.small {
   color: #f5c542 !important;
   font-weight: 600 !important;
 }
+
+.icon-btn img {
+    width: 20px;     /* whatever size you want */
+    height: 20px;
+    display: block;  /* removes inline spacing */
+}
+

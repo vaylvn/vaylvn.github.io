@@ -16,24 +16,10 @@ const lbList = document.getElementById('leaderboardList');
 const lbModeLabel = document.getElementById('lbModeLabel');
 const modeButtons = document.querySelectorAll('.mode-tabs button');
 
-let gameHistory = []; // ← stores answer events for summary + graph
-let questionStartTime = 0;
-let gameStartTime = 0;
-let globalRunData = null;
-
-let lastAPS = null;
-let lastAPSSmoothed = null;
-
-let isCustom = false;
 
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 function show(id) {
-	
-	if (id === "screen-home") {
-		isCustom = false;
-	}
-	
   screens.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
@@ -62,7 +48,6 @@ startCustomBtn.onclick = () => {
   max = Math.max(min, parseInt(maxInput.value) || 12);
   selectedMode = Math.max(5, parseInt(timeInput.value) || 30);
   time = selectedMode;
-  isCustom = true;
   startGame();
 };
 
@@ -76,7 +61,6 @@ startCustomBtn.onclick = () => {
 function startGame() {
   score = 0;
   running = false;
- 
   show('screen-game');
   eqEl.textContent = '';
   ansEl.textContent = '';
@@ -87,9 +71,6 @@ function startGame() {
 
 function rand(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
 function newQ(){
-	
-	questionStartTime = performance.now();
-	
   const a = rand(min,max), b = rand(min,max);
   current = {a,b,ans:a*b};
   eqEl.textContent = `${a}×${b}=`;
@@ -100,12 +81,6 @@ function newQ(){
 function startRun(){
   if(running) return;
   running = true;
-  
-  
-	gameHistory = [];
-    gameStartTime = performance.now();
-    questionStartTime = performance.now();
-  
   msgEl.textContent = '';
   newQ();
   timerInt = setInterval(()=>{
@@ -122,10 +97,10 @@ document.addEventListener('keydown', e => {
   if (!gameVisible) return;
   if (!running) return startRun();
 
-  if (e.key === '/' || e.key === '*' || (e.ctrlKey && e.key.toLowerCase() === 'f') || e.key === 'F3') {
-    e.preventDefault();
-    return;
-  }
+	if (e.key === '/' || e.key === '*' || (e.ctrlKey && e.key.toLowerCase() === 'f') || e.key === 'F3') {
+		e.preventDefault();
+		return;
+	}
 
   if (e.key === 'Backspace') {
     input = input.slice(0, -1);
@@ -134,59 +109,28 @@ document.addEventListener('keydown', e => {
   }
 
   ansEl.textContent = input;
+
   const q = document.getElementById('equation');
 
-  // ========== CORRECT ==========
+  // ✅ Correct answer
   if (parseInt(input, 10) === current.ans) {
-    const now = performance.now();
-    const timeTaken = (now - questionStartTime) / 1000;
-
-    gameHistory.push({
-      a: current.a,
-      b: current.b,
-      time: timeTaken,
-      correct: true,
-      tEnd: (now - gameStartTime) / 1000,
-	  answer: current.ans,
-	  guess: parseInt(input, 10),
-	  agDifference: 0
-    });
-
-    questionStartTime = now; // reset timing for next question
-
     score++;
     scoreEl.textContent = score;
 
     q.style.transition = 'color 0.1s ease';
-    q.style.color = '#5f5';
-    setTimeout(() => q.style.color = '', 100);
+    q.style.color = '#5f5'; // green flash
+    setTimeout(() => (q.style.color = ''), 100);
 
     input = '';
     newQ();
     return;
   }
 
-  // ========== INCORRECT FULL INPUT ==========
+  // ✅ Incorrect full-length answer
   if (input.length >= String(current.ans).length) {
-    const now = performance.now();
-    const timeTaken = (now - questionStartTime) / 1000;
-
-    gameHistory.push({
-      a: current.a,
-      b: current.b,
-      time: timeTaken,
-      correct: false,
-      tEnd: (now - gameStartTime) / 1000,
-	  answer: current.ans,
-	  guess: parseInt(input, 10),
-	  agDifference: (answer - parseInt(input, 10))
-    });
-
-    questionStartTime = now;
-
     q.style.transition = 'color 0.1s ease';
-    q.style.color = '#f55';
-    setTimeout(() => q.style.color = '', 100);
+    q.style.color = '#f55'; // red flash
+    setTimeout(() => (q.style.color = ''), 100);
 
     input = '';
     ansEl.textContent = '';
@@ -194,282 +138,26 @@ document.addEventListener('keydown', e => {
 });
 
 
+function endGame() {
+  if (!running) return;
+  running = false;
+  clearInterval(timerInt);
+  finalScoreEl.textContent = score;
 
-	function endGame() {
-	  if (!running) return;
-	  running = false;
-	  clearInterval(timerInt);
+  // Hide submit if this was a custom mode
+  const submit = document.getElementById('submitBtn');
+  const playAgain = document.getElementById('playAgainBtn');
 
-		show('screen-results');
+  if ([15, 30, 60].includes(selectedMode)) {
+    submit.style.display = 'inline-block';
+    playAgain.textContent = 'Skip';
+  } else {
+    submit.style.display = 'none';
+    playAgain.textContent = 'Main Menu';
+  }
 
-	  finalScoreEl.textContent = score;
-
-	  // generate final session data
-	  const runData = {
-		duration: selectedMode,    // 15/30/60/custom
-		results: gameHistory       // <-- list of answers you already track
-	  };
-
-		globalRunData = runData;
-
-	  updateSummary(runData);       // <── new
-	  renderGraph(runData);         // <── new
-
-	  // existing logic untouched
-	  const submit = document.getElementById('submitBtn');
-	  const playAgain = document.getElementById('playAgainBtn');
-
-	  if ([15, 30, 60].includes(selectedMode)) {
-		submit.style.display = 'inline-block';
-		playAgain.textContent = 'Skip';
-	  } else {
-		submit.style.display = 'none';
-		playAgain.textContent = 'Main Menu';
-	  }
-
-	  
-	}
-
-
-
-function updateSummary(run){
-  const r = run.results;
-  const correct = r.filter(x=>x.correct).length;
-  const streak = (()=>{let s=0,b=0;for(const x of r){if(x.correct) s++; else{b=Math.max(b,s);s=0}}return Math.max(b,s)})();
-  const acc = Math.round(correct/r.length*100);
-  const apm = (correct/run.duration*60).toFixed(1);
-  
-	if (isCustom) {
-		document.getElementById("summary").innerHTML = `
-			<div><b style="font-size:28px;color:#ffd642">custom</b><br>Mode<br>(${selectedMode}s | ${parseInt(minInput.value)} - ${parseInt(maxInput.value)})</div>
-			<div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
-			<div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
-			<div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
-			<div><b style="font-size:28px;color:#ffd642">${streak}</b><br>Streak</div>
-		  `;
-	} else {
-		document.getElementById("summary").innerHTML = `
-			<div><b style="font-size:28px;color:#ffd642">${selectedMode}s</b><br>Mode</div>
-			<div><b style="font-size:28px;color:#ffd642">${apm}</b><br>APM</div>
-			<div><b style="font-size:28px;color:#ffd642">${acc}%</b><br>Accuracy</div>
-			<div><b style="font-size:28px;color:#ffd642">${correct}/${r.length}</b><br>Correct</div>
-			<div><b style="font-size:28px;color:#ffd642">${streak}</b><br>Streak</div>
-		  `;
-	}
-
-  
+  show('screen-results');
 }
-
-
-
-function renderGraph(run){
- const cvs=document.getElementById("resultGraph"),ctx=cvs.getContext("2d"),tip=document.getElementById("tooltip");
- cvs.width=cvs.clientWidth;cvs.height=250;
- const R=run.results,d=run.duration,pad=20,gW=cvs.width-pad*2,gH=cvs.height-pad*2,baseY=cvs.height-pad;
-
- // APS bins
- const bins = Math.ceil(d);
- const aps = new Array(bins).fill(0);
- R.forEach(r=>r.correct&&aps[Math.min(bins-1,Math.floor(r.tEnd))]++);
-
- const smooth=a=>a.map((v,i)=>a.slice(Math.max(0,i-2),i+1).reduce((x,y)=>x+y)/Math.min(i+1,3));
- const apsS=smooth(aps),maxAPS=Math.max(...apsS,1);
-
-	lastAPS = aps;
-	lastAPSSmoothed = apsS;
-
- // Points for curve
- const pts=apsS.map((v,i)=>({x:pad+(i/(bins-1))*gW,y:baseY-(v/maxAPS)*gH}));
-
- function spline(p,t=0.5){
-   ctx.beginPath();ctx.moveTo(p[0].x,p[0].y);
-   for(let i=0;i<p.length-1;i++){
-     const p0=p[i-1]||p[i],p1=p[i],p2=p[i+1]||p[i],p3=p[i+2]||p2;
-     for(let s=0;s<=1;s+=0.05){
-       const s2=s*s,s3=s2*s;
-       const q1=-t*s3+2*t*s2-t*s, q2=(2-t)*s3+(t-3)*s2+1,
-             q3=(t-2)*s3+(3-2*t)*s2+t*s, q4=t*s3-t*s2;
-       ctx.lineTo(q1*p0.x+q2*p1.x+q3*p2.x+q4*p3.x,
-                  q1*p0.y+q2*p1.y+q3*p2.y+q4*p3.y);
-     }
-   }
-   ctx.strokeStyle = "#ffd642";
-   ctx.lineWidth=2;
-   ctx.shadowColor="rgba(255,214,66,.45)";ctx.shadowBlur=10;
-   ctx.stroke();ctx.shadowBlur=0;
- }
-
- // Draw Base & Curve
- ctx.strokeStyle="#333";ctx.beginPath();ctx.moveTo(pad,baseY);ctx.lineTo(cvs.width-pad,baseY);ctx.stroke();
- spline(pts);
-
- // Dots
- const dots=[];
- R.forEach(r=>{
-   const sp=1/r.time, maxSp=Math.max(...R.map(z=>1/z.time));
-   const x=pad+(r.tEnd/d)*gW;
-   const y=baseY-(sp/maxSp)*(gH*0.55);
-   
-   ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
-   
-   ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.fill();
-   dots.push({x,y,r});
- });
- 
-	 
-	cvs.onmousemove = e => {
-		const r = cvs.getBoundingClientRect();
-		const x = e.clientX - r.left;
-		const y = e.clientY - r.top;
-
-		// DOT HOVER
-		const hit = dots.find(p => (x-p.x)**2 + (y-p.y)**2 < 64);
-		if(hit){
-			tip.style.display = "block";
-			tip.style.left = (r.left + x + 12) + "px";
-			tip.style.top  = (r.top  + y - 12) + "px";
-
-			const ans = (hit.r.a * hit.r.b);
-
-			tip.innerHTML = `
-				<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>Speed: ${hit.r.time.toFixed(2)}s<br><br>
-				${hit.r.correct ? "✔ Correct" : "❌ Wrong"}
-			`;
-			return;
-		}
-		
-		
-		
-		
-		// Get index from mouse X
-		const idx = Math.round((x - pad) / (gW / (pts.length - 1)));
-
-		if (idx >= 0 && idx < pts.length) {
-			const p = pts[idx];  // <-- exact point ON the APS curve
-
-			tip.style.display = "block";
-			tip.style.left = (r.left + p.x + 12) + "px";  // tooltip follows LINE X
-			tip.style.top  = (r.top  + p.y - 12) + "px";  // tooltip follows LINE Y
-
-			tip.innerHTML = `
-				<b>APS:</b> ${apsS[idx].toFixed(2)}<br>
-				Second: ${idx}s<br>
-				Trend Line
-			`;
-			return;
-		}
-			
-		
-		/*
-		// APS HOVER
-		const idx = Math.round((x - pad) / (gW / (pts.length - 1)));
-		if (idx >= 0 && idx < pts.length){
-			tip.style.display = "block";
-			tip.style.left = (r.left + x + 12) + "px";
-			tip.style.top  = (r.top  + y - 12) + "px";
-
-			tip.innerHTML = `
-				<b>APS:</b> ${apsS[idx].toFixed(2)}<br>
-				Second: ${idx}s<br>
-				Speed Trend Line
-			`;
-			return;
-		}
-		*/
-
-		tip.style.display = "none";
-	};
-
-
-	cvs.onmouseleave = () => tip.style.display = "none";
-
-
-
-
-}
-
-
-function downloadRunCSV(run){
-    const rows = [
-		["","","","GAME","DATA","","",""],
-        ["tEnd","a","b","time","correct", "answer", "guess", "difference"]
-    ];
-	
-    run.results.forEach(r=>{
-        rows.push([
-            r.tEnd.toFixed(3),
-            r.a,
-            r.b,
-            r.time.toFixed(3),
-            r.correct ? 1 : 0,
-			r.answer,
-			r.guess,
-			r.agDifference,
-        ]);
-    });
-
-	// Add APS data
-    rows.push([]);
-    rows.push(["","APS",""]);
-    rows.push(["second","aps_raw","aps_smoothed"]);
-
-    if (lastAPS && lastAPSSmoothed){
-        for (let i = 0; i < lastAPS.length; i++){
-            rows.push([
-                i,
-                lastAPS[i],
-                lastAPSSmoothed[i].toFixed(3)
-            ]);
-        }
-    }
-
-
-    const csv = rows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], {type:"text/csv"});
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "numi_run.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(url);
-}
-
-document.getElementById("downloadBtn").onclick = () => downloadRunCSV(globalRunData);
-
-
-document.getElementById("screenshotBtn").addEventListener("click", async (e) => {
-    const download = e.shiftKey;
-    await takeScreenshot(download);
-});
-
-
-async function takeScreenshot(download) {
-    const target = document.getElementById("resultCapture");
-
-    const canvas = await html2canvas(target, {
-        backgroundColor: "#1B1B1B",
-        scale: 2
-    });
-
-    if (download) {
-        const link = document.createElement("a");
-        link.href = canvas.toDataURL("image/png");
-        link.download = "numi_result.png";
-        link.click();
-        return;
-    }
-
-    canvas.toBlob(async (blob) => {
-        await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob })
-        ]);
-    });
-}
-
 
 
 /* ---- Leaderboards ---- */
@@ -624,9 +312,6 @@ document.getElementById('backBtnGame').onclick = () => {
   } else {
     show('screen-home');
   }
-  
-  isCustom = false;
-  
 };
 
 
