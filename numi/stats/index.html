@@ -57,39 +57,47 @@
   const db = getFirestore(app);
 
   // --- CSV DOWNLOAD LOGIC ---
-  async function downloadFullCSV() {
+async function downloadFullCSV() {
     const sessionsSnap = await getDocs(collection(db, "sessions"));
 
-    const rows = [
-        [
-            "sessionId",
-            "timestamp_ms",
-            "timestamp_iso",
-            "duration",
-            "modeType",
-            "min",
-            "max",
-            "score",
-            "attempts",
-            "a", "b", "answer", "guess", "correct", "tEnd", "tTaken"
-        ]
-    ];
+    // Convert Firestore docs → array
+    let sessions = sessionsSnap.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+    }));
 
-    for (const session of sessionsSnap.docs) {
-        const s = session.data();
-        const answersSnap = await getDocs(collection(db, `sessions/${session.id}/answers`));
+    // Sort sessions newest → oldest (by timestamp)
+    sessions.sort((a, b) => b.timestamp - a.timestamp);
 
-        // prepare timestamp data
-        const ts = s.timestamp;
-        const ts_text = "'" + ts;                // forces Excel to treat as text
-        const ts_iso = new Date(ts).toISOString();
+    const rows = [[
+        "sessionId",
+        "timestamp_ms",
+        "timestamp_iso",
+        "duration",
+        "modeType",
+        "min",
+        "max",
+        "score",
+        "attempts",
+        "a","b","answer","guess","correct","tEnd","tTaken"
+    ]];
 
-        answersSnap.forEach(aDoc => {
-            const a = aDoc.data();
+    for (const s of sessions) {
+        const answersSnap = await getDocs(collection(db, `sessions/${s.id}/answers`));
+
+        // Convert answers → array
+        let answers = answersSnap.docs.map(aDoc => aDoc.data());
+
+        // Sort smallest → largest time (first to last question)
+        answers.sort((a, b) => a.tEnd - b.tEnd);
+
+        const ts_iso = new Date(s.timestamp).toISOString();
+
+        for (const a of answers) {
             rows.push([
-                session.id,
-                `="${s.timestamp}"`,        // text-formatted timestamp
-                ts_iso,        // human readable timestamp
+                s.id,
+                `="${s.timestamp}"`,
+                ts_iso,
                 s.duration,
                 s.modeType,
                 s.min,
@@ -104,11 +112,11 @@
                 a.tEnd,
                 a.tTaken
             ]);
-        });
+        }
     }
 
     const csv = rows.map(r => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob([csv], { type:"text/csv" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
@@ -124,3 +132,6 @@
 
 </body>
 </html>
+
+
+
