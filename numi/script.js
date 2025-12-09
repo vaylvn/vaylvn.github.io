@@ -265,7 +265,8 @@ function updateSummary(run){
 function renderGraph(run){
  const cvs=document.getElementById("resultGraph"),ctx=cvs.getContext("2d"),tip=document.getElementById("tooltip");
  cvs.width=cvs.clientWidth;cvs.height=250;
- const R=run.results,d=run.duration,pad=20,gW=cvs.width-pad*2,gH=cvs.height-pad*2,baseY=cvs.height-pad;
+ const R=run.results,d=run.duration,pad=20,gW=cvs.width-pad*2,gH=cvs.height-pad*2, baseY = cvs.height-pad;
+ const dotBaseY = baseY - 40
 
  // APS bins
  const bins = Math.ceil(d);
@@ -306,6 +307,19 @@ function renderGraph(run){
  ctx.strokeStyle="#333";ctx.beginPath();ctx.moveTo(pad,baseY);ctx.lineTo(cvs.width-pad,baseY);ctx.stroke();
  spline(pts);
 
+
+	// Dashed baseline for answer dots
+	ctx.save();
+	ctx.strokeStyle = "#333";
+	ctx.lineWidth = 1;
+	ctx.setLineDash([5, 5]);
+	ctx.beginPath();
+	ctx.moveTo(pad, dotBaseY);
+	ctx.lineTo(cvs.width - pad, dotBaseY);
+	ctx.stroke();
+	ctx.restore();
+
+
  // Dots
  const dots=[];
  R.forEach(r=>{
@@ -315,7 +329,7 @@ function renderGraph(run){
    
    ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
    
-   ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.fill();
+   ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
    dots.push({x,y,r});
  });
  
@@ -445,7 +459,7 @@ document.getElementById("downloadBtn").onclick = () => downloadRunCSV(globalRunD
 
 
 document.getElementById("screenshotBtn").addEventListener("click", async (e) => {
-    const download = e.shiftKey;
+    const download = e.shiftKey || isMobile;
     await takeScreenshot(download);
 });
 
