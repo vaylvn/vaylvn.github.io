@@ -48,8 +48,17 @@ body {
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
-  transition: background 0.1s ease, transform 0.05s ease;
+  animation: fadeInChat 140ms ease-out forwards;
 }
+
+
+
+@keyframes fadeInChat {
+  to {
+    opacity: 1;
+  }
+}
+
 
 
 
