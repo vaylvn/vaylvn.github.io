@@ -357,9 +357,16 @@ ctx.restore();
 					${hit.r.correct ? "✔ Correct" : "❌ Wrong"}
 				`;
 			} else {
+				
+				const diff = hit.r.guess - ans;
+				const diffStr = diff > 0 ? `+${diff}` : diff;  // add + for positive
+
+								
 				tip.innerHTML = `
-					<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>  Guessed: ${hit.r.guess} (${(hit.r.guess - ans)}) <br>   Speed: ${hit.r.time.toFixed(2)}s<br><br>
-					"❌ Wrong"
+					<b>Equation: ${hit.r.a} × ${hit.r.b} (${ans})</b><br>
+					Guessed: ${hit.r.guess} (${diffStr}) <br>
+					Speed: ${hit.r.time.toFixed(2)}s<br><br>
+					❌ Wrong
 				`;
 			}
 			
