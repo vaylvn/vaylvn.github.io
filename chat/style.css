@@ -49,6 +49,7 @@ body {
   padding: 4px 6px;
   border-radius: 6px;
   animation: fadeInChat 140ms ease-out forwards;
+  opacity: 0;
 }
 
 
