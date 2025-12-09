@@ -162,7 +162,19 @@
 
     const app = initializeApp(firebaseConfig);
     window.db = getFirestore(app);
-    window.firestoreFns = { collection, addDoc, query, orderBy, limit, getDocs };
+	
+	window.firestoreFns = {
+	  collection,
+	  addDoc,
+	  getDocs,
+	  query,
+	  orderBy,
+	  limit,
+	  doc,
+	  writeBatch   // ← MUST be added
+	};
+
+	
   </script>
 
   <!-- Main logic -->
