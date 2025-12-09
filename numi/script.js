@@ -279,8 +279,29 @@ function renderGraph(run){
 	lastAPS = aps;
 	lastAPSSmoothed = apsS;
 
+
+
+	 // Dots
+	 const dots=[];
+	 R.forEach(r=>{
+	   const sp=1/r.time, maxSp=Math.max(...R.map(z=>1/z.time));
+	   const x=pad+(r.tEnd/d)*gW;
+	   const y=baseY-(sp/maxSp)*(gH*0.55);
+	   
+	   ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
+	   
+	   ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
+	   dots.push({x,baseY,r});
+	 });
+
+
+
+
  // Points for curve
  const pts=apsS.map((v,i)=>({x:pad+(i/(bins-1))*gW,y:baseY-(v/maxAPS)*gH}));
+
+
+
 
  function spline(p,t=0.5){
    ctx.beginPath();
@@ -320,21 +341,12 @@ function renderGraph(run){
 	ctx.restore();
 
 
- // Dots
- const dots=[];
- R.forEach(r=>{
-   const sp=1/r.time, maxSp=Math.max(...R.map(z=>1/z.time));
-   const x=pad+(r.tEnd/d)*gW;
-   const y=baseY-(sp/maxSp)*(gH*0.55);
-   
-   ctx.fillStyle = r.correct ? "#ffc300" : "#ff4b5c";
-   
-   ctx.beginPath();ctx.arc(x,dotBaseY,3,0,7);ctx.fill();
-   dots.push({x,y,r});
- });
+
  
 	 
 	cvs.onmousemove = e => {
+		
+		
 		const r = cvs.getBoundingClientRect();
 		const x = e.clientX - r.left;
 		const y = e.clientY - r.top;
