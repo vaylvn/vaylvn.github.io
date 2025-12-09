@@ -93,8 +93,7 @@ body {
   line-height: 1.4;
   padding: 16px 18px;
   border-radius: 10px;
-  background: #050505;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+  background: #1B1B1B;
 }
 
 /* Isolated message formatting */
