@@ -484,7 +484,7 @@ window.addEventListener("keydown", (e) => {
         killEnemy(locked, { score: true, collateral: false });
       }
 	  
-	  playSound("click", 0.25, 0.03);
+	  playSound("click", 0.05, 0.03);
 	  
       return;
     } else {
