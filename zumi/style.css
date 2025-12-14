@@ -1,42 +1,20 @@
 :root {
-  --bg: #121212;
-  --lane: #2a2a2a;
-  --text: #9a9a9a;
-  --yellow: #f2d54a;
-  --red: #e34b4b;
+  --bg: #141414;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body {
   margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
   background: var(--bg);
   overflow: hidden;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 canvas {
   display: block;
   width: 100vw;
   height: 100vh;
-}
-
-#overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-.hint {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
-  color: #6f6f6f;
-  letter-spacing: 0.4px;
 }
