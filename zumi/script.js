@@ -144,7 +144,14 @@ const WORDS_LONG = [
 
 const sounds = {
   click: [
-    new Audio("assets/sounds/click.mp3")
+    new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
+	new Audio("assets/sounds/click.mp3"),
   ],
   click2: [
     new Audio("assets/sounds/click2.mp3")
