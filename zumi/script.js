@@ -272,7 +272,7 @@ function pickWord(elapsedSec) {
 const state = {
   running: true,
   ended: false,
-
+  splash: true,
 	
 	
 	
@@ -456,6 +456,15 @@ function killEnemy(enemy, opts = { score: true, collateral: false }) {
 window.addEventListener("keydown", (e) => {
   if (e.repeat) return;
 
+  if (state.splash && e.key === "Enter") {
+    state.splash = false;
+    state.running = true;
+    reset(); // reuse existing reset logic
+    return;
+  }
+
+
+
   if (!state.running) {
     if (e.key === "Enter") reset();
     return;
@@ -619,12 +628,73 @@ function endRun() {
   
 }
 
+
+function drawSplash() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Logo / title
+  ctx.fillStyle = COLORS.ui;
+  ctx.font = '700 36px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+  ctx.fillText("zumi", W / 2, H * 0.35);
+
+  // Subtitle
+  ctx.fillStyle = COLORS.uiDim;
+  ctx.font = FONT;
+  ctx.fillText("incoming Orbs detected", W / 2, H * 0.42);
+
+
+  // How to play
+  ctx.font = FONT_SMALL;
+	const lines = [
+	  "type the first letter to lock on",
+	  "finish the word to destroy the orb",
+	  "press esc to disengage",
+	  "mistypes slow you down",
+	  "red orbs cause explosions"
+	];
+
+  let y = H * 0.50;
+  for (const line of lines) {
+    ctx.fillText(line, W / 2, y);
+    y += 22;
+  }
+
+  // Start prompt (subtle pulse)
+  const pulse = (Math.sin(performance.now() / 500) + 1) / 2;
+  ctx.globalAlpha = 0.5 + pulse * 0.5;
+  ctx.fillStyle = COLORS.player;
+  ctx.font = FONT;
+  ctx.fillText("press enter to start", W / 2, H * 0.68);
+  ctx.globalAlpha = 1;
+}
+
+
 /* ---------- rendering ---------- */
 function draw() {
+	
+	
+	
+	
+	
   // background
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = COLORS.bg;
   ctx.fillRect(0, 0, W, H);
+
+	
+	if (state.splash) {
+	  drawSplash();
+	  return;
+	}
+
+	
+	
+
 
   const cx = W / 2, cy = H / 2;
   const now = performance.now();
