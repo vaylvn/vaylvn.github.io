@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LaneType (Concept)</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --lane: #2a2a2a;
+      --lane2: #333;
+      --text: #d9d9d9;
+      --muted: #8b8b8b;
+      --yellow: #f2d54a;
+      --red: #e34b4b;
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      overflow: hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      user-select: none;
+    }
+    canvas { display:block; width:100vw; height:100vh; }
+    .hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      color: var(--text);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 18px 20px;
+      letter-spacing: 0.2px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      opacity: 0.95;
+      font-size: 14px;
+    }
+    .top .right { text-align: right; color: var(--muted); }
+    .bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      opacity: 0.85;
+    }
+    .kbd {
+      display:inline-block;
+      padding: 2px 7px;
+      border: 1px solid #3b3b3b;
+      border-bottom-color:#2b2b2b;
+      border-radius: 8px;
+      color: var(--text);
+      background: rgba(255,255,255,0.04);
+      margin: 0 4px;
+      font-size: 11px;
+    }
+    .centerMsg {
+      align-self: center;
+      justify-self: center;
+      text-align: center;
+      max-width: 720px;
+      padding: 18px 22px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(6px);
+      display: none;
+    }
+    .centerMsg h1 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 650;
+      letter-spacing: 0.2px;
+    }
+    .centerMsg p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .centerMsg.show { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="hud">
+    <div class="top">
+      <div>
+        <span id="score">Score: 0</span> ·
+        <span id="dots">Dots: 0</span> ·
+        <span id="streak">Streak: 0</span>
+      </div>
+      <div class="right">
+        <span id="time">0.0s</span> · Best <span id="best">0.0s</span>
+      </div>
+    </div>
+
+    <div id="centerMsg" class="centerMsg show">
+      <h1>LaneType</h1>
+      <p>
+        Type the prompt. The <span style="color:var(--red)">red line</span> is death.
+        Collect <span style="color:var(--yellow)">dots</span> by staying clean.
+        Spend a dot with <span class="kbd">Esc</span> to push danger back.
+        Restart with <span class="kbd">Enter</span>.
+      </p>
+    </div>
+
+    <div class="bottom">
+      <div>
+        Controls: <span class="kbd">Type</span> · <span class="kbd">Esc</span> pushback (cost 1 dot) · <span class="kbd">Enter</span> restart
+      </div>
+      <div id="hint">Tip: mistakes speed up danger.</div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById("c");
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      const elScore = document.getElementById("score");
+      const elDots  = document.getElementById("dots");
+      const elStreak= document.getElementById("streak");
+      const elTime  = document.getElementById("time");
+      const elBest  = document.getElementById("best");
+      const centerMsg = document.getElementById("centerMsg");
+
+      // ---------------------------
+      // Game tuning (keep it simple)
+      // ---------------------------
+      const CURSOR_X_FRAC = 0.38;     // where the yellow vertical bar lives
+      const LANE_H_FRAC   = 0.12;
+      const TEXT_Y_OFFSET = 46;       // px above lane
+      const DOT_RADIUS    = 6;
+
+      const BASE_DANGER_SPEED = 55;   // px/sec
+      const MISTAKE_PENALTY   = 85;   // immediate danger surge (px) on wrong key
+      const CORRECT_RELIEF    = 10;   // push danger back slightly per correct char (px)
+      const DOT_PUSHBACK      = 140;  // px pushback per dot spend (Esc)
+      const DOT_SPAWN_CHANCE  = 0.55; // chance to spawn a dot on each word completion
+      const CLEAN_WINDOW_MS   = 900;  // must be "clean" to collect dot at cursor crossing
+
+      const WORDS = [
+        "minimal", "focus", "steady", "pressure", "signal", "silence", "reduce",
+        "sharpen", "tempo", "clarity", "thread", "vector", "calm", "control",
+        "repeat", "habit", "streak", "clean", "commit", "override", "pattern",
+        "buffer", "cursor", "drift", "sprint", "clutch", "resist", "anchor",
+        "tempo", "delta", "trace", "ghost", "static", "pulse", "margin"
+      ];
+
+      function randWord() {
+        const w = WORDS[(Math.random() * WORDS.length) | 0];
+        // Occasionally spice with punctuation / casing (script-hostile-ish)
+        const r = Math.random();
+        if (r < 0.12) return w.toUpperCase();
+        if (r < 0.22) return w + ".";
+        if (r < 0.30) return w + ",";
+        if (r < 0.34) return w + "!";
+        return w;
+      }
+
+      // ---------------------------
+      // State
+      // ---------------------------
+      let W = 0, H = 0, dpr = 1;
+      function resize() {
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        W = Math.floor(window.innerWidth);
+        H = Math.floor(window.innerHeight);
+        canvas.width  = Math.floor(W * dpr);
+        canvas.height = Math.floor(H * dpr);
+        canvas.style.width = W + "px";
+        canvas.style.height = H + "px";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener("resize", resize);
+      resize();
+
+      const game = {
+        running: false,
+        dead: false,
+        t0: 0,
+        time: 0,
+        best: Number(localStorage.getItem("lanetype_best") || "0") || 0,
+
+        score: 0,
+        dots: 0,
+        streak: 0,
+        lastMistakeAt: -1,
+
+        // Prompt typing
+        prompt: "",
+        idx: 0,
+        flash: 0,        // red flash intensity for mistakes
+        shake: 0,
+
+        // Danger line (red) moves toward cursor
+        dangerX: 0,
+
+        // Dots moving along lane from right to left
+        dotsArr: [],     // { x, y, v, collected }
+        escCooldown: 0
+      };
+
+      elBest.textContent = game.best.toFixed(1) + "s";
+
+      function newPrompt() {
+        // 2–4 words, spaced (keeps it chill but escalating)
+        const n = 2 + ((Math.random() * 3) | 0);
+        let s = "";
+        for (let i = 0; i < n; i++) s += (i ? " " : "") + randWord();
+        game.prompt = s;
+        game.idx = 0;
+      }
+
+      function reset(runStart = true) {
+        game.running = runStart;
+        game.dead = false;
+        game.t0 = performance.now();
+        game.time = 0;
+
+        game.score = 0;
+        game.dots = 0;
+        game.streak = 0;
+        game.lastMistakeAt = -1;
+
+        game.flash = 0;
+        game.shake = 0;
+
+        game.dotsArr.length = 0;
+
+        // danger starts comfortably behind (left of cursor)
+        game.dangerX = 20;
+        game.escCooldown = 0;
+
+        newPrompt();
+        syncHud();
+        centerMsg.classList.toggle("show", !runStart);
+      }
+
+      function start() {
+        reset(true);
+        centerMsg.classList.remove("show");
+      }
+
+      function die() {
+        game.dead = true;
+        game.running = false;
+
+        if (game.time > game.best) {
+          game.best = game.time;
+          localStorage.setItem("lanetype_best", String(game.best));
+          elBest.textContent = game.best.toFixed(1) + "s";
+        }
+        centerMsg.classList.add("show");
+      }
+
+      function syncHud() {
+        elScore.textContent = `Score: ${game.score}`;
+        elDots.textContent  = `Dots: ${game.dots}`;
+        elStreak.textContent= `Streak: ${game.streak}`;
+        elTime.textContent  = `${game.time.toFixed(1)}s`;
+      }
+
+      // Keyboard handling
+      window.addEventListener("keydown", (e) => {
+        // Restart
+        if (e.key === "Enter") {
+          start();
+          return;
+        }
+
+        // Spend dot pushback
+        if (e.key === "Escape") {
+          if (game.running && !game.dead && game.dots > 0 && game.escCooldown <= 0) {
+            game.dots--;
+            game.dangerX = Math.max(0, game.dangerX - DOT_PUSHBACK);
+            game.escCooldown = 0.18; // seconds
+            syncHud();
+          }
+          e.preventDefault();
+          return;
+        }
+
+        if (!game.running || game.dead) return;
+
+        // Only accept "character" keys + space/backspace handling
+        const isChar = e.key.length === 1;
+        const isSpace = e.key === " ";
+        const isBack = e.key === "Backspace";
+
+        if (!isChar && !isSpace && !isBack) return;
+
+        // Optional: Backspace doesn't help (keeps pressure)
+        if (isBack) {
+          // tiny penalty for trying to "edit"
+          mistake();
+          return;
+        }
+
+        // Expected char
+        const expected = game.prompt[game.idx] || "";
+        const got = e.key;
+
+        if (got === expected) {
+          correct();
+        } else {
+          // Allow user to type space if expected is space, etc. otherwise it's a mistake.
+          mistake();
+        }
+
+        // Prevent space scrolling
+        if (isSpace) e.preventDefault();
+      });
+
+      function correct() {
+        game.idx++;
+        game.streak++;
+
+        // Small relief per correct char (keeps it feeling "pushable")
+        game.dangerX = Math.max(0, game.dangerX - CORRECT_RELIEF);
+
+        // Word completion: score + maybe spawn a dot
+        if (game.idx >= game.prompt.length) {
+          game.score += 1;
+          // dot spawn chance increases with streak, slightly
+          const p = Math.min(0.90, DOT_SPAWN_CHANCE + game.streak * 0.0015);
+          if (Math.random() < p) spawnDot();
+          newPrompt();
+        }
+        syncHud();
+      }
+
+      function mistake() {
+        game.streak = 0;
+        game.lastMistakeAt = performance.now();
+        game.flash = 1.0;
+        game.shake = 1.0;
+
+        // Immediate surge + slight speed ramp feel (handled in update)
+        game.dangerX += MISTAKE_PENALTY;
+        syncHud();
+      }
+
+      function spawnDot() {
+        const laneY = (H * 0.5);
+        const laneH = (H * LANE_H_FRAC);
+        const y = laneY + (Math.random() * laneH * 0.32 - laneH * 0.16);
+        game.dotsArr.push({
+          x: W + 30,
+          y,
+          v: 140 + Math.random() * 120, // px/sec
+          collected: false
+        });
+      }
+
+      // ---------------------------
+      // Render
+      // ---------------------------
+      function draw() {
+        // background
+        ctx.fillStyle = "#121212";
+        ctx.fillRect(0, 0, W, H);
+
+        const laneY = H * 0.5;
+        const laneH = Math.max(68, H * LANE_H_FRAC);
+        const laneX = W * 0.12;
+        const laneW = W * 0.76;
+
+        // subtle shake on mistake
+        const shakePx = game.shake > 0 ? (Math.sin(performance.now() * 0.08) * 6 * game.shake) : 0;
+
+        // lane
+        ctx.fillStyle = "#2a2a2a";
+        roundRect(ctx, laneX, laneY - laneH / 2 + shakePx, laneW, laneH, 18);
+        ctx.fill();
+
+        // faint inner lane
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = "#333";
+        roundRect(ctx, laneX + 10, laneY - laneH * 0.22 + shakePx, laneW - 20, laneH * 0.44, 14);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // cursor line (yellow)
+        const cursorX = Math.floor(W * CURSOR_X_FRAC);
+        ctx.strokeStyle = "#f2d54a";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cursorX, laneY - laneH / 2 + shakePx);
+        ctx.lineTo(cursorX, laneY + laneH / 2 + shakePx);
+        ctx.stroke();
+
+        // danger line (red) - approaches cursor from left
+        const dangerX = Math.min(cursorX, game.dangerX);
+        ctx.strokeStyle = "#e34b4b";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(dangerX, laneY - laneH / 2 + shakePx);
+        ctx.lineTo(dangerX, laneY + laneH / 2 + shakePx);
+        ctx.stroke();
+
+        // danger "fill" behind it (optional - minimal)
+        ctx.globalAlpha = 0.10;
+        ctx.fillStyle = "#e34b4b";
+        ctx.fillRect(laneX, laneY - laneH/2 + shakePx, Math.max(0, dangerX - laneX), laneH);
+        ctx.globalAlpha = 1;
+
+        // dots
+        for (const d of game.dotsArr) {
+          if (d.collected) continue;
+          ctx.fillStyle = "#f2d54a";
+          ctx.beginPath();
+          ctx.arc(d.x, d.y + shakePx, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // prompt text above lane
+        const textY = laneY - laneH / 2 - TEXT_Y_OFFSET;
+        ctx.font = "600 22px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+        ctx.textBaseline = "alphabetic";
+
+        // draw typed part (fades), current + remaining
+        const typed = game.prompt.slice(0, game.idx);
+        const cur   = game.prompt[game.idx] || "";
+        const rest  = game.prompt.slice(game.idx + 1);
+
+        const baseX = laneX + 14;
+        // typed
+        ctx.fillStyle = "#6e6e6e";
+        ctx.fillText(typed, baseX, textY);
+
+        // measure typed width to position cursor char
+        const tw = ctx.measureText(typed).width;
+
+        // current char highlight
+        if (!game.dead) {
+          ctx.fillStyle = "#d9d9d9";
+          ctx.fillText(cur, baseX + tw, textY);
+          const cw = ctx.measureText(cur).width;
+
+          // underline current char (subtle)
+          ctx.strokeStyle = "#6a6a6a";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(baseX + tw, textY + 6);
+          ctx.lineTo(baseX + tw + Math.max(6, cw), textY + 6);
+          ctx.stroke();
+
+          // rest
+          ctx.fillStyle = "#8b8b8b";
+          ctx.fillText(rest, baseX + tw + cw, textY);
+        } else {
+          // dead: show full prompt muted
+          ctx.fillStyle = "#8b8b8b";
+          ctx.fillText(game.prompt, baseX, textY);
+        }
+
+        // mistake flash overlay
+        if (game.flash > 0.001) {
+          ctx.globalAlpha = 0.18 * game.flash;
+          ctx.fillStyle = "#e34b4b";
+          ctx.fillRect(0, 0, W, H);
+          ctx.globalAlpha = 1;
+        }
+
+        // small bottom center indicator for pushback availability
+        if (game.running && !game.dead) {
+          ctx.font = "500 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+          ctx.fillStyle = "#8b8b8b";
+          const msg = game.dots > 0 ? `Esc: pushback (-1 dot)` : `Collect dots to enable pushback`;
+          ctx.fillText(msg, laneX + 14, laneY + laneH / 2 + 34);
+        }
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        const rr = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rr, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rr);
+        ctx.arcTo(x + w, y + h, x, y + h, rr);
+        ctx.arcTo(x, y + h, x, y, rr);
+        ctx.arcTo(x, y, x + w, y, rr);
+        ctx.closePath();
+      }
+
+      // ---------------------------
+      // Update loop
+      // ---------------------------
+      let last = performance.now();
+      function tick(now) {
+        const dt = Math.min(0.033, (now - last) / 1000);
+        last = now;
+
+        if (game.running && !game.dead) {
+          game.time = (now - game.t0) / 1000;
+
+          // Danger speed ramps gently with time + mistakes (via flash/streak)
+          const cursorX = Math.floor(W * CURSOR_X_FRAC);
+          const timeRamp = 1 + (game.time * 0.015);        // slow ramp
+          const streakRelief = 1 - Math.min(0.25, game.streak * 0.002); // streak slows creep slightly
+          const speed = BASE_DANGER_SPEED * timeRamp * streakRelief;
+
+          game.dangerX += speed * dt;
+
+          // esc cooldown
+          game.escCooldown = Math.max(0, game.escCooldown - dt);
+
+          // dots movement + collection at cursor crossing
+          const clean = (game.lastMistakeAt < 0) ? true : (now - game.lastMistakeAt) > CLEAN_WINDOW_MS;
+          for (const d of game.dotsArr) {
+            if (d.collected) continue;
+            d.x -= d.v * dt;
+
+            // Collect when crossing cursor if clean
+            if (d.x <= cursorX && !d.collected) {
+              if (clean) {
+                d.collected = true;
+                game.dots++;
+                syncHud();
+              } else {
+                // missed dot: let it drift off-screen
+              }
+            }
+          }
+          // prune off-screen dots
+          game.dotsArr = game.dotsArr.filter(d => d.x > -50 && !d.collected);
+
+          // decay FX
+          game.flash = Math.max(0, game.flash - dt * 2.8);
+          game.shake = Math.max(0, game.shake - dt * 3.2);
+
+          // Death condition
+          if (game.dangerX >= cursorX) {
+            die();
+          }
+
+          // HUD time
+          elTime.textContent = `${game.time.toFixed(1)}s`;
+        }
+
+        draw();
+        requestAnimationFrame(tick);
+      }
+
+      // Start idle (show instructions), press Enter to begin
+      reset(false);
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
