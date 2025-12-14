@@ -9,6 +9,73 @@
    - end screen stats
 ========================================================= */
 
+let audioCtx = null;
+let masterGain = null;
+const audioBuffers = {};
+
+
+async function loadSound(name, url) {
+  const res = await fetch(url);
+  const arrayBuffer = await res.arrayBuffer();
+  audioBuffers[name] = await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function loadGameSounds() {
+  await Promise.all([
+    loadSound("click", "assets/sounds/click.mp3"),
+    loadSound("hit",   "assets/sounds/hit.mp3"),
+    loadSound("miss",  "assets/sounds/miss.mp3"),
+    loadSound("tnt",   "assets/sounds/tnt.mp3"),
+  ]);
+}
+
+
+function initAudio() {
+  if (audioCtx) return;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.8; // global volume
+  masterGain.connect(audioCtx.destination);
+  
+  loadGameSounds();
+
+}
+
+window.addEventListener("keydown", (e) => {
+  initAudio();
+  // existing logic continues…
+});
+
+function playSound(name, volume = 1.0, pitchJitter = 0) {
+  if (!audioCtx) return;
+
+  const buffer = audioBuffers[name];
+  if (!buffer) return;
+
+  const src = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+
+  src.buffer = buffer;
+
+  if (pitchJitter !== 0) {
+    src.playbackRate.value = 1 + (Math.random() * 2 - 1) * pitchJitter;
+  }
+
+  gain.gain.value = volume;
+
+  src.connect(gain);
+  gain.connect(masterGain);
+
+  src.start();
+}
+
+
+
+
+
+
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -141,54 +208,6 @@ const WORDS_LONG = [
 
 
 
-
-const sounds = {
-  click: [
-    new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-	new Audio("assets/sounds/click.mp3"),
-  ],
-  click2: [
-    new Audio("assets/sounds/click2.mp3")
-  ],
-  death: [
-    new Audio("assets/sounds/death.mp3")
-  ],
-  hit: [
-    new Audio("assets/sounds/hit.mp3"),
-	new Audio("assets/sounds/hit.mp3"),
-	new Audio("assets/sounds/hit.mp3"),
-	new Audio("assets/sounds/hit.mp3"),
-	new Audio("assets/sounds/hit.mp3"),
-  ],
-  miss: [
-    new Audio("assets/sounds/miss.mp3")
-  ],
-  tnt: [
-    new Audio("assets/sounds/tnt.mp3"),
-	new Audio("assets/sounds/tnt.mp3"),
-	new Audio("assets/sounds/tnt.mp3"),
-	new Audio("assets/sounds/tnt.mp3"),
-	new Audio("assets/sounds/tnt.mp3"),
-  ]
-};
-
-
-function playSound(name, volume = 1.0) {
-  const pool = sounds[name];
-  if (!pool || pool.length === 0) return;
-
-  const a = pool.shift();
-  a.currentTime = 0;
-  a.volume = volume;
-  a.play();
-  pool.push(a);
-}
 
 
 
@@ -465,13 +484,14 @@ window.addEventListener("keydown", (e) => {
         killEnemy(locked, { score: true, collateral: false });
       }
 	  
-	  playSound("click", 0.5);
+	  playSound("click", 0.25, 0.03);
 	  
       return;
     } else {
       // mistype ignored, flash
 	  
-	  playSound("miss", 1.0);
+	  playSound("miss", 0.25, 0.03);
+
       state.missFlashT = 0.08;
       return;
     }
@@ -549,11 +569,12 @@ function update(dt) {
 
       if (state.hp <= 0) {
         state.hp = 0;
-		playSound("death", 1.0);
+		playSound("death", 0.5);
+
         endRun();
         return;
       } else {
-		  playSound("hit", 1.0);
+		  playSound("hit", 0.2);
 	  }
     }
   }
