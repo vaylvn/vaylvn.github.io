@@ -26,6 +26,7 @@ async function loadGameSounds() {
     loadSound("hit",   "assets/sounds/hit.mp3"),
     loadSound("miss",  "assets/sounds/miss.mp3"),
     loadSound("tnt",   "assets/sounds/tnt.mp3"),
+	loadSound("death", "assets/sounds/death.mp3"),
   ]);
 }
 
