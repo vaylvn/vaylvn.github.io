@@ -26,13 +26,13 @@ resize();
 
 /* ---------- tuning ---------- */
 const COLORS = {
-  bg: "#141414",
-  ui: "#f2f2f2",
+  bg: "#1B1B1B",
+  ui: "#EAEAEA",
   uiDim: "#a8a8a8",
-  text: "#eaeaea",
-  typed: "#7a7a7a",
+  text: "#7a7a7a",
+  typed: "#A3D900",
   miss: "#e34b4b",
-  player: "#f2d54a",
+  player: "#F5C542",
   enemy: "#d8d8d8",
   exploder: "#e34b4b",
 };
@@ -62,9 +62,8 @@ const EXPLODER_BLAST_FADE = 0.22;  // seconds blast ring visible
 
 const LOCK_FADE_ALPHA = 0.55;
 
-const VIGNETTE_RADIUS = 300;   // clear center radius
-const VIGNETTE_FEATHER = 200;  // softness of edge
-
+const VIGNETTE_RADIUS = 250;   // clear center radius
+const VIGNETTE_FEATHER = 250;  // softness of edge
 
 const FONT = '600 20px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 const FONT_SMALL = '500 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
@@ -142,7 +141,63 @@ const WORDS_LONG = [
 
 
 
+
+const sounds = {
+  click: [
+    new Audio("assets/sounds/click.mp3")
+  ],
+  click2: [
+    new Audio("assets/sounds/click2.mp3")
+  ],
+  death: [
+    new Audio("assets/sounds/death.mp3")
+  ],
+  hit: [
+    new Audio("assets/sounds/hit.mp3"),
+	new Audio("assets/sounds/hit.mp3"),
+	new Audio("assets/sounds/hit.mp3"),
+	new Audio("assets/sounds/hit.mp3"),
+	new Audio("assets/sounds/hit.mp3"),
+  ],
+  miss: [
+    new Audio("assets/sounds/miss.mp3")
+  ],
+  tnt: [
+    new Audio("assets/sounds/tnt.mp3"),
+	new Audio("assets/sounds/tnt.mp3"),
+	new Audio("assets/sounds/tnt.mp3"),
+	new Audio("assets/sounds/tnt.mp3"),
+	new Audio("assets/sounds/tnt.mp3"),
+  ]
+};
+
+
+function playSound(name, volume = 1.0) {
+  const pool = sounds[name];
+  if (!pool || pool.length === 0) return;
+
+  const a = pool.shift();
+  a.currentTime = 0;
+  a.volume = volume;
+  a.play();
+  pool.push(a);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 let lastWordWasLong = false;
+
+
+
 
 // Ensure first letters are mostly diverse early; later we accept repeats but we try to avoid collisions at spawn.
 function pickWord(elapsedSec) {
@@ -210,6 +265,7 @@ const state = {
 
   // effects
   missFlashT: 0,
+  hitFlashT: 0,
   blastRings: [], // {x,y,r,t}
 
   // timing
@@ -236,6 +292,7 @@ function reset() {
   state.enemies = [];
   state.lockId = null;
   state.missFlashT = 0;
+  state.hitFlashT = 0;
   state.blastRings = [];
   state.startMs = performance.now();
   state.lastMs = performance.now();
@@ -376,6 +433,12 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "Enter") reset();
     return;
   }
+  
+  if (e.key === "Escape") {
+	  state.lockId = null;
+	  return;
+	}
+
 
   // ignore non-printable keys
   if (e.key.length !== 1) return;
@@ -394,9 +457,14 @@ window.addEventListener("keydown", (e) => {
       if (locked.progress >= locked.word.length) {
         killEnemy(locked, { score: true, collateral: false });
       }
+	  
+	  playSound("click", 0.5);
+	  
       return;
     } else {
       // mistype ignored, flash
+	  
+	  playSound("miss", 1.0);
       state.missFlashT = 0.08;
       return;
     }
@@ -406,7 +474,7 @@ window.addEventListener("keydown", (e) => {
   // If multiple share the first letter, pick the nearest-to-center (most urgent).
   const candidates = state.enemies.filter(en => en.word[0] === key);
   if (candidates.length === 0) {
-    state.missFlashT = 0.08;
+    // state.missFlashT = 0.08;
     return;
   }
 
@@ -470,13 +538,16 @@ function update(dt) {
       if (state.lockId === e.id) state.lockId = null;
 
       // UI shake (simple: set missFlash and also add a brief bar shake timer)
-      state.missFlashT = Math.max(state.missFlashT, 0.10);
+      state.hitFlashT = Math.max(state.hitFlashT, 0.10);
 
       if (state.hp <= 0) {
         state.hp = 0;
+		playSound("death", 1.0);
         endRun();
         return;
-      }
+      } else {
+		  playSound("hit", 1.0);
+	  }
     }
   }
 
@@ -491,6 +562,7 @@ function update(dt) {
 
   // miss flash timer
   state.missFlashT = Math.max(0, state.missFlashT - dt);
+  state.hitFlashT = Math.max(0, state.hitFlashT - dt);
 
   // WPM sampling (for peak + future graph)
   // Sample every ~1.5s
@@ -615,7 +687,14 @@ function draw() {
       for (let i = 0; i < word.length; i++) {
         const ch = word[i];
         const w = ctx.measureText(ch).width;
-        ctx.fillStyle = (i < e.progress) ? COLORS.typed : COLORS.text;
+		
+		if (state.missFlashT > 0) {
+			ctx.fillStyle = "#E34B4B";
+		} else {
+			ctx.fillStyle = (i < e.progress) ? COLORS.typed : COLORS.text;
+		}
+		
+        
         ctx.fillText(ch, startX + w / 2, y);
         startX += w;
       }
@@ -635,7 +714,8 @@ function draw() {
     ctx.globalAlpha = 1;
   }
 
-
+	
+	const hpFrac = state.hp / state.hpMax;
 
 
 		// static center reveal overlay
@@ -644,14 +724,18 @@ function draw() {
 		// static center visibility mask (hide outside, keep center visible)
 // static vignette overlay (dark outside, clear center)
 		ctx.save();
+		
+		
 
 		const r0 = VIGNETTE_RADIUS;
 		const r1 = VIGNETTE_RADIUS + VIGNETTE_FEATHER;
+		
+		
 
 		// radial alpha mask: transparent center → opaque outside
 		const grad = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
-		grad.addColorStop(0, "rgba(20,20,20,0)"); // fully clear center
-		grad.addColorStop(1, "rgba(20,20,20,1)"); // solid dark outside
+		grad.addColorStop(0, "rgba(27,27,27,0)"); // fully clear center
+		grad.addColorStop(1, "rgba(27,27,27,1)"); // solid dark outside
 
 		ctx.fillStyle = grad;
 		ctx.fillRect(0, 0, W, H);
@@ -670,8 +754,10 @@ function draw() {
 
   // shake health bar on hits (reuse missFlashT)
   let shakeX = 0, shakeY = 0;
-  if (state.missFlashT > 0.001) {
-    const s = 2.5 * (state.missFlashT / 0.10);
+  
+  
+  if (state.hitFlashT > 0.001) {
+    const s = 2.5 * (state.hitFlashT / 0.10);
     shakeX = (Math.random() * 2 - 1) * s;
     shakeY = (Math.random() * 2 - 1) * s;
 	
@@ -680,8 +766,7 @@ function draw() {
   ctx.fillStyle = "#2a2a2a";
   ctx.fillRect(barX + shakeX, barY + shakeY, barW, barH);
 
-  const hpFrac = state.hp / state.hpMax;
-  ctx.fillStyle = (state.missFlashT > 0.001) ? "#f03c3c" : COLORS.ui;
+  ctx.fillStyle = (state.hitFlashT > 0.001) ? "#f03c3c" : COLORS.ui;
   ctx.fillRect(barX + shakeX, barY + shakeY, barW * hpFrac, barH);
 
 
