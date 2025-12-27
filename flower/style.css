@@ -54,3 +54,36 @@ button:hover {
 .tier-0 { outline: 2px solid #4caf50; } /* groundcover */
 .tier-1 { outline: 2px solid #fbc02d; } /* wildflower */
 .tier-2 { outline: 2px solid #ba68c8; } /* delicate */
+
+
+body {
+  background:#111;
+  color:#ddd;
+  font-family:system-ui;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+
+#grid {
+  display:grid;
+  grid-template-columns:repeat(20,1fr);
+  width:620px;
+  gap:1px;
+}
+
+.tile {
+  aspect-ratio:1;
+}
+
+/* soil */
+.moisture-0 { background:#2a1d14; }
+.moisture-1 { background:#3a2a1a; }
+.moisture-2 { background:#4a3a2a; }
+.moisture-3 { background:#5a4a3a; }
+
+/* tiers */
+.tier-0 { outline:2px solid #4caf50; }
+.tier-1 { outline:2px solid #fbc02d; }
+.tier-2 { outline:2px solid #ba68c8; }
