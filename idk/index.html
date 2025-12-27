@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Node Typing Prototype</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      font-family: monospace;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <script>
+    /*****************
+     * config.js
+     *****************/
+    const CONFIG = {
+      NODE_RADIUS: 10,
+      NODE_SPACING: 120,
+      CORRUPTION_SPEED: 20, // pixels per second
+      FONT_SIZE: 18,
+      WORDS: ["void", "node", "graph", "entropy", "signal", "error", "compile", "buffer", "vector", "stack"],
+    };
+
+    /*****************
+     * state.js
+     *****************/
+    const state = {
+      nodes: [],
+      currentIndex: 0,
+      corruptionPos: 0,
+      inputBuffer: "",
+      alive: true,
+    };
+
+    function createNode(x, y, word) {
+      return { x, y, word, typed: false };
+    }
+
+    function initGraph() {
+      state.nodes = [];
+      const startX = 100;
+      const y = window.innerHeight / 2;
+      for (let i = 0; i < 20; i++) {
+        const word = CONFIG.WORDS[Math.floor(Math.random() * CONFIG.WORDS.length)];
+        state.nodes.push(createNode(startX + i * CONFIG.NODE_SPACING, y, word));
+      }
+      state.currentIndex = 0;
+      state.corruptionPos = startX - 50;
+      state.inputBuffer = "";
+      state.alive = true;
+    }
+
+    /*****************
+     * input.js
+     *****************/
+    window.addEventListener("keydown", (e) => {
+      if (!state.alive) return;
+      if (e.key.length === 1) {
+        state.inputBuffer += e.key;
+        const currentNode = state.nodes[state.currentIndex];
+        if (!currentNode.word.startsWith(state.inputBuffer)) {
+          state.inputBuffer = ""; // reset on error
+        } else if (state.inputBuffer === currentNode.word) {
+          currentNode.typed = true;
+          state.currentIndex++;
+          state.inputBuffer = "";
+        }
+      }
+    });
+
+    /*****************
+     * renderer.js
+     *****************/
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `${CONFIG.FONT_SIZE}px monospace`;
+      ctx.textAlign = "center";
+
+      // draw connections
+      ctx.strokeStyle = "#555";
+      ctx.beginPath();
+      for (let i = 0; i < state.nodes.length - 1; i++) {
+        ctx.moveTo(state.nodes[i].x, state.nodes[i].y);
+        ctx.lineTo(state.nodes[i + 1].x, state.nodes[i + 1].y);
+      }
+      ctx.stroke();
+
+      // corruption line
+      ctx.strokeStyle = "red";
+      ctx.beginPath();
+      ctx.moveTo(state.corruptionPos, state.nodes[0].y);
+      ctx.lineTo(state.corruptionPos + 20, state.nodes[0].y);
+      ctx.stroke();
+
+      // draw nodes
+      state.nodes.forEach((node, i) => {
+        ctx.fillStyle = node.typed ? "#0f0" : "#fff";
+        ctx.beginPath();
+        ctx.rect(node.x - CONFIG.NODE_RADIUS, node.y - CONFIG.NODE_RADIUS, CONFIG.NODE_RADIUS * 2, CONFIG.NODE_RADIUS * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff";
+        ctx.fillText(node.word, node.x, node.y - 20);
+      });
+
+      if (!state.alive) {
+        ctx.fillStyle = "red";
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+      }
+    }
+
+    /*****************
+     * game.js
+     *****************/
+    let lastTime = 0;
+    function loop(time) {
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
+      if (state.alive) {
+        state.corruptionPos += CONFIG.CORRUPTION_SPEED * dt;
+        const currentNode = state.nodes[state.currentIndex];
+        if (currentNode && state.corruptionPos >= currentNode.x) {
+          state.alive = false;
+        }
+      }
+
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    initGraph();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
