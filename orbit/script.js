@@ -111,6 +111,7 @@ async function loadAllSounds() {
   await Promise.all([
     loadSound("point", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point.mp3"),
 	loadSound("point_check", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point_check.mp3")
+	loadSound("fail", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/fail.mp3")
   ]);
   console.log("Sounds ready");
 }
@@ -188,6 +189,7 @@ function startRun() {
 function gameOver() {
   if (flashing) return;
 
+  playSound("fail", { volume: 0.5, rate: 1.0 });
   running = false;
   flashing = true;
   flashStart = performance.now();
@@ -222,7 +224,7 @@ function handleAttempt() {
 
 	if (score % 5 === 0) {
 		const variance = Math.floor(Math.random() * 3);
-		playSound("point_check", { volume: 1.0, rate: 1.0 + (0.05 * variance) });
+		playSound("point_check", { volume: 1.0, rate: 1.0 + (0.02 * variance) });
 	} else {
 		const variance = Math.floor(Math.random() * 3);
 		playSound("point", { volume: 1.0, rate: 1.0 + (0.05 * variance) });
