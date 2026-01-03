@@ -379,7 +379,7 @@ submitBtn.onclick = async () => {
     const { collection, addDoc } = window.firestoreFns;
 
     const ref = await addDoc(
-      collection(window.db, `leaderboards/${device}`),
+      collection(window.db, device),
       {
         name,
         score,
@@ -414,10 +414,9 @@ async function loadLeaderboard() {
   const { collection, getDocs, query, orderBy, limit } = window.firestoreFns;
   const lastId = localStorage.getItem("lastScoreId");
 
-  // Fetch top 10 from each device
   const [pcSnap, mobileSnap] = await Promise.all([
-    getDocs(query(collection(window.db, "leaderboards/pc"), orderBy("score", "desc"), limit(10))),
-    getDocs(query(collection(window.db, "leaderboards/mobile"), orderBy("score", "desc"), limit(10)))
+    getDocs(query(collection(window.db, "pc"), orderBy("score", "desc"), limit(10))),
+    getDocs(query(collection(window.db, "mobile"), orderBy("score", "desc"), limit(10)))
   ]);
 
   const pc = pcSnap.docs.map(d => ({ id: d.id, ...d.data(), device: "pc" }));
@@ -431,6 +430,7 @@ async function loadLeaderboard() {
   renderLeaderboard("lbPC", pc, "pc", lastId);
   renderLeaderboard("lbMobile", mobile, "mobile", lastId);
 }
+
 
 function renderLeaderboard(listId, rows, type, lastId) {
   const ul = document.getElementById(listId);
