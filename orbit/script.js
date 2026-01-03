@@ -81,6 +81,51 @@ let lastT = 0;
 let flashing = false;      // game over flash active
 let flashStart = 0;
 
+
+
+
+
+
+
+function playSound(name, { volume = 0.3, rate = 1.0 } = {}) {
+  if (!audioEnabled || !sounds[name]) return;
+
+  const source = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  source.buffer = sounds[name];
+  source.playbackRate.value = rate;
+  gain.gain.value = volume;
+  source.connect(gain).connect(audioCtx.destination);
+  source.start(0);
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const sounds = {};
+
+async function loadSound(name, url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  sounds[name] = await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+async function loadAllSounds() {
+  await Promise.all([
+    loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click2.mp3"),
+	loadSound("click2", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click.mp3")
+  ]);
+  console.log("Sounds ready");
+}
+
+
+
+
+
+
+
+
+
+
+
 /* =========================
    Math helpers
 ========================= */
@@ -320,8 +365,8 @@ playBtn.addEventListener("click", () => {
 });
 
 viewLBBtn.addEventListener("click", async () => {
-  showScreen("screen-leaderboard");
-  await loadLeaderboard();
+	await loadLeaderboard();
+	showScreen("screen-leaderboard");
 });
 
 
@@ -390,8 +435,9 @@ submitBtn.onclick = async () => {
     localStorage.setItem("lastScoreId", ref.id);
   }
 
-  showScreen("screen-leaderboard");
-  await loadLeaderboard();
+  
+	await loadLeaderboard();
+	showScreen("screen-leaderboard");
 };
 
 document.querySelectorAll(".device-tabs button").forEach(btn => {
