@@ -88,7 +88,6 @@ let flashStart = 0;
 
 
 function playSound(name, { volume = 0.3, rate = 1.0 } = {}) {
-  if (!audioEnabled || !sounds[name]) return;
 
   const source = audioCtx.createBufferSource();
   const gain = audioCtx.createGain();
