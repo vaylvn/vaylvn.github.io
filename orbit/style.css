@@ -83,6 +83,59 @@ button.small {
   font-size:0.9rem;
 }
 
+#lbCombined,
+#lbPC,
+#lbMobile {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 24px;
+}
+
+#lbCombined li,
+#lbPC li,
+#lbMobile li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+li.highlight {
+  color: #f2c94c;
+  font-weight: 600;
+}
+
+li.highlight span:last-child {
+  opacity: 1;
+}
+
+li.highlight::before {
+  content: "→ ";
+  color: #f2c94c;
+}
+
+
+.device-tabs button {
+  border: 1px solid rgba(255,255,255,0.25);
+  background: transparent;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.device-tabs button:hover {
+  border-color: rgba(255,255,255,0.5);
+}
+
+.device-tabs button.active {
+  background: rgba(255,255,255,0.08);
+  border-color: #f2c94c; /* numi yellow */
+  color: #f2c94c;
+}
+
+
 input {
   background:none;
   border:none;
