@@ -135,7 +135,7 @@ function renderShareCard(score) {
   ctx.font = "72px 'IBM Plex Mono'";
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
-  ctx.fillText("orbit", SHARE_W / 2, 140);
+  ctx.fillText("orbit", SHARE_W / 2, 150);
 
   ctx.fillStyle = "#f2c94c";
   ctx.fillText(".", SHARE_W / 2 + 110, 140);
@@ -146,7 +146,13 @@ function renderShareCard(score) {
   // Score
   ctx.font = "160px 'IBM Plex Mono'";
   ctx.fillStyle = "#f2c94c";
-  ctx.fillText(score, SHARE_W / 2, SHARE_H / 2 + 40);
+  ctx.fillText(score, SHARE_W / 2, SHARE_H / 2 + 80);
+
+  // Footer
+  ctx.font = "50px 'IBM Plex Mono'";
+  ctx.fillStyle = "#4a4a4a";
+  ctx.textAlign = "center";
+  ctx.fillText("widget.vayl.uk/orbit", SHARE_W / 2, SHARE_H - 150);
 
 }
 
