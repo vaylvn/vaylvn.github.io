@@ -138,7 +138,7 @@ function renderShareCard(score) {
   ctx.fillText("orbit", SHARE_W / 2, 160);
 
   ctx.fillStyle = "#f2c94c";
-  ctx.fillText(".", SHARE_W / 2 + 110, 140);
+  ctx.fillText(".", SHARE_W / 2 + 110, 160);
 
   // Ring
   drawStaticRing(ctx);
