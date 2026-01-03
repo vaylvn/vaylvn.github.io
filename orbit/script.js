@@ -56,7 +56,7 @@ const MAX_LOCK_SIZE = 14;         // degrees (half-width)
 const MIN_LOCK_SIZE = 6;
 const LOCK_SHRINK_PER_HIT = 0.25;
 const MIN_SPAWN_GAP = 90;         // degrees, both directions
-const GAME_OVER_FLASH_MS = 700;   // time before switching to results
+const GAME_OVER_FLASH_MS = 2000;   // time before switching to results
 
 /* =========================
    Game state
@@ -148,7 +148,7 @@ function gameOver() {
   flashStart = performance.now();
 
   // Keep the player looking at the circle for the flash moment
-  msg.textContent = "game over";
+  // msg.textContent = "game over";
   msg.style.display = "";
 }
 
@@ -234,7 +234,7 @@ function draw() {
   ctx.stroke();
 
   // lock arc
-  ctx.strokeStyle = stroke;
+  ctx.strokeStyle = orbCol;
   ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.arc(
