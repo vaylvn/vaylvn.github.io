@@ -445,7 +445,12 @@ function renderLeaderboard(listId, rows, type, lastId) {
   ul.innerHTML = "";
 
   if (!rows.length) {
-    ul.innerHTML = "<li><span>No scores yet</span></li>";
+    ul.innerHTML = `
+		  <li class="lb-empty">
+			<span>No scores yet</span>
+		  </li>
+		`;
+
     return;
   }
 
