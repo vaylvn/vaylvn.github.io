@@ -110,7 +110,7 @@ async function loadSound(name, url) {
 async function loadAllSounds() {
   await Promise.all([
     loadSound("point", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point.mp3"),
-	loadSound("point_chek", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point_check.mp3")
+	loadSound("point_check", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point_check.mp3")
   ]);
   console.log("Sounds ready");
 }
