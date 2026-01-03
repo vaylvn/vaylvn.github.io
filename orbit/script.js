@@ -21,6 +21,14 @@ const submitBtn = document.getElementById("submitBtn");
 const playAgainBtn = document.getElementById("playAgainBtn");
 const menuBtn = document.getElementById("menuBtn");
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+const cameraBtn = document.getElementById("cameraBtn");
+
+
+// Initial tooltip text
+cameraBtn.title = isMobile
+  ? "Save image"
+  : "Click to copy · Shift-click to save";
+
 
 /* =========================
    Canvas setup
@@ -214,6 +222,23 @@ function drawStaticRing(ctx) {
 }
 
 
+
+let tooltipResetTimer = null;
+
+function flashTooltip(text, duration = 1200) {
+  if (tooltipResetTimer) clearTimeout(tooltipResetTimer);
+
+  cameraBtn.title = text;
+
+  tooltipResetTimer = setTimeout(() => {
+    cameraBtn.title = isMobile
+      ? "Save image"
+      : "Click to copy · Shift-click to save";
+  }, duration);
+}
+
+
+
 cameraBtn.onclick = async (e) => {
   // Always re-render in case score changed
   renderShareCard(score);
@@ -235,10 +260,12 @@ cameraBtn.onclick = async (e) => {
     try {
       const item = new ClipboardItem({ "image/png": blob });
       await navigator.clipboard.write([item]);
+	  flashTooltip("Copied!");
       return;
     } catch (err) {
       // Clipboard failed → fallback to download
       downloadBlob(blob, `orbit-${score}.png`);
+	  flashTooltip("Saved");
       return;
     }
   }
