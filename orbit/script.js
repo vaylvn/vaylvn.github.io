@@ -319,10 +319,11 @@ playBtn.addEventListener("click", () => {
   // allow tap anywhere on game screen to start
 });
 
-viewLBBtn.addEventListener("click", () => {
+viewLBBtn.addEventListener("click", async () => {
   showScreen("screen-leaderboard");
   await loadLeaderboard();
 });
+
 
 backBtnGame.addEventListener("click", () => {
   showScreen("screen-home");
