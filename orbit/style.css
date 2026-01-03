@@ -36,6 +36,10 @@ main {
   color: #f5c542; /* Numi yellow */
 }
 
+.hidden {
+  display: none;
+}
+
 
 .screen {
   display:none;
