@@ -466,11 +466,11 @@ function renderLeaderboard(listId, rows, type, lastId) {
 
     // Mobile suffix ONLY on combined list
     if (type === "combined" && r.device === "mobile") {
-      name += " ᵐ";
+      name += "ᵐ";
     }
 
     // Trophy for #1
-    if (i === 0) name = `🏆 ${name}`;
+    // if (i === 0) name = `🏆 ${name}`;
 
 
 	li.innerHTML = `
