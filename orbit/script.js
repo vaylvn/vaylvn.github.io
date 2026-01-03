@@ -291,7 +291,7 @@ function gameOver() {
 
 function finishGameOver() {
   flashing = false;
-  finalScoreEl.textContent = String(score);
+  // finalScoreEl.textContent = String(score);
 
   showScreen("screen-results");
   nameInput.value = "";
