@@ -171,7 +171,11 @@ function renderShareCard(score) {
   // Score
   ctx.font = "160px 'IBM Plex Mono'";
   ctx.fillStyle = "#f2c94c";
-  ctx.fillText(score, SHARE_W / 2, SHARE_H / 2 + 60);
+  
+  scoreText = (isMobile) ? str(score) += "ᵐ" : str(score);
+  
+  
+  ctx.fillText(scoreText, SHARE_W / 2, SHARE_H / 2 + 60);
 
   // Footer
   ctx.font = "50px 'IBM Plex Mono'";
