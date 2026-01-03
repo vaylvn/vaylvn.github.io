@@ -172,7 +172,7 @@ function renderShareCard(score) {
   ctx.font = "160px 'IBM Plex Mono'";
   ctx.fillStyle = "#f2c94c";
   
-  scoreText = (isMobile) ? toString(score) + "ᵐ" : toString(score);
+  const scoreText = (isMobile) ? toString(score) + "ᵐ" : toString(score);
   
   
   ctx.fillText(scoreText, SHARE_W / 2, SHARE_H / 2 + 60);
