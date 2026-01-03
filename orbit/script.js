@@ -549,9 +549,6 @@ viewLBBtn.addEventListener("click", async () => {
 });
 
 
-backBtnGame.addEventListener("click", () => {
-  showScreen("screen-home");
-});
 
 backBtnLB.addEventListener("click", () => {
   showScreen("screen-home");
