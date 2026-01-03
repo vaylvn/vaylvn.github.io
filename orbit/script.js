@@ -110,8 +110,8 @@ async function loadSound(name, url) {
 
 async function loadAllSounds() {
   await Promise.all([
-    loadSound("click", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click2.mp3"),
-	loadSound("click2", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/lgame/assets/audio/click.mp3")
+    loadSound("point", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point.mp3"),
+	loadSound("point_chek", "https://raw.githubusercontent.com/vaylvn/vaylvn.github.io/refs/heads/main/orbit/assets/point_check.mp3")
   ]);
   console.log("Sounds ready");
 }
@@ -220,6 +220,17 @@ function handleAttempt() {
     dir *= -1;
     speed += SPEED_INC;
     score += 1;
+
+	if (score % 5 === 0) {
+		const variance = Math.floor(Math.random() * 3);
+		playSound("point_check", { volume: 1.0, rate: 1.0 + (0.05 * variance) });
+	} else {
+		const variance = Math.floor(Math.random() * 3);
+		playSound("point", { volume: 1.0, rate: 1.0 + (0.05 * variance) });
+	}
+
+
+	
 
     lockSize = Math.max(MIN_LOCK_SIZE, lockSize - LOCK_SHRINK_PER_HIT);
 
@@ -536,6 +547,8 @@ function renderLeaderboard(listId, rows, type, lastId) {
 /* =========================
    Boot
 ========================= */
+
+loadAllSounds();
 showScreen("screen-home");
 
 document.fonts?.load('16px "IBM Plex Mono"').finally(() => {
