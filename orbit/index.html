@@ -59,11 +59,56 @@
     <section id="screen-leaderboard" class="screen">
       <button id="backBtnLB" class="small">← Back</button>
       <h2>Leaderboards</h2>
-      <p class="desc">Coming next.</p>
+	  
+	  <div class="device-tabs">
+		<button data-type="combined" class="active">All</button>
+		<button data-type="pc">PC</button>
+		<button data-type="mobile">Mobile</button>
+	  </div>
 
-      <ul id="lbList"></ul>
+	  <ul id="lbCombined"></ul>
+	  <ul id="lbPC" class="hidden"></ul>
+	  <ul id="lbMobile" class="hidden"></ul>
     </section>
+	
   </main>
+
+	<script type="module">
+	  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+	  import {
+		getFirestore,
+		collection,
+		addDoc,
+		getDocs,
+		query,
+		orderBy,
+		limit
+	  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+	  const firebaseConfig = {
+		apiKey: "AIzaSyCrf4dRp5NA4XJQt7tAptYMPyInIX-BwSM",
+		authDomain: "orbit-a63af.firebaseapp.com",
+		projectId: "orbit-a63af",
+		storageBucket: "orbit-a63af.firebasestorage.app",
+		messagingSenderId: "514603325684",
+		appId: "1:514603325684:web:ddabcad8e78a94c4cfa6a1"
+	  };
+
+	  const app = initializeApp(firebaseConfig);
+	  const db = getFirestore(app);
+
+	  // expose minimal API (Numi-style)
+	  window.db = db;
+	  window.firestoreFns = {
+		collection,
+		addDoc,
+		getDocs,
+		query,
+		orderBy,
+		limit
+	  };
+	</script>
+
 
   <script type="module" src="script.js"></script>
 </body>

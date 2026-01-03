@@ -20,6 +20,7 @@ const nameInput = document.getElementById("nameInput");
 const submitBtn = document.getElementById("submitBtn");
 const playAgainBtn = document.getElementById("playAgainBtn");
 const menuBtn = document.getElementById("menuBtn");
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 /* =========================
    Canvas setup
@@ -30,7 +31,7 @@ const ctx = canvas.getContext("2d");
 const COLORS = {
   bg: "#1b1b1b",
   track: "#444",
-  lock: "#f5c542",
+  lock: "#f5c542", 
   yellow: "#f5c542",
   failA: "#c33",
   failB: "#811",
@@ -51,10 +52,10 @@ window.addEventListener("resize", resizeCanvas);
    Match Hole config
 ========================= */
 const START_SPEED = 120;          // deg/sec
-const SPEED_INC = 8;
+const SPEED_INC = 4;
 const MAX_LOCK_SIZE = 14;         // degrees (half-width)
 const MIN_LOCK_SIZE = 6;
-const LOCK_SHRINK_PER_HIT = 0.25;
+const LOCK_SHRINK_PER_HIT = 0.10;
 const MIN_SPAWN_GAP = 90;         // degrees, both directions
 const GAME_OVER_FLASH_MS = 2000;   // time before switching to results
 
@@ -320,6 +321,7 @@ playBtn.addEventListener("click", () => {
 
 viewLBBtn.addEventListener("click", () => {
   showScreen("screen-leaderboard");
+  await loadLeaderboard();
 });
 
 backBtnGame.addEventListener("click", () => {
@@ -356,10 +358,117 @@ playAgainBtn.addEventListener("click", () => {
   resetRound();
 });
 
-submitBtn.addEventListener("click", () => {
-  // placeholder: you can wire this to Firebase later
-  showScreen("screen-home");
+
+submitBtn.onclick = async () => {
+  let name = nameInput.value.trim().toUpperCase();
+
+  if (!/^[A-Z]{3}$/.test(name)) {
+    alert("3 letters please");
+    return;
+  }
+
+  if (isOffensiveTag(name)) {
+    alert("Invalid tag");
+    return;
+  }
+
+  const device = isMobile ? "mobile" : "pc";
+
+  if (window.db) {
+    const { collection, addDoc } = window.firestoreFns;
+
+    const ref = await addDoc(
+      collection(window.db, `leaderboards/${device}`),
+      {
+        name,
+        score,
+        ts: Date.now()
+      }
+    );
+
+    localStorage.setItem("lastScoreId", ref.id);
+  }
+
+  showScreen("screen-leaderboard");
+  await loadLeaderboard();
+};
+
+document.querySelectorAll(".device-tabs button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".device-tabs button")
+      .forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const type = btn.dataset.type;
+    document.getElementById("lbCombined").classList.toggle("hidden", type !== "combined");
+    document.getElementById("lbPC").classList.toggle("hidden", type !== "pc");
+    document.getElementById("lbMobile").classList.toggle("hidden", type !== "mobile");
+  };
 });
+
+
+async function loadLeaderboard() {
+  if (!window.db) return;
+
+  const { collection, getDocs, query, orderBy, limit } = window.firestoreFns;
+  const lastId = localStorage.getItem("lastScoreId");
+
+  // Fetch top 10 from each device
+  const [pcSnap, mobileSnap] = await Promise.all([
+    getDocs(query(collection(window.db, "leaderboards/pc"), orderBy("score", "desc"), limit(10))),
+    getDocs(query(collection(window.db, "leaderboards/mobile"), orderBy("score", "desc"), limit(10)))
+  ]);
+
+  const pc = pcSnap.docs.map(d => ({ id: d.id, ...d.data(), device: "pc" }));
+  const mobile = mobileSnap.docs.map(d => ({ id: d.id, ...d.data(), device: "mobile" }));
+
+  const combined = [...pc, ...mobile]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+
+  renderLeaderboard("lbCombined", combined, "combined", lastId);
+  renderLeaderboard("lbPC", pc, "pc", lastId);
+  renderLeaderboard("lbMobile", mobile, "mobile", lastId);
+}
+
+function renderLeaderboard(listId, rows, type, lastId) {
+  const ul = document.getElementById(listId);
+  ul.innerHTML = "";
+
+  if (!rows.length) {
+    ul.innerHTML = "<li><span>No scores yet</span></li>";
+    return;
+  }
+
+  rows.forEach((r, i) => {
+    const li = document.createElement("li");
+
+    let name = r.name;
+
+    // Emoji easter eggs
+    if (name.startsWith("AGL")) name += " 🍪";
+    if (name.startsWith("MEL")) name += " 🪸";
+    if (name.startsWith("SWA")) name += " 🌿";
+
+    // Mobile suffix ONLY on combined list
+    if (type === "combined" && r.device === "mobile") {
+      name += " ᵐ";
+    }
+
+    // Trophy for #1
+    if (i === 0) name = "🏆 " + name;
+
+    li.innerHTML = `
+      <span>${String(i + 1).padStart(2, "0")}. ${name}</span>
+      <span>${r.score}</span>
+    `;
+
+    if (r.id === lastId) li.classList.add("highlight");
+    ul.appendChild(li);
+  });
+}
+
+
 
 /* =========================
    Boot
