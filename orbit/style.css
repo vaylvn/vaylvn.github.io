@@ -169,7 +169,6 @@ li.highlight span:last-child {
 }
 
 li.highlight::before {
-  content: "→ ";
   color: #f2c94c;
 }
 
