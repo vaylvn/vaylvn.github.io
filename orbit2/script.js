@@ -123,9 +123,26 @@ async function loadAllSounds() {
 const SHARE_W = 1080;
 const SHARE_H = 1080;
 
+function roundedClip(ctx, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.arcTo(w, 0, w, h, r);
+  ctx.arcTo(w, h, 0, h, r);
+  ctx.arcTo(0, h, 0, 0, r);
+  ctx.arcTo(0, 0, w, 0, r);
+  ctx.closePath();
+  ctx.clip();
+}
+
+
 function renderShareCard(score) {
   const canvas = shareCanvas;
   const ctx = canvas.getContext("2d");
+  
+  ctx.clearRect(0, 0, SHARE_W, SHARE_H);
+  ctx.save();
+  roundedClip(ctx, SHARE_W, SHARE_H, 32);
+
 
   // Background
   ctx.fillStyle = "#121212";
@@ -153,6 +170,8 @@ function renderShareCard(score) {
   ctx.fillStyle = "#4a4a4a";
   ctx.textAlign = "center";
   ctx.fillText("widget.vayl.uk/orbit", SHARE_W / 2, SHARE_H - 130);
+
+  ctx.restore();
 
 }
 
