@@ -291,12 +291,17 @@ function gameOver() {
 
 function finishGameOver() {
   flashing = false;
-  // finalScoreEl.textContent = String(score);
 
   showScreen("screen-results");
+
+  // Reset + focus name
   nameInput.value = "";
   nameInput.focus();
+
+  // Render initial share card (no name yet)
+  renderShareCard(score, "AAA");
 }
+
 
 /* =========================
    Input handling (Numi-style)
