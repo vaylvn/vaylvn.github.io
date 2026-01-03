@@ -40,6 +40,18 @@ main {
   display: none;
 }
 
+#shareCanvas {
+  display: block;
+  width: 280px;
+  height: 280px;
+  margin: 24px auto 28px;
+  border-radius: 12px;
+
+  /* Optional but useful while debugging */
+  background: #121212;
+}
+
+
 
 .screen {
   display:none;

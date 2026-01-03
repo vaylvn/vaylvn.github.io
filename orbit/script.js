@@ -123,9 +123,26 @@ async function loadAllSounds() {
 const SHARE_W = 1080;
 const SHARE_H = 1080;
 
-function renderShareCard(score, name) {
+function roundedClip(ctx, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.arcTo(w, 0, w, h, r);
+  ctx.arcTo(w, h, 0, h, r);
+  ctx.arcTo(0, h, 0, 0, r);
+  ctx.arcTo(0, 0, w, 0, r);
+  ctx.closePath();
+  ctx.clip();
+}
+
+
+function renderShareCard(score) {
   const canvas = shareCanvas;
   const ctx = canvas.getContext("2d");
+  
+  ctx.clearRect(0, 0, SHARE_W, SHARE_H);
+  ctx.save();
+  roundedClip(ctx, SHARE_W, SHARE_H, 32);
+
 
   // Background
   ctx.fillStyle = "#121212";
@@ -135,10 +152,10 @@ function renderShareCard(score, name) {
   ctx.font = "72px 'IBM Plex Mono'";
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
-  ctx.fillText("orbit", SHARE_W / 2, 140);
+  ctx.fillText("orbit", SHARE_W / 2, 160);
 
   ctx.fillStyle = "#f2c94c";
-  ctx.fillText(".", SHARE_W / 2 + 110, 140);
+  ctx.fillText(".", SHARE_W / 2 + 110, 160);
 
   // Ring
   drawStaticRing(ctx);
@@ -146,12 +163,16 @@ function renderShareCard(score, name) {
   // Score
   ctx.font = "160px 'IBM Plex Mono'";
   ctx.fillStyle = "#f2c94c";
-  ctx.fillText(score, SHARE_W / 2, SHARE_H / 2 + 40);
+  ctx.fillText(score, SHARE_W / 2, SHARE_H / 2 + 60);
 
-  // Name
-  ctx.font = "42px 'IBM Plex Mono'";
-  ctx.fillStyle = "#bfae6a";
-  ctx.fillText(name, SHARE_W / 2, SHARE_H / 2 + 120);
+  // Footer
+  ctx.font = "50px 'IBM Plex Mono'";
+  ctx.fillStyle = "#4a4a4a";
+  ctx.textAlign = "center";
+  ctx.fillText("widget.vayl.uk/orbit", SHARE_W / 2, SHARE_H - 130);
+
+  ctx.restore();
+
 }
 
 function drawStaticRing(ctx) {
@@ -194,24 +215,48 @@ function drawStaticRing(ctx) {
 
 
 cameraBtn.onclick = async (e) => {
-  renderShareCard(score, name);
+  // Always re-render in case score changed
+  renderShareCard(score);
 
-  const blob = await new Promise(res =>
-    shareCanvas.toBlob(res, "image/png")
+  const blob = await new Promise(resolve =>
+    shareCanvas.toBlob(resolve, "image/png")
   );
 
-  // Desktop: copy to clipboard
-  if (!isMobile && navigator.clipboard && window.ClipboardItem) {
-    const item = new ClipboardItem({ "image/png": blob });
-    await navigator.clipboard.write([item]);
-    flashToast("Copied to clipboard");
+  const isDesktop = !isMobile;
+
+  // ---- DESKTOP: Shift = download ----
+  if (isDesktop && e.shiftKey) {
+    downloadBlob(blob, `orbit-${score}.png`);
     return;
   }
 
-  // Fallback: download
-  const url = URL.createObjectURL(blob);
-  downloadImage(url);
+  // ---- DESKTOP: normal click = copy ----
+  if (isDesktop && navigator.clipboard && window.ClipboardItem) {
+    try {
+      const item = new ClipboardItem({ "image/png": blob });
+      await navigator.clipboard.write([item]);
+      return;
+    } catch (err) {
+      // Clipboard failed → fallback to download
+      downloadBlob(blob, `orbit-${score}.png`);
+      return;
+    }
+  }
+
+  // ---- MOBILE or fallback: download ----
+  downloadBlob(blob, `orbit-${score}.png`);
 };
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 
 
@@ -291,12 +336,17 @@ function gameOver() {
 
 function finishGameOver() {
   flashing = false;
-  // finalScoreEl.textContent = String(score);
 
   showScreen("screen-results");
+
+  // Reset + focus name
   nameInput.value = "";
   nameInput.focus();
+
+  // Render initial share card (no name yet)
+  renderShareCard(score, "AAA");
 }
+
 
 /* =========================
    Input handling (Numi-style)
