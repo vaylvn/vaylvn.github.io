@@ -465,12 +465,15 @@ function renderLeaderboard(listId, rows, type, lastId) {
     }
 
     // Trophy for #1
-    if (i === 0) name = "🏆 " + name;
+    if (i === 0) name = `🏆 ${name}`;
 
-    li.innerHTML = `
-      <span>${String(i + 1).padStart(2, "0")}. ${name}</span>
-      <span>${r.score}</span>
-    `;
+
+	li.innerHTML = `
+	  <span class="lb-rank">${String(i + 1).padStart(2, "0")}.</span>
+	  <span class="lb-name">${name}</span>
+	  <span class="lb-score">${r.score}</span>
+	`;
+
 
     if (r.id === lastId) li.classList.add("highlight");
     ul.appendChild(li);

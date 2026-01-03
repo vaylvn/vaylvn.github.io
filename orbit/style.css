@@ -100,6 +100,65 @@ button.small {
   font-family: 'IBM Plex Mono', monospace;
 }
 
+/* Leaderboard list reset */
+#lbCombined,
+#lbPC,
+#lbMobile {
+  list-style: none;
+  padding: 0;
+  margin: 24px auto 0;
+  max-width: 360px;
+}
+
+/* Each row */
+#lbCombined li,
+#lbPC li,
+#lbMobile li {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  padding: 6px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  opacity: 0.85;
+}
+
+/* Rank column */
+.lb-rank {
+  text-align: right;
+  padding-right: 10px;
+}
+
+/* Name column */
+.lb-name {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Score column */
+.lb-score {
+  text-align: right;
+}
+
+/* Trophy spacing */
+.lb-name .trophy {
+  margin-right: 4px;
+}
+
+/* Highlight (your score) */
+li.highlight {
+  color: #f2c94c;
+  opacity: 1;
+  font-weight: 600;
+}
+
+li.highlight .lb-score {
+  color: #f2c94c;
+}
+
+
 li.highlight {
   color: #f2c94c;
   font-weight: 600;
