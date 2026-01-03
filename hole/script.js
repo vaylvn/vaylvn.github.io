@@ -234,7 +234,7 @@ function draw() {
   ctx.stroke();
 
   // lock arc
-  ctx.strokeStyle = stroke;
+  ctx.strokeStyle = orbCol;
   ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.arc(
