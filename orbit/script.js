@@ -407,6 +407,14 @@ document.querySelectorAll(".device-tabs button").forEach(btn => {
   };
 });
 
+function isOffensiveTag(tag) {
+  if (!tag) return false;
+  const banned = [
+    "nig", "ngr", "poc", "fag", "gay", "kkk", "cum", "sex"
+  ];
+  const t = tag.toLowerCase();
+  return banned.includes(t);
+}
 
 async function loadLeaderboard() {
   if (!window.db) return;
