@@ -30,7 +30,7 @@ const ctx = canvas.getContext("2d");
 const COLORS = {
   bg: "#1b1b1b",
   track: "#444",
-  lock: "#666",
+  lock: "#f5c542",
   yellow: "#f5c542",
   failA: "#c33",
   failB: "#811",
