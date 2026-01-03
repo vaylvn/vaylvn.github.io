@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Match Hole</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <!-- Screen: Home -->
+    <section id="screen-home" class="screen active">
+	
+      <h1 class="logo">
+		orbit<span class="accent">.</span>
+	  </h1>
+
+      <p class="desc">Tap rhythm · miss once and it’s over</p>
+
+      <div class="row">
+        <button id="playBtn">Play</button>
+        <button id="viewLBBtn">Leaderboards</button>
+      </div>
+
+      <p class="hint">Tip: You can also press Space</p>
+    </section>
+
+    <!-- Screen: Game -->
+    <section id="screen-game" class="screen">
+      <button id="backBtnGame" class="small">← Back</button>
+
+      <div id="gameWrap">
+        <canvas id="gameCanvas"></canvas>
+        <p id="msg" class="hint">Tap / Space to start</p>
+      </div>
+    </section>
+
+    <!-- Screen: Results -->
+    <section id="screen-results" class="screen">
+      <h2>Score: <span id="finalScore">0</span></h2>
+
+      <input id="nameInput" maxlength="3" placeholder="AAA" autocomplete="off" />
+
+      <div class="row">
+        <button id="submitBtn">Submit</button>
+        <button id="playAgainBtn">Play Again</button>
+        <button id="menuBtn">Menu</button>
+      </div>
+
+      <p class="hint">Leaderboard coming soon.</p>
+    </section>
+
+    <!-- Screen: Leaderboard -->
+    <section id="screen-leaderboard" class="screen">
+      <button id="backBtnLB" class="small">← Back</button>
+      <h2>Leaderboards</h2>
+      <p class="desc">Coming next.</p>
+
+      <ul id="lbList"></ul>
+    </section>
+  </main>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
