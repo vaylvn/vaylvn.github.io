@@ -16,8 +16,13 @@ const FAIL = "#c33";
 
 const START_SPEED = 120; // deg/sec
 const SPEED_INC = 8;
-const LOCK_SIZE = 8; // degrees
+const LOCK_SIZE = 8; // degrees (half-width)
+const MAX_LOCK_SIZE = 14; // degrees (half-width)
+const MIN_LOCK_SIZE = 6;
+const LOCK_SHRINK_PER_HIT = 0.25; // tweakable
 const MIN_FORWARD_GAP = 90;
+const MIN_SPAWN_GAP = 90; // degrees, both directions
+
 
 // --- State ---
 let center, radius;
@@ -27,11 +32,21 @@ let score;
 let running = false;
 let lastTime = 0;
 let failed = false;
+let insideLock = false;
+let lockSize;
+
 
 // --- Helpers ---
 const degToRad = d => d * Math.PI / 180;
 const normAngle = a => (a + 360) % 360;
 
+// shortest angular distance
+function angleDiff(a, b) {
+  let d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+// distance forward only (for spawn logic)
 function angularDistance(from, to, dir) {
   let d = normAngle(to - from);
   return dir === 1 ? d : normAngle(360 - d);
@@ -40,23 +55,27 @@ function angularDistance(from, to, dir) {
 function spawnLock() {
   while (true) {
     const a = Math.random() * 360;
-    const dist = angularDistance(orbAngle, a, direction);
-    if (dist >= MIN_FORWARD_GAP) {
+    const dist = angleDiff(a, orbAngle);
+
+    if (dist >= MIN_SPAWN_GAP) {
       lockAngle = a;
       return;
     }
   }
 }
 
+
 function reset() {
   center = { x: canvas.width / 2, y: canvas.height / 2 };
   radius = Math.min(canvas.width, canvas.height) * 0.3;
 
+  lockSize = MAX_LOCK_SIZE;
   orbAngle = -90;
   direction = 1;
   speed = START_SPEED;
   score = 0;
   failed = false;
+  insideLock = false;
 
   spawnLock();
   running = false;
@@ -75,14 +94,24 @@ function handleInput() {
     return;
   }
 
-  const dist = Math.abs(normAngle(orbAngle - lockAngle));
-  if (dist <= LOCK_SIZE) {
-    direction *= -1;
-    speed += SPEED_INC;
-    score++;
-    spawnLock();
-  } else {
-    failed = true;
+  const dist = angleDiff(orbAngle, lockAngle);
+
+
+
+	if (dist <= lockSize) {
+	  direction *= -1;
+	  speed += SPEED_INC;
+	  score++;
+
+	  lockSize = Math.max(
+		MIN_LOCK_SIZE,
+		lockSize - LOCK_SHRINK_PER_HIT
+	  );
+
+	  insideLock = false;
+	  spawnLock();
+	} else {
+     failed = true;
   }
 }
 
@@ -108,8 +137,8 @@ function drawLock() {
     center.x,
     center.y,
     radius,
-    degToRad(lockAngle - LOCK_SIZE),
-    degToRad(lockAngle + LOCK_SIZE)
+    degToRad(lockAngle - lockSize),
+    degToRad(lockAngle + lockSize)
   );
   ctx.stroke();
 }
@@ -133,6 +162,7 @@ function drawScore() {
   let size = radius * 0.4;
   ctx.font = `bold ${size}px sans-serif`;
   let w = ctx.measureText(score).width;
+
   if (w > radius * 1.2) {
     size *= (radius * 1.2) / w;
     ctx.font = `bold ${size}px sans-serif`;
@@ -162,16 +192,14 @@ function loop(t) {
     const dt = (t - lastTime) / 1000;
     lastTime = t;
 
-    orbAngle += direction * speed * dt;
-    orbAngle = normAngle(orbAngle);
+    orbAngle = normAngle(orbAngle + direction * speed * dt);
 
-    const dist = angularDistance(
-      orbAngle - direction * speed * dt,
-      lockAngle,
-      direction
-    );
-    if (dist < speed * dt) {
-      failed = true;
+    const dist = angleDiff(orbAngle, lockAngle);
+
+    if (dist <= lockSize) {
+      insideLock = true;
+    } else if (insideLock) {
+      failed = true; // exited lock without input
     }
   }
 
