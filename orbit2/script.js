@@ -123,7 +123,7 @@ async function loadAllSounds() {
 const SHARE_W = 1080;
 const SHARE_H = 1080;
 
-function renderShareCard(score, name) {
+function renderShareCard(score) {
   const canvas = shareCanvas;
   const ctx = canvas.getContext("2d");
 
@@ -148,10 +148,6 @@ function renderShareCard(score, name) {
   ctx.fillStyle = "#f2c94c";
   ctx.fillText(score, SHARE_W / 2, SHARE_H / 2 + 40);
 
-  // Name
-  ctx.font = "42px 'IBM Plex Mono'";
-  ctx.fillStyle = "#bfae6a";
-  ctx.fillText(name, SHARE_W / 2, SHARE_H / 2 + 120);
 }
 
 function drawStaticRing(ctx) {
