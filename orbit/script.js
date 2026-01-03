@@ -330,11 +330,20 @@ backBtnLB.addEventListener("click", () => {
   showScreen("screen-home");
 });
 
-canvas.addEventListener("pointerdown", () => {
-  const gameScreenActive = document.getElementById("screen-game").classList.contains("active");
+document.addEventListener("pointerdown", (e) => {
+  const gameScreenActive =
+    document.getElementById("screen-game").classList.contains("active");
   if (!gameScreenActive) return;
+
+  // Ignore taps on interactive UI
+  if (e.target.closest("button, input, textarea, select")) {
+    return;
+  }
+
+  e.preventDefault();
   onGameScreenPress();
 });
+
 
 menuBtn.addEventListener("click", () => {
   showScreen("screen-home");
