@@ -148,7 +148,7 @@ function gameOver() {
   flashStart = performance.now();
 
   // Keep the player looking at the circle for the flash moment
-  // msg.textContent = "game over";
+  msg.textContent = " ";
   msg.style.display = "";
 }
 
