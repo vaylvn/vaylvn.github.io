@@ -215,24 +215,38 @@ function drawStaticRing(ctx) {
 
 
 cameraBtn.onclick = async (e) => {
-  renderShareCard(score, name);
+  // Always re-render in case score changed
+  renderShareCard(score);
 
-  const blob = await new Promise(res =>
-    shareCanvas.toBlob(res, "image/png")
+  const blob = await new Promise(resolve =>
+    shareCanvas.toBlob(resolve, "image/png")
   );
 
-  // Desktop: copy to clipboard
-  if (!isMobile && navigator.clipboard && window.ClipboardItem) {
-    const item = new ClipboardItem({ "image/png": blob });
-    await navigator.clipboard.write([item]);
-    flashToast("Copied to clipboard");
+  const isDesktop = !isMobile;
+
+  // ---- DESKTOP: Shift = download ----
+  if (isDesktop && e.shiftKey) {
+    downloadBlob(blob, `orbit-${score}.png`);
     return;
   }
 
-  // Fallback: download
-  const url = URL.createObjectURL(blob);
-  downloadImage(url);
+  // ---- DESKTOP: normal click = copy ----
+  if (isDesktop && navigator.clipboard && window.ClipboardItem) {
+    try {
+      const item = new ClipboardItem({ "image/png": blob });
+      await navigator.clipboard.write([item]);
+      return;
+    } catch (err) {
+      // Clipboard failed → fallback to download
+      downloadBlob(blob, `orbit-${score}.png`);
+      return;
+    }
+  }
+
+  // ---- MOBILE or fallback: download ----
+  downloadBlob(blob, `orbit-${score}.png`);
 };
+
 
 
 
