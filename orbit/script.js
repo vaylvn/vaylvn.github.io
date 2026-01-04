@@ -453,7 +453,7 @@ document.addEventListener("keydown", async (e) => {
 
 
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", async (e) => {
   // Only when results screen is active
   if (!document.getElementById("screen-results").classList.contains("active")) {
     return;
