@@ -378,7 +378,7 @@ function finishGameOver() {
 
   // Reset + focus name
   nameInput.value = "";
-  nameInput.focus();
+  // nameInput.focus();
 
   // Render initial share card (no name yet)
   renderShareCard(score, "AAA");
@@ -456,13 +456,13 @@ document.addEventListener("keydown", (e) => {
 
   // Don't hijack typing in name input
   if (document.activeElement === nameInput) {
-    if (e.key === "Enter") {
+    if (e.code === "Space") {
       playAgainBtn.click();
     }
     return;
   }
 
-  if (e.key === "Enter") {
+  if (e.code === "Space") {
     playAgainBtn.click();
   }
 
