@@ -354,7 +354,7 @@ function startRun() {
 function gameOver() {
   if (flashing) return;
 
-  playSound("fail", { volume: 0.2, rate: 1.0 });
+  playSound("fail", { volume: 0.5, rate: 1.0 });
   running = false;
   flashing = true;
   flashStart = performance.now();
