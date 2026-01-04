@@ -429,6 +429,25 @@ function handleAttempt() {
 
 
 
+  
+
+
+document.addEventListener("keydown", (e) => {
+  // Only when results screen is active
+  if (!document.getElementById("screen-home").classList.contains("active")) {
+    return;
+  }
+
+  if (e.key === "Space") {
+    showScreen("screen-game");
+	resizeCanvas();
+	initLayout();
+	resetRound();
+  }
+
+});
+
+
 document.addEventListener("keydown", (e) => {
   // Only when results screen is active
   if (!document.getElementById("screen-results").classList.contains("active")) {
