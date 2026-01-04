@@ -427,6 +427,34 @@ function handleAttempt() {
   }
 }
 
+
+
+document.addEventListener("keydown", (e) => {
+  // Only when results screen is active
+  if (!document.getElementById("screen-results").classList.contains("active")) {
+    return;
+  }
+
+  // Don't hijack typing in name input
+  if (document.activeElement === nameInput) {
+    if (e.key === "Enter") {
+      playAgainBtn.click();
+    }
+    return;
+  }
+
+  if (e.key === "Enter") {
+    playAgainBtn.click();
+  }
+
+  if (e.key === "Escape") {
+    menuBtn.click();
+  }
+});
+
+
+
+
 function onGameScreenPress() {
   if (flashing) return;
 
