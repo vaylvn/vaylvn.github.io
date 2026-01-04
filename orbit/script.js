@@ -341,7 +341,8 @@ function resetRound() {
   spawnLock();
 
   msg.textContent = "Tap / Space to start";
-  msg.style.display = "";
+  msg.style.opacity = "1";
+  
 }
 
 function startRun() {
@@ -350,7 +351,11 @@ function startRun() {
   insideLock = false;
   lastT = performance.now();
 
-  msg.style.display = "none";
+  msg.style.opacity = "0";
+  msg.style.pointerEvents = "none";
+
+  
+  
 }
 
 function gameOver() {
@@ -362,8 +367,8 @@ function gameOver() {
   flashStart = performance.now();
 
   // Keep the player looking at the circle for the flash moment
-  msg.textContent = "";
-  msg.style.display = "";
+  msg.style.opacity = "0";
+  msg.textContent = "Tap / Space to start";
 }
 
 function finishGameOver() {

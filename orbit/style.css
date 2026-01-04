@@ -40,6 +40,11 @@ main {
   display: none;
 }
 
+#msg {
+  transition: opacity 0.25s ease;
+}
+
+
 #shareCanvas {
   display: block;
   width: 280px;
