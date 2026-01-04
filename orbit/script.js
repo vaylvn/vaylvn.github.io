@@ -41,8 +41,8 @@ const COLORS = {
   track: "#444",
   lock: "#f5c542", 
   yellow: "#f5c542",
-  failA: "#c33",
-  failB: "#811",
+  failA: "#CC3333",
+  failB: "#FF4D4D",
 };
 
 function resizeCanvas() {
