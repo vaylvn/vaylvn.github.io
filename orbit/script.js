@@ -432,25 +432,25 @@ function handleAttempt() {
   
 
 
-document.addEventListener("keydown", (e) => {
-  // Only when results screen is active
+document.addEventListener("keydown", async (e) => {
+  // Only when home screen is active
   if (!document.getElementById("screen-home").classList.contains("active")) {
     return;
   }
 
   if (e.code === "Space") {
     showScreen("screen-game");
-	resizeCanvas();
-	initLayout();
-	resetRound();
-  }
-  
-  if (e.code === "Backspace") {
-    await loadLeaderboard();
-	showScreen("screen-leaderboard");
+    resizeCanvas();
+    initLayout();
+    resetRound();
   }
 
+  if (e.code === "Backspace") {
+    await loadLeaderboard();
+    showScreen("screen-leaderboard");
+  }
 });
+
 
 
 document.addEventListener("keydown", (e) => {
