@@ -444,6 +444,11 @@ document.addEventListener("keydown", (e) => {
 	initLayout();
 	resetRound();
   }
+  
+  if (e.code === "Tab") {
+    await loadLeaderboard();
+	showScreen("screen-leaderboard");
+  }
 
 });
 
@@ -456,8 +461,8 @@ document.addEventListener("keydown", (e) => {
 
   // Don't hijack typing in name input
   if (document.activeElement === nameInput) {
-    if (e.code === "Space") {
-      playAgainBtn.click();
+    if (e.key === "Enter") {
+      submitBtn.click();
     }
     return;
   }
