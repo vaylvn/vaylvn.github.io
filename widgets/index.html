@@ -47,6 +47,8 @@
     }
 
     .card {
+	  position: relative;
+      overflow: hidden;
       display: block;
       padding: 18px 20px;
       background: var(--panel);
@@ -67,9 +69,9 @@
 	  background-image: var(--bg-img);
 	  background-size: cover;
 	  background-position: top right;
-	  opacity: 0.25;
+	  opacity: 0.12;
+	  transition: opacity 0.15s ease;
 
-	  /* fade into card */
 	  mask-image: radial-gradient(
 		circle at top right,
 		rgba(0,0,0,1) 0%,
@@ -79,6 +81,13 @@
 
 	  pointer-events: none;
 	}
+	
+	.card:hover::before,
+	.card:focus-visible::before {
+	  opacity: 0.25;
+	}
+
+
 
 
     .card:hover,
