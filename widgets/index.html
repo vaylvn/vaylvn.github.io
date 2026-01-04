@@ -47,9 +47,15 @@
     }
 
     .card {
-	  position: relative;
-	  overflow: hidden;
-	}
+      display: block;
+      padding: 18px 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
 
 	.card::before {
 	  content: "";
