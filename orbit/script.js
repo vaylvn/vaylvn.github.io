@@ -455,7 +455,7 @@ function draw() {
   const orbCol = isFail ? failColor() : COLORS.yellow;
 
   // circle
-  ctx.strokeStyle = stroke;
+  ctx.strokeStyle = COLORS.track;
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
@@ -485,7 +485,8 @@ function draw() {
   ctx.fill();
 
   // score in center (Numi font)
-  ctx.fillStyle = isFail ? failColor() : COLORS.yellow;
+  // ctx.fillStyle = isFail ? failColor() : COLORS.yellow;
+  ctx.fillStyle = COLORS.yellow;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
