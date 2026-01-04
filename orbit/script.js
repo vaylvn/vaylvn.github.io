@@ -89,6 +89,8 @@ let lastT = 0;
 let flashing = false;      // game over flash active
 let flashStart = 0;
 
+let scorePulse = 1.0;
+let scorePulseVel = 0;
 
 
 
@@ -391,6 +393,14 @@ function handleAttempt() {
     dir *= -1;
     speed += SPEED_INC;
     score += 1;
+	
+
+	// trigger pulse
+	scorePulse = 1.15;      // how big the bump is
+	scorePulseVel = -0.01;  // how fast it settles
+
+		
+		
 
 	if (score % 5 === 0) {
 		const variance = Math.floor(Math.random() * 3);
@@ -484,21 +494,31 @@ function draw() {
   ctx.arc(ox, oy, 8, 0, Math.PI * 2);
   ctx.fill();
 
-  // score in center (Numi font)
-  // ctx.fillStyle = isFail ? failColor() : COLORS.yellow;
-  ctx.fillStyle = COLORS.yellow;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
 
-  let size = radius * 0.55;
-  ctx.font = `700 ${size}px "IBM Plex Mono", monospace`;
-  let w = ctx.measureText(String(score)).width;
-  const maxW = radius * 1.2;
 
-  if (w > maxW) {
-    size *= maxW / w;
-    ctx.font = `700 ${size}px "IBM Plex Mono", monospace`;
-  }
+	ctx.fillStyle = COLORS.yellow;
+	ctx.textAlign = "center";
+	ctx.textBaseline = "middle";
+
+	let size = radius * 0.55;
+	ctx.font = `700 ${size}px "IBM Plex Mono", monospace`;
+
+	let w = ctx.measureText(String(score)).width;
+	const maxW = radius * 1.2;
+
+	if (w > maxW) {
+	  size *= maxW / w;
+	}
+
+	// ✅ APPLY PULSE *AFTER* FITTING
+	const pulseSize = size * scorePulse;
+
+	ctx.font = `700 ${pulseSize}px "IBM Plex Mono", monospace`;
+	ctx.fillText(score, cx, cy);
+
+
+
+
 
   ctx.fillText(String(score), center.x, center.y);
 }
@@ -528,6 +548,11 @@ function step(t) {
     if (flashing && (t - flashStart) >= GAME_OVER_FLASH_MS) {
       finishGameOver();
     }
+
+	if (scorePulse > 1.0) {
+	  scorePulse += scorePulseVel;
+	  if (scorePulse < 1.0) scorePulse = 1.0;
+	}
 
     draw();
   }
