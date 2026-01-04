@@ -494,28 +494,21 @@ function draw() {
   ctx.arc(ox, oy, 8, 0, Math.PI * 2);
   ctx.fill();
 
+  // score in center (Numi font)
+  // ctx.fillStyle = isFail ? failColor() : COLORS.yellow;
+  ctx.fillStyle = COLORS.yellow;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
+  let size = radius * 0.55;
+  ctx.font = `700 ${size}px "IBM Plex Mono", monospace`;
+  let w = ctx.measureText(String(score)).width;
+  const maxW = radius * 1.2;
 
-	ctx.fillStyle = COLORS.yellow;
-	ctx.textAlign = "center";
-	ctx.textBaseline = "middle";
-
-	let size = radius * 0.55;
-	ctx.font = `700 ${size}px "IBM Plex Mono", monospace`;
-
-	let w = ctx.measureText(String(score)).width;
-	const maxW = radius * 1.2;
-
-	if (w > maxW) {
-	  size *= maxW / w;
-	}
-
-	// ✅ APPLY PULSE *AFTER* FITTING
-	const pulseSize = size * scorePulse;
-
-	ctx.font = `700 ${pulseSize}px "IBM Plex Mono", monospace`;
-	ctx.fillText(score, cx, cy);
-
+  if (w > maxW) {
+    size *= maxW / w;
+    ctx.font = `700 ${size}px "IBM Plex Mono", monospace`;
+  }
 
 
 
