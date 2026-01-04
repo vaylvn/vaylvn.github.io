@@ -438,7 +438,7 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (e.key === "Space") {
+  if (e.code === "Space") {
     showScreen("screen-game");
 	resizeCanvas();
 	initLayout();
