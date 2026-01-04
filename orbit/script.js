@@ -182,7 +182,7 @@ function renderShareCard(score) {
   ctx.font = "50px 'IBM Plex Mono'";
   ctx.fillStyle = "#4a4a4a";
   ctx.textAlign = "center";
-  ctx.fillText("widget.vayl.uk/orbit", SHARE_W / 2, SHARE_H - 130);
+  ctx.fillText("vayl.uk/orbit", SHARE_W / 2, SHARE_H - 130);
 
   ctx.restore();
 
