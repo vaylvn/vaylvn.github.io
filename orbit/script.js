@@ -445,7 +445,7 @@ document.addEventListener("keydown", (e) => {
 	resetRound();
   }
   
-  if (e.code === "Tab") {
+  if (e.code === "Backspace") {
     await loadLeaderboard();
 	showScreen("screen-leaderboard");
   }
@@ -462,7 +462,7 @@ document.addEventListener("keydown", (e) => {
   // Don't hijack typing in name input
   if (document.activeElement === nameInput) {
     if (e.key === "Enter") {
-      submitBtn.click();
+      await submitBtn.click();
     }
     return;
   }
