@@ -451,6 +451,17 @@ document.addEventListener("keydown", async (e) => {
   }
 });
 
+document.addEventListener("keydown", async (e) => {
+  // Only when home screen is active
+  if (!document.getElementById("screen-leaderboard").classList.contains("active")) {
+    return;
+  }
+
+  if (e.key === "Escape") {
+    backBtnLB.click();
+  }
+  
+});
 
 
 document.addEventListener("keydown", async (e) => {
