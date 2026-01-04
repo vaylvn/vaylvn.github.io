@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vayl · Games</title>
+
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #12151b;
+      --border: #1e2330;
+      --text: #e6e9ef;
+      --muted: #9aa3b2;
+      --accent: #5ddcff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 48px 20px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin: 0 0 24px;
+      letter-spacing: 0.5px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      display: block;
+      padding: 18px 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+      
+    <h1>VaylGames</h1>
+
+    <section class="grid">
+        
+      <a class="card" href="/orbit">
+        <h2>Orbit</h2>
+        <p>Precision timing and reaction challenge</p>
+      </a>
+
+      <a class="card" href="/numi">
+        <h2>Numi</h2>
+        <p>Mental arithmetic speed challenge</p>
+
+      </a>
+
+      <a class="card" href="/zumi">
+        <h2>Zumi</h2>
+        <p>Typing speed and accuracy defence game</p>
+
+      </a>
+
+      <a class="card" href="/lgame">
+        <h2>L</h2>
+        <p>Modern implementation of de Bono’s L Game (1967)</p>
+
+      </a>
+      
+    </section>
+
+    <footer>
+      vayl.uk
+    </footer>
+  </main>
+</body>
+</html>
