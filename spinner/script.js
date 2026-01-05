@@ -332,8 +332,58 @@ window.addEventListener("DOMContentLoaded", () => {
 	  reader.readAsText(file);
 	});
 
+	
+	function randomColor() {
+	  return "#" + Math.floor(Math.random() * 16777215)
+		.toString(16)
+		.padStart(6, "0");
+	}
 
-		
+
+	document.getElementById("colorUniform").onclick = () => {
+	  if (!config.segments.length) return;
+	  const base = config.segments[0].color;
+	  config.segments.forEach(s => s.color = base);
+	  rebuildSegments();
+	};
+
+	document.getElementById("colorAlt2").onclick = () => {
+	  if (config.segments.length < 2) return;
+	  const colors = [
+		config.segments[0].color,
+		config.segments[1].color
+	  ];
+	  config.segments.forEach((s, i) => {
+		s.color = colors[i % 2];
+	  });
+	  rebuildSegments();
+	};
+
+
+	document.getElementById("colorCycle3").onclick = () => {
+	  if (config.segments.length < 3) return;
+	  const colors = [
+		config.segments[0].color,
+		config.segments[1].color,
+		config.segments[2].color
+	  ];
+	  config.segments.forEach((s, i) => {
+		s.color = colors[i % 3];
+	  });
+	  rebuildSegments();
+	};
+	
+	document.getElementById("colorRandom").onclick = () => {
+	  config.segments.forEach(s => s.color = randomColor());
+	  rebuildSegments();
+	};
+
+	function rebuildSegments() {
+	  tb.innerHTML = "";
+	  config.segments.forEach(addRow);
+	  update();
+	}
+
 
 
 
