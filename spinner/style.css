@@ -292,6 +292,32 @@ td button.remove:hover {
 
 
 
+/* Header */
+.header {
+  display: flex;
+  align-items: center;          /* fixes vertical alignment */
+  gap: 12px;
+  margin: 0 0 18px 0;
+  padding: 0;
+}
+
+.header img {
+  width: 28px;                  /* slimmer = more premium */
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.header span {
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  opacity: 0.85;   /* subtle luxury spacing */
+  text-transform: uppercase;    /* optional but very “Vayl” */
+  color: #eaeaea;
+  line-height: 1;               /* kills baseline weirdness */
+}
+
+
 
 
 
