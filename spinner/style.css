@@ -257,9 +257,37 @@ button.ghost:hover {
 
 .autospin-row {
   display: flex;
-  gap: 16px;
   align-items: center;
+  gap: 20px;
+  flex-wrap: wrap; /* allows graceful wrap on smaller screens */
 }
+
+.autospin-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.autospin-item input[type="number"] {
+  width: 52px;
+}
+
+.autospin-item.wide {
+  flex: 1;
+  min-width: 260px;
+}
+
+.autospin-item input[type="range"] {
+  width: 140px;
+}
+
+.autospin-item .unit {
+  opacity: 0.6;
+  font-size: 12px;
+}
+
 
 
 
