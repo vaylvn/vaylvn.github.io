@@ -384,6 +384,46 @@ window.addEventListener("DOMContentLoaded", () => {
 	  update();
 	}
 
+	function populateSegmentsFromList(lines) {
+	  if (!Array.isArray(lines) || !lines.length) return;
+
+	  // Base defaults
+	  let template = {
+		weight: 1,
+		font: "Roboto",
+		size: 16,
+		bold: false,
+		italic: false,
+		underline: false,
+		outlineColor: "#000000",
+		outlineWidth: 0
+	  };
+
+	  // If at least one segment exists, copy its styling
+	  if (config.segments.length >= 1) {
+		const { label, color, ...rest } = config.segments[0];
+		template = { ...template, ...rest };
+	  }
+
+	  // Clear existing rows
+	  tb.innerHTML = "";
+
+	  // Add new rows
+	  lines
+		.map(l => l.trim())
+		.filter(Boolean)
+		.forEach(text => {
+		  addRow({
+			label: text,
+			color: "#" + Math.floor(Math.random() * 16777215)
+			  .toString(16)
+			  .padStart(6, "0"),
+			...template
+		  });
+		});
+
+	  update();
+	}
 
 
 
@@ -484,8 +524,14 @@ window.addEventListener("DOMContentLoaded", () => {
 			if (data.cmd === "spin") {
 				startSpin(); // <---- your spinner function
 			}
+			
+			if (data.cmd === "populate") {
+			  populateSegmentsFromList(data.entries);
+			}
+			
+			
 		} catch (err) {
-			console.warn("pollSpin error", err);
+			console.warn("pollSpinner error", err);
 		}
 
 		setTimeout(pollSpin, 200);

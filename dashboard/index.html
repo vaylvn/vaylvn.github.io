@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Vayl</title>
+
+    <link rel="icon" href="assets/logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- REQUIRED FOR MONACO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+
+</head>
+
+
+<body>
+
+<!-- ======================= -->
+<!--        TOP BAR          -->
+<!-- ======================= -->
+<div id="topbar">
+    <img src="assets/logo.png" class="topbar-logo" />
+
+    <div class="topbar-tabs">
+        <div id="tab-console" class="topbar-tab active" onclick="switchMode('console')">Console</div>
+        <div id="tab-config" class="topbar-tab" onclick="switchMode('config')">Configuration</div>
+		<div id="tab-macro" class="topbar-tab" onclick="switchMode('macro')">Macro</div>
+		<div id="tab-widget" class="topbar-tab" onclick="switchMode('widgets')">Widgets</div>
+    </div>
+	
+	<div id="share-btn" onclick="openShareModal()">connect device</div>
+	
+</div>
+
+<div id="share-modal" class="hidden">
+    <div id="share-modal-content">
+        <h3>Connect Another Device</h3>
+        <p>Scan this QR code from your phone/tablet:</p>
+
+        <div id="qr-canvas"></div>
+
+        <div id="share-close" onclick="closeShareModal()">Close</div>
+    </div>
+</div>
+
+
+
+<!-- ======================= -->
+<!--       MAIN LAYOUT       -->
+<!-- ======================= -->
+
+<div id="app">
+
+    <!-- ---- Console Panel ---- -->
+    <div id="console-panel">
+        <div id="console-output"></div>
+    </div>
+
+    <!-- ---- Sidebar (Config Mode Only) ---- -->
+    <div id="sidebar">
+		<input id="tree-search" placeholder="Search..." />
+		<div id="tree-container"></div>
+	</div>
+
+    <!-- ---- Editor Panel ---- -->
+    <div id="editor-panel">
+		
+
+		<div id="editor-container">
+			<div id="editor"></div>
+
+			<div id="tag-float" class="hidden">
+				<div id="tag-float-header">
+					<span>Tags</span>
+					<div id="tag-float-close">✕</div>
+				</div>
+
+				<input id="tag-float-search" placeholder="Search..." />
+
+				<!-- EVENT TAGS -->
+				<div class="tag-section" id="event-tag-section" style="display:none;">
+					<div class="tag-title">Event</div>
+					<div id="event-tag-list"></div>
+				</div>
+
+				<!-- GENERIC TAGS -->
+				<div class="tag-section">
+					<div class="tag-title">Generic</div>
+					<div id="tag-float-list"></div>
+				</div>
+			</div>
+			
+			<div id="action-float" class="hidden">
+				<div id="action-float-header">
+					<span>Actions</span>
+					<div id="action-float-close">✕</div>
+				</div>
+
+				<input id="action-float-search" placeholder="Search..." />
+
+				<div id="action-float-list"></div>
+			</div>
+
+			
+		</div>
+
+
+
+		<!-- <div id="tag-toggle-btn" onclick="toggleTagPanel()">Tags</div> -->
+
+
+		
+		<div id="editor-toolbar">
+			<button class="editor-btn" onclick="saveFile()">Save</button>
+			<button id="btn-tag" class="editor-btn-tag" onclick="toggleTagPanel()">Show Tags</button>
+			<button id="btn-action" class="editor-btn-action" onclick="toggleActionPanel()">Show Actions</button>
+		</div>
+		
+	</div>
+	
+	<div id="macro-panel">
+
+		<div id="macro-wrapper">
+
+			<div id="macro-controls">
+				<div class="macro-controls-left">
+					<label class="switch">
+						<input type="checkbox" id="macro-edit-toggle">
+						<span class="slider"></span>
+					</label>
+					<span class="switch-label">Edit Mode</span>
+				</div>
+
+				<button id="macro-add">+ Add Macro</button>
+			</div>
+
+			<div id="macro-items"></div>
+
+		</div>
+
+
+
+	</div>
+
+
+
+
+</div>
+
+
+
+
+<div id="ap-menu" class="ap-menu hidden"></div>
+
+
+
+<!-- ======================= -->
+<!--    CONTEXT MENU UI      -->
+<!-- ======================= -->
+
+<input type="color" id="highlight-color-picker" style="display:none;">
+
+<div id="editor-context-menu" class="hidden">
+    <div onclick="ctxAction('clean')">Clean</div>
+    <div onclick="ctxAction('compact')">Compact</div>
+    <div onclick="ctxAction('highlight')">Highlight</div>
+</div>
+
+
+
+<div id="context-menu" class="hidden">
+    <div data-action="new-file"   onclick="createFile()">New File</div>
+    <div data-action="new-folder" onclick="createFolder()">New Folder</div>
+    <div data-action="rename"     onclick="renameNode()">Rename</div>
+    <div data-action="delete"     onclick="deleteNode()">Delete</div>
+</div>
+
+
+
+<div id="welcome-modal" class="bootmodal hidden">
+    <div class="bootmodal-content">
+		<img src="assets/logo.png" class="welcome-logo" />
+        <h2>Welcome to Vayl Dashboard</h2>
+		<p>Vayl.exe now runs quietly in the background.</p>
+		<p>You can close this tab anytime — just revisit:</p>
+		<h3>https://widget.vayl.uk/vayl/</h3>
+        <button id="welcome-close" class="welcome-btn">CLOSE</button>
+    </div>
+</div>
+
+
+<div id="update-modal" class="bootmodal hidden">
+    <div class="bootmodal-content">
+        <img src="assets/logo.png" class="welcome-logo" />
+        <h2>New Version Available</h2>
+        <p>A new build of Vayl is available to download.</p>
+        <p>Latest version: <span id="update-version" style="font-weight:bold;"></span></p>
+
+        <button id="update-download" class="welcome-btn">DOWNLOAD UPDATE</button>
+        <button id="update-ignore" class="welcome-btn">IGNORE</button>
+    </div>
+</div>
+
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="script.js"></script>
+
+
+</body>
+</html>
