@@ -247,6 +247,55 @@ window.addEventListener("DOMContentLoaded", () => {
         weight:1,font:"Roboto",size:16,bold:false,italic:false,underline:false};
       addRow(s);update();
     };
+	
+	
+	
+	
+	
+	const segmentUpload = document.getElementById("segmentUpload");
+
+	segmentUpload.addEventListener("change", () => {
+	  const file = segmentUpload.files[0];
+	  if (!file) return;
+
+	  const reader = new FileReader();
+	  reader.onload = () => {
+		const lines = reader.result
+		  .split(/\r?\n/)
+		  .map(l => l.trim())
+		  .filter(Boolean);
+
+		if (!lines.length) return;
+
+		// 🔥 clear existing segments
+		tb.innerHTML = "";
+
+		// add one segment per line
+		lines.forEach(text => {
+		  addRow({
+			label: text,
+			color: "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"),
+			weight: 1,
+			font: "Roboto",
+			size: 16,
+			bold: false,
+			italic: false,
+			underline: false,
+			outlineColor: "#000000",
+			outlineWidth: 0
+		  });
+		});
+
+		update();
+		segmentUpload.value = ""; // reset input
+	  };
+
+	  reader.readAsText(file);
+	});
+
+		
+
+
 
     ["spinDelay","autoSpin"].forEach(id=>document.getElementById(id).oninput=update);
     document.getElementById("copyUrl").onclick=()=>navigator.clipboard.writeText(document.getElementById("shareUrl").value);
