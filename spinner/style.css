@@ -255,6 +255,13 @@ button.ghost:hover {
 }
 
 
+.autospin-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+
 
 /* Table */
 /* Segment table – softened, card-like rows */
