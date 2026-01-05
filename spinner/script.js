@@ -298,6 +298,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
 		if (!lines.length) return;
 
+		// 🧠 capture template if exactly one segment exists
+		let template = null;
+		if (config.segments.length >= 1) {
+		  const { label, color, ...rest } = config.segments[0];
+		  template = { ...rest };
+		}
+
 		// 🔥 clear existing segments
 		tb.innerHTML = "";
 
@@ -313,7 +320,8 @@ window.addEventListener("DOMContentLoaded", () => {
 			italic: false,
 			underline: false,
 			outlineColor: "#000000",
-			outlineWidth: 0
+			outlineWidth: 0,
+			...(template || {})
 		  });
 		});
 
@@ -323,6 +331,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 	  reader.readAsText(file);
 	});
+
 
 		
 
