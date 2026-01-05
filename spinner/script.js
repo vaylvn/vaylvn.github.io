@@ -242,6 +242,32 @@ window.addEventListener("DOMContentLoaded", () => {
       r.querySelectorAll(".styleBtn").forEach(b=>b.onclick=()=>{b.classList.toggle("active");update();});
     }
 
+
+
+
+
+		const soundSelect = document.getElementById("soundSelect");
+		const customSoundInput = document.getElementById("customSoundUrl");
+
+		function updateSoundUI() {
+		  const mode = soundSelect.value;
+		  customSoundInput.style.display = (mode === "custom") ? "block" : "none";
+		}
+
+		soundSelect.addEventListener("change", () => {
+		  if (soundSelect.value !== "custom") {
+			customSoundInput.value = "";
+		  }
+		  updateSoundUI();
+		  update();
+		});
+
+
+
+
+
+
+
     document.getElementById("addSegment").onclick=()=>{
       const s={label:"",color:"#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"),
         weight:1,font:"Roboto",size:16,bold:false,italic:false,underline:false};
@@ -349,8 +375,16 @@ window.addEventListener("DOMContentLoaded", () => {
       config.rimWidth=parseFloat(document.getElementById("rimWidth").value)||3;
       config.arrowOutline=document.getElementById("arrowOutline").value;
       config.arrowWidth=parseFloat(document.getElementById("arrowWidth").value)||2;
-      config.sound=document.getElementById("soundSelect").value;
-      config.customSound=document.getElementById("customSoundUrl").value.trim();
+	  
+      config.sound = soundSelect.value;
+	  config.customSound =
+		  soundSelect.value === "custom"
+			? customSoundInput.value.trim()
+			: "";
+
+	  
+	  
+	  
       config.tickDensity=parseFloat(document.getElementById("tickDensity").value)||30;
 	  config.spinnerName = document.getElementById("spinnerNameInput").value;
 
@@ -364,6 +398,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
     addRow({label:"Sample",color:"#ff3b3b",weight:1,font:"Roboto",size:16,bold:false,italic:false,underline:false});
     update();canvas.onclick=startSpin;
+	
+	updateSoundUI();
+
+	
   } else {
     document.getElementById("editor").style.display="none";
     try{

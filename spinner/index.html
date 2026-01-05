@@ -79,17 +79,24 @@
 		
 		
         <label>Sound
-          <select id="soundSelect">
-            <option value="none">None</option>
-            <option value="click">Click</option>
-            <option value="tick">Tick</option>
-            <option value="boop">Boop</option>
+		  <select id="soundSelect">
+			<option value="none">None</option>
+			<option value="click">Click</option>
+			<option value="tick">Tick</option>
+			<option value="boop">Boop</option>
 			<option value="beep">Beep</option>
 			<option value="tweet">Tweet</option>
-          </select>
-		  <input type="text" id="customSoundUrl" placeholder="Or select custom URL..." style="width:400px"><br>
-        </label><br>
-        
+			<option value="custom">Custom URL</option>
+		  </select>
+		</label>
+
+		<input
+		  type="text"
+		  id="customSoundUrl"
+		  placeholder="https://example.com/sound.mp3"
+		  style="width:100%; display:none; margin-top:6px;">
+
+				
 		
 		
 		
