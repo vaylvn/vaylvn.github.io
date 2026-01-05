@@ -222,6 +222,19 @@ button.ghost:hover {
   border-color: #666;
 }
 
+.segment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto; /* ⬅️ pushes it to the right */
+}
+
+
 .segment-actions button {
   padding: 6px 10px;
   font-size: 13px;
