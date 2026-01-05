@@ -254,6 +254,11 @@ window.addEventListener("DOMContentLoaded", () => {
 	
 	const segmentUpload = document.getElementById("segmentUpload");
 
+	document.getElementById("importSegments").onclick = () => {
+	  segmentUpload.click();
+	};
+
+
 	segmentUpload.addEventListener("change", () => {
 	  const file = segmentUpload.files[0];
 	  if (!file) return;

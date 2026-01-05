@@ -102,10 +102,6 @@
 	  
 	  
         <h3>Segments</h3>
-		<label style="display:block; margin-bottom:8px;">
-		  Import segments (.txt)
-		  <input type="file" id="segmentUpload" accept=".txt">
-		</label>
 
         <table>
           <thead>
@@ -130,7 +126,14 @@
 
 		<tbody id="segments"></tbody>
         </table>
-        <button id="addSegment">+ Add Segment</button>
+		
+		
+		<div class="segment-actions">
+		  <button id="addSegment">+ Add Segment</button>
+		  <button id="importSegments" class="ghost">Import (.txt)</button>
+		  <input type="file" id="segmentUpload" accept=".txt" hidden>
+		</div>
+
       </section>
 
       <section>
