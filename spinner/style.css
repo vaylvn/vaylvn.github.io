@@ -197,7 +197,6 @@ button:active { background: #2e2e2e; }
   border: 1px dashed #444;
   color: #e0e0e0;
   font-weight: 500;
-  margin-top: 8px;
 }
 #addSegment:hover {
   background: #333;
