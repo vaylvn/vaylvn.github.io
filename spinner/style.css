@@ -223,6 +223,14 @@ button.ghost:hover {
   border-color: #666;
 }
 
+.segment-actions button {
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
 
 
 
