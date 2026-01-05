@@ -140,17 +140,7 @@
   </div>
   <p id="version">v2.5</p>
 
-  <script>
-	  // Auto-detect configurator vs. live mode
-	  const isConfig = window.location.href.includes("config");
-	  document.body.dataset.mode = isConfig ? "config" : "live";
 
-	  // Force full transparency on live mode
-	  if (!isConfig) {
-		document.body.style.background = "transparent";
-		document.documentElement.style.background = "transparent";
-	  }
-	</script>
 	<script src="script.js"></script>
 	  
   
