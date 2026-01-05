@@ -9,6 +9,12 @@ window.addEventListener("DOMContentLoaded", () => {
     "Open Sans","Raleway","Oswald","Playfair+Display"
   ];
 
+
+
+
+
+
+
   const params = new URLSearchParams(location.search);
   const dataParam = params.get("data");
   const canvas = document.getElementById("spinnerCanvas");
