@@ -19,7 +19,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 
-  const params = new URLSearchParams(location.search);
   const dataParam = params.get("data");
   const canvas = document.getElementById("spinnerCanvas");
   const ctx = canvas.getContext("2d");
