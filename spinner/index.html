@@ -71,39 +71,38 @@
 
 
 
-      <section>
-	  
-	  
-        <h3>Audio</h3>
-		
-		
-		
-        <label>Sound
-		  <select id="soundSelect">
-			<option value="none">None</option>
-			<option value="click">Click</option>
-			<option value="tick">Tick</option>
-			<option value="boop">Boop</option>
-			<option value="beep">Beep</option>
-			<option value="tweet">Tweet</option>
-			<option value="custom">Custom URL</option>
-		  </select>
-		</label>
+		<section>
+		  <h3>Audio</h3>
 
-		<input
-		  type="text"
-		  id="customSoundUrl"
-		  placeholder="https://example.com/sound.mp3"
-		  style="width:100%; display:none; margin-top:6px;">
+		  <div class="audio-row">
+			<label>
+			  Sound
+			  <select id="soundSelect">
+				<option value="none">None</option>
+				<option value="click">Click</option>
+				<option value="tick">Tick</option>
+				<option value="boop">Boop</option>
+				<option value="beep">Beep</option>
+				<option value="tweet">Tweet</option>
+				<option value="custom">Custom URL</option>
+			  </select>
+			</label>
 
-				
-		
-		
-		
-		
-		<label>Tick density <input type="range" id="tickDensity" min="5" max="100" value="30">
-          <span id="tickDensityVal">30</span></label>
-      </section>
+			<label class="tick">
+			  Tick density
+			  <input type="range" id="tickDensity" min="5" max="100" value="30">
+			  <span id="tickDensityVal">30</span>
+			</label>
+		  </div>
+
+		  <input
+			type="text"
+			id="customSoundUrl"
+			placeholder="https://example.com/sound.mp3"
+			class="audio-custom"
+		  >
+		</section>
+
 
       <section>
 	  

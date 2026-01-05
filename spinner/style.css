@@ -231,6 +231,29 @@ button.ghost:hover {
   align-items: center;
 }
 
+.audio-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.audio-row label {
+  margin: 0;
+}
+
+.audio-row .tick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.audio-custom {
+  width: 100%;
+  margin-top: 8px;
+  display: none;
+}
+
 
 
 /* Table */
