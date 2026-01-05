@@ -10,7 +10,11 @@ window.addEventListener("DOMContentLoaded", () => {
   ];
 
 
-  
+	const params = new URLSearchParams(location.search);
+	const isLive = params.has("data");
+
+	document.body.dataset.mode = isLive ? "live" : "config";
+
 
 
 

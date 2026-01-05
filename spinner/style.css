@@ -8,6 +8,18 @@ body {
   flex-direction: column;
 }
 
+
+body[data-mode="live"] {
+  background: transparent !important;
+}
+
+body[data-mode="live"] html {
+  background: transparent !important;
+}
+
+
+
+
 #layout {
   display: flex;
   flex: 1;
@@ -283,10 +295,6 @@ td button.remove:hover {
 
 
 
-/* When in live mode (OBS), remove all background layers */
-body[data-mode="live"] {
-  background: transparent !important;
-}
 
 
 /* Hide version text in live mode */
@@ -312,6 +320,10 @@ body[data-mode="config"] #spinnerPanel {
 body[data-mode="live"] #spinnerPanel {
   background: transparent !important;
 }
+
+
+
+
 
 #spinnerCanvas {
   display: block;
