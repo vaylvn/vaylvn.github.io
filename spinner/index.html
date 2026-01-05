@@ -70,32 +70,24 @@
 
 
 
-		<section>
-		  <h3>Audio</h3>
-
-		  <label>Sound
-			<select id="soundSelect">
-			  <option value="none">None</option>
-			  <option value="click">Click</option>
-			  <option value="tick">Tick</option>
-			  <option value="boop">Boop</option>
-			  <option value="beep">Beep</option>
-			  <option value="tweet">Tweet</option>
-			  <option value="embedded">Embedded (upload)</option>
-			</select>
-		  </label>
-
-		  <div id="audioUploadRow" style="display:none">
-			<input type="file" id="audioUpload" accept="audio/*">
-			<span id="audioSizeInfo"></span>
-		  </div>
-
-		  <br>
-		  <label>Tick density
-			<input type="range" id="tickDensity" min="5" max="100" value="30">
-			<span id="tickDensityVal">30</span>
-		  </label>
-		</section>
+      <section>
+        <h3>Audio</h3>
+        <label>Sound
+          <select id="soundSelect">
+            <option value="none">None</option>
+            <option value="click">Click</option>
+            <option value="tick">Tick</option>
+            <option value="boop">Boop</option>
+			<option value="beep">Beep</option>
+			<option value="tweet">Tweet</option>
+          </select>
+		  <input type="text" id="customSoundUrl" placeholder="Or select custom URL..." style="width:400px"><br>
+        
+		  
+        </label><br>
+        <label>Tick density <input type="range" id="tickDensity" min="5" max="100" value="30">
+          <span id="tickDensityVal">30</span></label>
+      </section>
 
       <section>
         <h3>Segments</h3>
