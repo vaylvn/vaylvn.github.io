@@ -205,8 +205,12 @@ let activeWord = null;
 
 function placeWord(entry, startX, startY, dir, intersectionKey = null) {
 
+
+
   const cells = [];
-	const word = entry.word;
+  const word = entry.word;
+ 
+  console.log(word)
 
   for (let i = 0; i < word.length; i++) {
     const x = startX + (dir === "right" ? i : 0);
