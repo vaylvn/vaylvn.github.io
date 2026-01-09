@@ -11,7 +11,7 @@ let WORDS_BY_LETTER = {};
 fetch("words.json")
   .then(r => r.json())
   .then(list => {
-    WORDS = list.filter(w => w.length >= 4 && w.length <= 10);
+    WORDS = list.filter(w => w.length >= 3 && w.length <= 10);
 
     // index by letter (critical for performance + variety)
     for (const word of WORDS) {
