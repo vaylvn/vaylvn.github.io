@@ -264,12 +264,22 @@ function draw() {
   ctx.fillRect(-5000, -5000, 10000, 10000);
 
   const visibleRadius = Math.ceil((canvas.width / CELL_SIZE) / camera.zoom) + 2;
+  
+	const halfWidth = canvas.width / camera.zoom / 2;
+	const halfHeight = canvas.height / camera.zoom / 2;
 
-  for (let x = -visibleRadius; x <= visibleRadius; x++) {
-    for (let y = -visibleRadius; y <= visibleRadius; y++) {
-      drawCell(x, y);
-    }
-  }
+	const minX = Math.floor((-camera.x - halfWidth) / CELL_SIZE) - 2;
+	const maxX = Math.ceil((-camera.x + halfWidth) / CELL_SIZE) + 2;
+	const minY = Math.floor((-camera.y - halfHeight) / CELL_SIZE) - 2;
+	const maxY = Math.ceil((-camera.y + halfHeight) / CELL_SIZE) + 2;
+
+
+  for (let x = minX; x <= maxX; x++) {
+	  for (let y = minY; y <= maxY; y++) {
+		drawCell(x, y);
+	  }
+	}
+
   
   if (cameraLerp < 1) {
 	  cameraLerp += 0.05; // speed (lower = smoother)
