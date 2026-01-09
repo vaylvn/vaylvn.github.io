@@ -243,6 +243,9 @@ function placeWord(entry, startX, startY, dir, intersectionKey = null) {
 	cameraTarget.y = -center.y;
 	cameraLerp = 0;
 
+	document.getElementById("clue-type").textContent = activeWord.type;
+	document.getElementById("clue-text").textContent = activeWord.clue;
+
   
 }
 

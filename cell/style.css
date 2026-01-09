@@ -10,3 +10,24 @@ html, body {
 canvas {
   display: block;
 }
+
+#clue {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #e6e8ff;
+  pointer-events: none;
+}
+
+#clue-type {
+  font-size: 12px;
+  letter-spacing: 2px;
+  opacity: 0.7;
+}
+
+#clue-text {
+  font-size: 14px;
+  margin-top: 4px;
+}
