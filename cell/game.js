@@ -11,20 +11,25 @@ let WORDS_BY_LETTER = {};
 fetch("words.json")
   .then(r => r.json())
   .then(list => {
-    WORDS = list.filter(w => w.length >= 3 && w.length <= 10);
+    WORDS = list;
 
-    // index by letter (critical for performance + variety)
-    for (const word of WORDS) {
+    for (const entry of WORDS) {
+      const word = entry.word;
       for (const char of new Set(word)) {
-        (WORDS_BY_LETTER[char] ??= []).push(word);
+        (WORDS_BY_LETTER[char] ??= []).push(entry);
       }
     }
+	
+	placeWord(
+      WORDS[Math.floor(Math.random() * WORDS.length)],
+      0,
+      0,
+      "right"
+    );
 
-    console.log(`Loaded ${WORDS.length} words`);
-  })
-  .catch(err => {
-    console.error("Failed to load words.json", err);
+    console.log(`Loaded ${WORDS.length} words with clues`);
   });
+
 
 
 function isOccupied(x, y) {
@@ -72,7 +77,9 @@ function generateNextWord(prevWord) {
 	if (!candidates || !candidates.length) continue;
 
 
-    const word = candidates[Math.floor(Math.random() * candidates.length)];
+    const entry = candidates[Math.floor(Math.random() * candidates.length)];
+	const word = entry.word;
+
     const index = word.indexOf(letter);
 
     const startX = pivot.x - (dir === "right" ? index : 0);
@@ -106,13 +113,14 @@ function generateNextWord(prevWord) {
 
 	console.log(word)
 
-    return {
-	  word,
+	return {
+	  entry,              // 👈 keep the whole object
 	  startX,
 	  startY,
 	  dir,
 	  intersectionKey: pivotKey
 	};
+
 
   }
 
@@ -195,7 +203,8 @@ const usedIntersections = new Set();
 
 let activeWord = null;
 
-function placeWord(word, startX, startY, dir, intersectionKey = null) {
+function placeWord(entry, startX, startY, dir, intersectionKey = null) {
+
   const cells = [];
 
   for (let i = 0; i < word.length; i++) {
@@ -216,12 +225,18 @@ function placeWord(word, startX, startY, dir, intersectionKey = null) {
     usedIntersections.add(intersectionKey);
   }
 
+	const word = entry.word;
+
+
   activeWord = {
-    word,
-    cells,
-    index: 0,
-    direction: dir
-  };
+	  word,
+	  type: entry.type,
+	  clue: entry.clue,
+	  cells,
+	  index: 0,
+	  direction: dir
+	};
+
   
 	const center = getWordCenter(activeWord);
 	cameraTarget.x = -center.x;
@@ -233,8 +248,6 @@ function placeWord(word, startX, startY, dir, intersectionKey = null) {
 
 
 
-// demo seed word
-placeWord("HELLO", 0, 0, "right");
 
 /* ======================
    RENDER LOOP
@@ -367,13 +380,14 @@ function completeActiveWord() {
     return;
   }
 
-  placeWord(
-	  next.word,
+	placeWord(
+	  next.entry,
 	  next.startX,
 	  next.startY,
 	  next.dir,
 	  next.intersectionKey
 	);
+
 
 }
 
