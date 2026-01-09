@@ -206,6 +206,7 @@ let activeWord = null;
 function placeWord(entry, startX, startY, dir, intersectionKey = null) {
 
   const cells = [];
+	const word = entry.word;
 
   for (let i = 0; i < word.length; i++) {
     const x = startX + (dir === "right" ? i : 0);
@@ -225,7 +226,7 @@ function placeWord(entry, startX, startY, dir, intersectionKey = null) {
     usedIntersections.add(intersectionKey);
   }
 
-	const word = entry.word;
+	
 
 
   activeWord = {
