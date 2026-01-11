@@ -294,7 +294,7 @@ function switchMode(mode) {
 		consolePanel.style.display = "none";
         sidebar.style.display = "none";
         editorPanel.style.display = "none";
-		playlistPanel.style.display = "grid";
+		playlistPanel.style.display = "block";
         loadPlaylistPanel();
         return;
 	}

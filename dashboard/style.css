@@ -970,32 +970,6 @@ input:checked + .slider:before {
   box-sizing: border-box;
 }
 
-#playlist-player {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#playlist-info {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  justify-content: center;
-}
-
-#playlist-controls {
-  display: flex;
-  gap: 8px;
-}
-
-#playlist-controls button {
-  padding: 6px 10px;
-}
-
-#playlist-queue {
-  max-height: 40vh;
-  overflow-y: auto;
-}
 
 .now-playing {
   font-size: 14px;
@@ -1006,6 +980,12 @@ input:checked + .slider:before {
 .playlist-controls {
   display: flex;
   gap: 8px;
+}
+
+.playlist-player {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .playlist-sidebar {
