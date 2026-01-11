@@ -954,3 +954,56 @@ input:checked + .slider:before {
     margin-left: 12px;
 }
 
+
+
+/* ===========================
+   Playlist
+   =========================== */
+
+
+#playlist-panel {
+  display: none;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 32px;
+  padding: 24px;
+  height: calc(100vh - 52px);
+  box-sizing: border-box;
+}
+
+#playlist-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#playlist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
+}
+
+#playlist-controls {
+  display: flex;
+  gap: 8px;
+}
+
+#playlist-controls button {
+  padding: 6px 10px;
+}
+
+#playlist-queue {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 4px;
+}
+
+.queue-item button {
+  opacity: 0.7;
+}

@@ -296,7 +296,7 @@ function switchMode(mode) {
 		consolePanel.style.display = "none";
         sidebar.style.display = "none";
         editorPanel.style.display = "none";
-		playlistPanel.style.display = "flex";
+		playlistPanel.style.display = "grid";
         loadPlaylistPanel();
         return;
 	}
@@ -312,16 +312,13 @@ function switchMode(mode) {
 let currentPlaylist = null
 
 
-function loadPlaylistPanel() {
-  if (!currentPlaylist) {
-    document.getElementById("playlist-now-playing").innerHTML =
-      "<p>No playlist data.</p>";
-    return;
-  }
 
+function loadPlaylistPanel() {
   renderPlaylist();
   onPlaylistUpdate(currentPlaylist);
 }
+
+
 
 
 
@@ -329,8 +326,15 @@ function renderPlaylist() {
   const nowEl = document.getElementById("playlist-now-playing");
   const queueEl = document.getElementById("playlist-queue");
 
+  if (!nowEl || !queueEl) return;
+
   nowEl.innerHTML = "";
   queueEl.innerHTML = "";
+
+  if (!currentPlaylist) {
+    nowEl.innerHTML = "<p class='muted'>Waiting for playlist…</p>";
+    return;
+  }
 
   const { nowPlaying, queue } = currentPlaylist;
 
@@ -348,12 +352,18 @@ function renderPlaylist() {
     return;
   }
 
-  queue.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.textContent = `${i + 1}. ${item.videoId} — ${item.by}`;
-    queueEl.appendChild(div);
-  });
+	queue.forEach((item, i) => {
+	  const row = document.createElement("div");
+	  row.className = "queue-item";
+	  row.innerHTML = `
+		<span>${i + 1}. ${item.title} — ${item.by}</span>
+		<button data-index="${i}">✕</button>
+	  `;
+	  queueEl.appendChild(row);
+	});
+
 }
+
 
 
 let player;
