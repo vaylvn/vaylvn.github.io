@@ -48,13 +48,13 @@
     .panel {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 6px;
       padding: 16px;
       margin-bottom: 20px;
     }
 
     .now-playing {
-      border-left: 3px solid var(--accent);
+      border-left: 4px solid var(--accent);
     }
 
     .now-playing .title {
@@ -65,14 +65,17 @@
     .meta {
       font-size: 0.85rem;
       color: var(--muted);
+	  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	  letter-spacing: 0.2px;
     }
 
     .queue-item {
       display: flex;
       gap: 12px;
-      padding: 12px 0;
+      padding: 10px 0;
       border-bottom: 1px solid var(--border);
     }
+	
 
     .queue-item:last-child {
       border-bottom: none;
@@ -81,7 +84,7 @@
     .index {
       width: 28px;
       text-align: right;
-      color: var(--muted);
+      color: #6b7280;
       flex-shrink: 0;
     }
 
