@@ -359,12 +359,14 @@ function renderPlaylist() {
 	queue.forEach((item, i) => {
 	  const row = document.createElement("div");
 	  row.className = "queue-item";
+	  row.dataset.id = item.id;
 	  row.innerHTML = `
 		<span>${i + 1}. ${item.title} — ${item.by}</span>
-		<button data-index="${i}">✕</button>
+		<button data-id="${item.id}">✕</button>
 	  `;
 	  queueEl.appendChild(row);
 	});
+
 
 }
 
@@ -403,6 +405,7 @@ function onPlaylistUpdate(playlist) {
     player.loadVideoById(newId);
   }
 }
+
 
 
 
