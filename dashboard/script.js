@@ -327,8 +327,9 @@ function loadPlaylistPanel() {
 
 
 function renderPlaylist() {
-  const nowEl = document.getElementById("playlist-now-playing");
-  const queueEl = document.getElementById("playlist-queue");
+  const nowEl = document.querySelector(".now-playing");
+  const queueEl = document.querySelector(".playlist-queue");
+
 
   if (!nowEl || !queueEl) return;
 
