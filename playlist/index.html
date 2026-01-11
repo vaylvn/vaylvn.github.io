@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vayl · Playlist</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #0e0f12;
+      --panel: #151821;
+      --border: #24283a;
+      --text: #e6e8ef;
+      --muted: #9aa0b5;
+      --accent: #7aa2f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 16px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .now-playing {
+      border-left: 3px solid var(--accent);
+    }
+
+    .now-playing .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .meta {
+      font-size: 0.85rem;
