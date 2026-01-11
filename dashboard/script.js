@@ -426,6 +426,19 @@ function onPlayerStateChange(event) {
 }
 
 
+function playlistSkip() {
+  socket.send(JSON.stringify({ type: "playlist:skip" }));
+}
+
+function playlistShuffle() {
+  socket.send(JSON.stringify({ type: "playlist:shuffle" }));
+}
+
+function playlistClear() {
+  socket.send(JSON.stringify({ type: "playlist:clear" }));
+}
+
+
 
 
 
