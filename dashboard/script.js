@@ -129,7 +129,15 @@ function handleWebSocketMessage(msg) {
 			return;
 		}
 
+		if (data.type === "playlist:update") {
+			currentPlaylist = data.playlist;
 
+			if (isPlaylistTabActive()) {
+				renderPlaylist();
+			}
+
+			return;
+		}
 
         // File content
         if (data.type === "file") {
@@ -249,12 +257,14 @@ function switchMode(mode) {
     const sidebar = document.getElementById("sidebar");
     const editorPanel = document.getElementById("editor-panel");
 	const macroPanel = document.getElementById("macro-panel");
+	const playlistPanel = document.getElementById("playlist-panel");
 
     if (mode === "console") {
         consolePanel.style.display = "block";
         sidebar.style.display = "none";
         editorPanel.style.display = "none";
 		macroPanel.style.display = "none";
+		playlistPanel.style.display = "none";
         return;
     }
 
@@ -263,6 +273,7 @@ function switchMode(mode) {
         sidebar.style.display = "block";
         editorPanel.style.display = "flex";
 		macroPanel.style.display = "none";
+		playlistPanel.style.display = "none";
         initMonaco();
         return;
     }
@@ -272,12 +283,56 @@ function switchMode(mode) {
 		consolePanel.style.display = "none";
         sidebar.style.display = "none";
         editorPanel.style.display = "none";
+		playlistPanel.style.display = "none";
         loadMacroPanel();
+        return;
+	}
+	
+	if (mode == "playlist") {
+		macroPanel.style.display = "none";
+		consolePanel.style.display = "none";
+        sidebar.style.display = "none";
+        editorPanel.style.display = "none";
+		playlistPanel.style.display = "flex";
+        loadPlaylistPanel();
         return;
 	}
 
 
 }
+
+
+
+/* ============================================== */
+/*                 PLAYLIST SETUP                 */
+/* ============================================== */
+let currentPlaylist = null
+
+
+function loadPlaylistPanel() {
+  const container = document.getElementById("playlist-panel")
+  container.innerHTML = ""
+
+  if (!currentPlaylist) {
+    container.innerHTML = "<p>No playlist data.</p>"
+    return
+  }
+
+  renderPlaylist()
+}
+
+
+function renderPlaylist() {
+    const panel = document.getElementById("playlist-panel");
+    panel.innerHTML = "";
+
+    const { nowPlaying, queue } = currentPlaylist;
+
+    // render nowPlaying
+    // render queue
+}
+
+
 
 
 /* ============================================== */
