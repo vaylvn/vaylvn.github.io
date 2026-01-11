@@ -132,12 +132,15 @@ function handleWebSocketMessage(msg) {
 		if (data.type === "playlist:update") {
 			currentPlaylist = data.playlist;
 
+			onPlaylistUpdate(currentPlaylist);
+
 			if (isPlaylistTabActive()) {
 				renderPlaylist();
 			}
 
 			return;
 		}
+
 
         // File content
         if (data.type === "file") {
@@ -310,27 +313,48 @@ let currentPlaylist = null
 
 
 function loadPlaylistPanel() {
-  const container = document.getElementById("playlist-panel")
-  container.innerHTML = ""
-
   if (!currentPlaylist) {
-    container.innerHTML = "<p>No playlist data.</p>"
-    return
+    document.getElementById("playlist-now-playing").innerHTML =
+      "<p>No playlist data.</p>";
+    return;
   }
 
-  renderPlaylist()
+  renderPlaylist();
+  onPlaylistUpdate(currentPlaylist);
 }
+
 
 
 function renderPlaylist() {
-    const panel = document.getElementById("playlist-panel");
-    panel.innerHTML = "";
+  const nowEl = document.getElementById("playlist-now-playing");
+  const queueEl = document.getElementById("playlist-queue");
 
-    const { nowPlaying, queue } = currentPlaylist;
+  nowEl.innerHTML = "";
+  queueEl.innerHTML = "";
 
-    // render nowPlaying
-    // render queue
+  const { nowPlaying, queue } = currentPlaylist;
+
+  if (nowPlaying) {
+    nowEl.innerHTML = `
+      <strong>Now Playing</strong><br>
+      ${nowPlaying.videoId} — ${nowPlaying.by}
+    `;
+  } else {
+    nowEl.innerHTML = "<p>Nothing playing.</p>";
+  }
+
+  if (!queue || queue.length === 0) {
+    queueEl.innerHTML = "<p>Queue empty.</p>";
+    return;
+  }
+
+  queue.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.textContent = `${i + 1}. ${item.videoId} — ${item.by}`;
+    queueEl.appendChild(div);
+  });
 }
+
 
 let player;
 let currentVideoId = null;
