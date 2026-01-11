@@ -379,11 +379,17 @@ function onPlaylistUpdate(playlist) {
 
   const newId = playlist.nowPlaying.videoId;
 
+  if (!player || typeof player.loadVideoById !== "function") {
+    pendingVideoId = newId;
+    return;
+  }
+
   if (newId !== currentVideoId) {
     currentVideoId = newId;
     player.loadVideoById(newId);
   }
 }
+
 
 function onPlayerStateChange(event) {
   console.log("YT STATE CHANGE:", event.data);
@@ -391,11 +397,15 @@ function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.ENDED) {
     console.log("VIDEO ENDED — notifying client");
 
+    // 🔥 THIS IS THE KEY LINE
+    currentVideoId = null;
+
     socket.send(JSON.stringify({
       type: "playlist:ended"
     }));
   }
 }
+
 
 
 
