@@ -346,7 +346,7 @@ function renderPlaylist() {
   if (nowPlaying) {
     nowEl.innerHTML = `
       <strong>Now Playing</strong><br>
-      ${nowPlaying.videoId} — ${nowPlaying.by}
+      ${nowPlaying.title} — ${nowPlaying.by}
     `;
   } else {
     nowEl.innerHTML = "<p>Nothing playing.</p>";
