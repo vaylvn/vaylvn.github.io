@@ -64,3 +64,152 @@
 
     .meta {
       font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .queue-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .queue-item:last-child {
+      border-bottom: none;
+    }
+
+    .index {
+      width: 28px;
+      text-align: right;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .queue-item .title {
+      font-weight: 500;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1 id="header">Playlist</h1>
+
+    <div id="nowPlaying" class="panel now-playing"></div>
+
+    <div class="panel">
+      <div id="queue"></div>
+    </div>
+
+    <footer>
+      Powered by Vayl
+    </footer>
+  </div>
+
+	<script type="module">
+	  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+	  import {
+		getFirestore,
+		doc,
+		onSnapshot
+	  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+	  // ---------- CONFIG ----------
+	  const firebaseConfig = {
+		apiKey: "AIzaSyBaab79KrbwK86b_53y-4tPFKiJ4cWLhYk",
+		authDomain: "vayl-playlist.firebaseapp.com",
+		projectId: "vayl-playlist",
+		storageBucket: "vayl-playlist.firebasestorage.app",
+		messagingSenderId: "700799343656",
+		appId: "1:700799343656:web:c8059d0736c2e66ad2291d"
+	  };
+
+	  // ---------- INIT ----------
+	  const app = initializeApp(firebaseConfig);
+	  const db = getFirestore(app);
+
+	  const params = new URLSearchParams(window.location.search);
+	  const user = params.get("user");
+
+	  if (!user) {
+		document.body.innerHTML = "<p style='color:#9aa0b5'>No user specified.</p>";
+		throw new Error("Missing user param");
+	  }
+
+	  document.getElementById("header").textContent = `Playlist · ${user}`;
+
+	  const nowPlayingEl = document.getElementById("nowPlaying");
+	  const queueEl = document.getElementById("queue");
+
+	  function formatDuration(seconds) {
+		const m = Math.floor(seconds / 60);
+		const s = seconds % 60;
+		return `${m}:${s.toString().padStart(2, "0")}`;
+	  }
+
+	  // ---------- LISTENER ----------
+	  const playlistRef = doc(db, "playlists", user);
+
+	  onSnapshot(playlistRef, (docSnap) => {
+		if (!docSnap.exists()) {
+		  nowPlayingEl.innerHTML = "<div class='empty'>No active playlist.</div>";
+		  queueEl.innerHTML = "";
+		  return;
+		}
+
+		const data = docSnap.data();
+
+		// Now Playing
+		if (data.nowPlaying) {
+		  nowPlayingEl.innerHTML = `
+			<div class="title">${data.nowPlaying.title}</div>
+			<div class="meta">
+			  ${formatDuration(data.nowPlaying.duration)} · added by ${data.nowPlaying.by}
+			</div>
+		  `;
+		} else {
+		  nowPlayingEl.innerHTML = "<div class='empty'>Nothing playing.</div>";
+		}
+
+		// Queue
+		queueEl.innerHTML = "";
+
+		if (!data.queue || data.queue.length === 0) {
+		  queueEl.innerHTML = "<div class='empty'>Queue is empty.</div>";
+		  return;
+		}
+
+		data.queue.forEach((item, i) => {
+		  const row = document.createElement("div");
+		  row.className = "queue-item";
+		  row.innerHTML = `
+			<div class="index">${i + 1}</div>
+			<div>
+			  <div class="title">${item.title}</div>
+			  <div class="meta">
+				${formatDuration(item.duration)} · added by ${item.by}
+			  </div>
+			</div>
+		  `;
+		  queueEl.appendChild(row);
+		});
+	  });
+	</script>
+
+
+</body>
+</html>
