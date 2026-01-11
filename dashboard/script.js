@@ -130,16 +130,14 @@ function handleWebSocketMessage(msg) {
 		}
 
 		if (data.type === "playlist:update") {
-			currentPlaylist = data.playlist;
+		  currentPlaylist = data.playlist;
 
-			onPlaylistUpdate(currentPlaylist);
+		  renderPlaylist();
+		  onPlaylistUpdate(currentPlaylist);
 
-			if (isPlaylistTabActive()) {
-				renderPlaylist();
-			}
-
-			return;
+		  return;
 		}
+
 
 
         // File content
@@ -315,8 +313,14 @@ let currentPlaylist = null
 
 function loadPlaylistPanel() {
   renderPlaylist();
-  onPlaylistUpdate(currentPlaylist);
+
+  // Only try to sync the player if we have playlist data
+  if (currentPlaylist) {
+    onPlaylistUpdate(currentPlaylist);
+  }
 }
+
+
 
 
 
@@ -385,7 +389,7 @@ function onYouTubeIframeAPIReady() {
 }
 
 function onPlaylistUpdate(playlist) {
-  if (!playlist.nowPlaying) return;
+  if (!playlist || !playlist.nowPlaying) return;
 
   const newId = playlist.nowPlaying.videoId;
 
@@ -399,6 +403,7 @@ function onPlaylistUpdate(playlist) {
     player.loadVideoById(newId);
   }
 }
+
 
 
 function onPlayerStateChange(event) {
