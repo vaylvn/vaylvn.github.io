@@ -966,7 +966,7 @@ input:checked + .slider:before {
   grid-template-columns: 1.6fr 1fr;
   gap: 32px;
   padding: 24px;
-  height: calc(100vh - 52px);
+  height: 100%;
   box-sizing: border-box;
 }
 
@@ -997,6 +997,32 @@ input:checked + .slider:before {
   overflow-y: auto;
 }
 
+.now-playing {
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+.playlist-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.playlist-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
+}
+
+.playlist-grid {
+  display: grid;
+  grid-template-columns: minmax(640px, 1.2fr) 420px;
+  gap: 32px;
+  align-items: center;
+  height: 100%;
+}
+
 .queue-item {
   display: flex;
   justify-content: space-between;
@@ -1006,4 +1032,29 @@ input:checked + .slider:before {
 
 .queue-item button {
   opacity: 0.7;
+}
+
+.pl-btn {
+  background: #1f2227;
+  color: #e6e6e6;
+  border: 1px solid #2a2e35;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pl-btn:hover {
+  background: #262b33;
+}
+
+.pl-btn.danger {
+  border-color: #3a2323;
+  color: #ffb3b3;
+}
+
+.playlist-queue {
+  margin-top: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 13px;
 }
