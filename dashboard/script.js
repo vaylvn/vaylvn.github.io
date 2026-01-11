@@ -363,9 +363,10 @@ function onPlaylistUpdate(playlist) {
 
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.ENDED) {
-    socket.send(JSON.stringify({
-      type: "playlist:ended"
+	  socket.send(JSON.stringify({
+        type: "playlist:ended"
     }));
+
   }
 }
 
