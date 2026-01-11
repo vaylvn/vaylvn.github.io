@@ -5,6 +5,9 @@
   <title>Vayl · Playlist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+	  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -44,6 +47,24 @@
       font-weight: 600;
       letter-spacing: 0.3px;
     }
+	
+	h2 {
+	  color: #fff;
+	  font-weight: 600;
+	  font-size: 20px;
+	  margin: 0 0 15px 0;
+	  text-align: left;
+	}
+	
+	.header span {
+	  font-size: 14px;
+	  font-weight: 300;
+	  letter-spacing: 0.18em;
+	  opacity: 0.85;   /* subtle luxury spacing */
+	  text-transform: uppercase;    /* optional but very “Vayl” */
+	  color: #eaeaea;
+	  line-height: 1;               /* kills baseline weirdness */
+	}
 
     .panel {
       background: var(--panel);
@@ -110,6 +131,12 @@
 <body>
 
   <div class="container">
+  
+	<h2 class="header">
+	  <img src="https://vaylvn.github.io/spinner/assets/logo.png" alt="Logo">
+	  <span>Playlist</span>
+	</h2>
+  
     <h1 id="header">Playlist</h1>
 
     <div id="nowPlaying" class="panel now-playing"></div>
