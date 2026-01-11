@@ -332,6 +332,42 @@ function renderPlaylist() {
     // render queue
 }
 
+let player;
+let currentVideoId = null;
+
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player("yt-player", {
+    height: "360",
+    width: "640",
+    playerVars: {
+      autoplay: 1,
+      controls: 1,
+      modestbranding: 1
+    },
+    events: {
+      onStateChange: onPlayerStateChange
+    }
+  });
+}
+
+function onPlaylistUpdate(playlist) {
+  if (!playlist.nowPlaying) return;
+
+  const newId = playlist.nowPlaying.videoId;
+
+  if (newId !== currentVideoId) {
+    currentVideoId = newId;
+    player.loadVideoById(newId);
+  }
+}
+
+function onPlayerStateChange(event) {
+  if (event.data === YT.PlayerState.ENDED) {
+    socket.send(JSON.stringify({
+      type: "playlist:ended"
+    }));
+  }
+}
 
 
 
