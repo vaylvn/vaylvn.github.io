@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vayl</title>
+  <meta name="description" content="Vayl is a minimalist, powerful Twitch automation bot focused on speed, control, and zero clutter." />
+
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --fg: #e6e8eb;
+      --muted: #9aa0a6;
+      --accent: #6cf2c2; /* easy to swap */
+      --border: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      line-height: 1.5;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero */
+    header {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero {
+      text-align: center;
+      max-width: 720px;
+    }
+
+    .logo {
+      font-size: clamp(3rem, 8vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      margin-top: 12px;
+      font-size: 1.1rem;
+      color: var(--muted);
+    }
+
+    .actions {
+      margin-top: 40px;
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 14px 22px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      font-weight: 500;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 180px;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      background: rgba(108,242,194,0.05);
+    }
+
+    .btn strong {
+      font-size: 0.95rem;
+    }
+
+    .btn span {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Features */
+    section.features {
+      padding: 100px 0 120px;
+      border-top: 1px solid var(--border);
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 1.6rem;
+      margin-bottom: 48px;
+      font-weight: 600;
+    }
+
+    .feature-list {
+      max-width: 720px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    .feature {
+      padding: 18px 22px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      gap: 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      margin-top: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    /* Subtle background glow */
+    .glow {
+      position: fixed;
+      inset: -20% -20% auto -20%;
+      height: 60vh;
+      background: radial-gradient(circle at top center, rgba(108,242,194,0.08), transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+
+  <header>
+    <div class="container hero">
+      
+      <div class="logo"><img src="https://vaylvn.github.io/spinner/assets/logo.png" alt="Logo"></div>
+      
+      <div class="tagline">Minimal Clutter. Maximum control.</div>
+
+      <div class="actions">
+        <a class="btn" href="#" id="download-btn">
+          <strong>Download</strong>
+          <span id="version">Fetching latest version…</span>
+        </a>
+        <a class="btn" href="#docs">
+          <strong>Documentation</strong>
+          <span>Setup · Commands · Integrations</span>
+        </a>
+        <a class="btn" href="#discord">
+          <strong>Community</strong>
+          <span>Discord support & updates</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <section class="features">
+    <div class="container">
+      <h2>What Vayl focuses on</h2>
+      <div class="feature-list">
+        <div class="feature"><div class="dot"></div><p>Local-first architecture with optional server components — your bot, your control.</p></div>
+        <div class="feature"><div class="dot"></div><p>EventSub-ready Twitch integrations with zero OAuth guesswork.</p></div>
+        <div class="feature"><div class="dot"></div><p>YAML-driven commands, macros, counters, and variables — no cluttered UI.</p></div>
+        <div class="feature"><div class="dot"></div><p>OBS, sound effects, TTS, widgets, and WebSocket messaging built in.</p></div>
+        <div class="feature"><div class="dot"></div><p>Designed for speed, stability, and minimal maintenance — not gimmicks.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">© <span id="year"></span> Vayl. Built to stay out of your way.</div>
+  </footer>
+
+  <script>
+    const GITHUB_REPO = "OWNER/REPO"; // e.g. ValonVN/Vayl
+
+    async function fetchLatestRelease() {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+
+        const version = data.tag_name || "latest";
+        const asset = data.assets?.[0];
+
+        document.getElementById("version").textContent = `Version ${version}`;
+        if (asset) {
+          document.getElementById("download-btn").href = asset.browser_download_url;
+        }
+      } catch {
+        document.getElementById("version").textContent = "Latest release";
+      }
+    }
+
+    fetchLatestRelease();
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
