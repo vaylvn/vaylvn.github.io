@@ -602,7 +602,7 @@ body {
     padding: 20px;
     overflow-y: auto;
     height: 100%;
-    background: none;
+    background: #111;
 }
 
 /* Base log card */
