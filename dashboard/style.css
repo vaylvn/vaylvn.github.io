@@ -1,3 +1,29 @@
+:root {
+  /* Core surfaces */
+  --bg-root: #0f1115;
+  --bg-panel: #151820;
+  --bg-surface: #1c1f27;
+  --bg-elevated: #222631;
+
+  /* Borders & dividers */
+  --border-soft: rgba(255,255,255,0.06);
+  --border-mid: rgba(255,255,255,0.1);
+
+  /* Text */
+  --text-primary: #eaeaf0;
+  --text-secondary: #9aa0ab;
+  --text-muted: #6e7480;
+
+  /* Accent (used sparingly) */
+  --accent: #5eead4;
+
+  /* Motion */
+  --ease-ui: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+
+
+
 /* ========================= */
 /*         GLOBAL            */
 /* ========================= */
@@ -5,9 +31,20 @@
 body {
     margin: 0;
     font-family: Consolas, monospace;
-    background: #1A1A1E;
-    color: #eee;
     overflow: hidden;
+	
+	
+  background: radial-gradient(
+	1200px 600px at 50% -200px,
+	rgba(94,234,212,0.05),
+	transparent 60%
+  ),
+  var(--bg-root);
+
+  color: var(--text-primary);
+  font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
+	
 }
 
 #app {
@@ -26,8 +63,12 @@ body {
 
 #topbar {
     height: 50px;
-    background: #121214;
-    border-bottom: 1px solid #2a2a2a;
+  background: linear-gradient(
+    to bottom,
+    #141720,
+    #10131a
+  );
+  border-bottom: 1px solid var(--border-soft);
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -55,21 +96,27 @@ body {
 
 .topbar-tab {
     font-size: 14px;
-    color: #aaa;
+  color: var(--text-secondary);
+  transition: color 0.15s var(--ease-ui),
+              opacity 0.15s var(--ease-ui);
     padding-bottom: 3px;
     cursor: pointer;
     user-select: none;
-    transition: color 0.15s;
 }
 
 .topbar-tab:hover {
     color: #fff;
 }
 
-.topbar-tab.active {
-    color: #fff;
-    border-bottom: 2px solid #fff;
+.topbar-tab {
+
 }
+
+.topbar-tab.active {
+  color: var(--text-primary);
+  border-bottom: 2px solid rgba(255,255,255,0.8);
+}
+
 
 
 /* ========================= */
@@ -245,11 +292,15 @@ body {
 #editor-container {
     flex: 1;
 	position: relative;
-    background: #1A1A1E;        /* subtle contrast behind editor */
+    /* subtle contrast behind editor */
     border-radius: 8px;          /* nice curvature */
     padding: 8px;                /* actual breathing room */
     overflow: hidden;            /* keeps Monaco from spilling out */
-    box-shadow: 0 0 12px rgba(0,0,0,0.3);  /* optional, looks clean */
+      background: var(--bg-surface);
+	  border: 1px solid var(--border-soft);
+	  box-shadow:
+		0 0 0 1px rgba(255,255,255,0.02),
+		0 10px 30px rgba(0,0,0,0.4);
 }
 
 #editor-toolbar {
@@ -1037,4 +1088,81 @@ input:checked + .slider:before {
   max-height: 320px;
   overflow-y: auto;
   font-size: 13px;
+}
+
+
+
+
+
+#sidebar,
+#editor-panel,
+#macro-panel,
+#playlist-panel {
+  background: var(--bg-panel);
+}
+
+
+.editor-btn,
+.editor-btn-tag,
+.editor-btn-action,
+.pl-btn,
+#welcome-btn,
+#macro-add {
+  transition:
+    background 0.15s var(--ease-ui),
+    border-color 0.15s var(--ease-ui),
+    transform 0.08s var(--ease-ui),
+    box-shadow 0.15s var(--ease-ui);
+}
+
+.editor-btn:hover,
+.pl-btn:hover {
+  transform: translateY(-1px);
+}
+
+.editor-btn:active,
+.pl-btn:active {
+  transform: translateY(0);
+}
+
+
+
+#tag-float,
+#action-float,
+.ap-menu {
+  background: linear-gradient(
+    to bottom,
+    var(--bg-elevated),
+    var(--bg-surface)
+  );
+  border: 1px solid var(--border-soft);
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+
+
+.log-card {
+  background: linear-gradient(
+    to bottom,
+    #141720,
+    #10131a
+  );
+  border-left-width: 3px;
+  transition: background 0.15s var(--ease-ui);
+}
+
+
+
+#playlist-panel {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.playlist-player {
+  background: var(--bg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.6);
 }
