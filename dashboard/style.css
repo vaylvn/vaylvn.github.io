@@ -1096,8 +1096,7 @@ input:checked + .slider:before {
 
 #sidebar,
 #editor-panel,
-#macro-panel,
-#playlist-panel {
+#macro-panel {
   background: var(--bg-panel);
 }
 
@@ -1144,11 +1143,7 @@ input:checked + .slider:before {
 
 
 .log-card {
-  background: linear-gradient(
-    to bottom,
-    #141720,
-    #10131a
-  );
+  background: #11111;
   border-left-width: 3px;
   transition: background 0.15s var(--ease-ui);
 }
@@ -1163,6 +1158,4 @@ input:checked + .slider:before {
 .playlist-player {
   background: var(--bg-surface);
   border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  box-shadow: 0 30px 60px rgba(0,0,0,0.6);
 }
