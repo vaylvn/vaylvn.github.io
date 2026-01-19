@@ -63,12 +63,8 @@ body {
 
 #topbar {
     height: 50px;
-  background: linear-gradient(
-    to bottom,
-    #141720,
-    #10131a
-  );
-  border-bottom: 1px solid var(--border-soft);
+    background: #131316;
+    border-bottom: 1px solid var(--border-soft);
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -602,19 +598,16 @@ body {
     padding: 20px;
     overflow-y: auto;
     height: 100%;
-    background: #111;
+    background: #1C1C21;
 }
 
 /* Base log card */
 .log-card {
     background: #121214;
-    border-radius: 5px;
-    border-left: 4px solid #555;
     padding: 8px 12px;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    box-shadow: 0 0 0 1px #222;
 }
 
 /* Header (category) */
@@ -1143,7 +1136,7 @@ input:checked + .slider:before {
 
 
 .log-card {
-  background: #11111;
+  background: #131316;
   border-left-width: 3px;
   transition: background 0.15s var(--ease-ui);
 }
