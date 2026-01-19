@@ -34,12 +34,7 @@ body {
     overflow: hidden;
 	
 	
-  background: radial-gradient(
-	1200px 600px at 50% -200px,
-	rgba(94,234,212,0.05),
-	transparent 60%
-  ),
-  var(--bg-root);
+  background: #111;
 
   color: var(--text-primary);
   font-smoothing: antialiased;
@@ -598,7 +593,6 @@ body {
     padding: 10px;
     overflow-y: auto;
     height: 100%;
-    background: #1C1C21;
 }
 
 /* Base log card */
@@ -700,7 +694,6 @@ body {
 #macro-panel {
     flex: 1;
     display: none; /* hidden in console mode */
-    background: #222228;
     overflow: hidden;
     flex-direction: column;
 	margin-top: 10px;
