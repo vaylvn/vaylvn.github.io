@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Vayl Coin Flip</title>
+
+<style>
+:root {
+  --coin-size: 160px;
+  --floor-y: 0px;
+  --accent: #f5c842;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#scene {
+  position: relative;
+  perspective: 1200px;
+}
+
+#shadow {
+  position: absolute;
+  top: calc(var(--coin-size) / 2 + 8px);
+  left: 50%;
+  width: 140px;
+  height: 28px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.15) 40%,
+    transparent 70%
+  );
+  filter: blur(6px);
+  transition: transform 1.6s ease, opacity 1.6s ease;
+}
+
+#coin-wrapper {
+  position: relative;
+  transform: translateY(var(--floor-y));
+  transition: transform 1.6s cubic-bezier(.2,.7,.3,1);
+}
+
+#coin {
+  width: var(--coin-size);
+  height: var(--coin-size);
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,0.08),
+    0 18px 40px rgba(0,0,0,0.65);
+}
+
+.face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at top left,
+    rgba(255,255,255,0.28),
+    transparent 60%
+  );
+}
+
+.tails {
+  transform: rotateX(180deg);
+}
+
+#coin::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(245,200,66,0.35),
+    transparent 65%
+  );
+  filter: blur(14px);
+  z-index: -1;
+  opacity: 0.55;
+}
+</style>
+</head>
+
+<body>
+
+<div id="scene">
+  <div id="shadow"></div>
+
+  <div id="coin-wrapper">
+    <div id="coin">
+      <div class="face heads"></div>
+      <div class="face tails"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Config
+========================= */
+function decodeConfig() {
+  const p = new URLSearchParams(location.search);
+  if (!p.has("data")) return {};
+  try { return JSON.parse(atob(p.get("data"))); }
+  catch { return {}; }
+}
+
+const cfg = decodeConfig();
+
+const headsURL = cfg.heads || "";
+const tailsURL = cfg.tails || "";
+
+const auto = cfg.auto?.enabled ?? false;
+const autoSeconds = cfg.auto?.seconds ?? 0;
+
+const motionHeight = cfg.motion?.height ?? 260;
+const duration = cfg.motion?.duration ?? 1600;
+
+const spinMin = cfg.spin?.rotations?.[0] ?? 6;
+const spinMax = cfg.spin?.rotations?.[1] ?? 9;
+
+/* =========================
+   DOM
+========================= */
+const coin = document.getElementById("coin");
+const wrapper = document.getElementById("coin-wrapper");
+const shadow = document.getElementById("shadow");
+
+const headsFace = coin.querySelector(".heads");
+const tailsFace = coin.querySelector(".tails");
+
+if (headsURL) headsFace.style.backgroundImage = `url("${headsURL}")`;
+if (tailsURL) tailsFace.style.backgroundImage = `url("${tailsURL}")`;
+
+let spinning = false;
+let rotation = 0;
+let autoTimer = null;
+
+/* =========================
+   RNG
+========================= */
+function randomBit() {
+  return crypto.getRandomValues(new Uint8Array(1))[0] & 1;
+}
+
+/* =========================
+   Flip
+========================= */
+function flip() {
+  if (spinning) return;
+  spinning = true;
+
+  const result = randomBit(); // 0 heads, 1 tails
+  const spins = spinMin + Math.floor(Math.random() * (spinMax - spinMin + 1));
+
+  const finalRotation =
+    spins * 360 +
+    (result === 1 ? 180 : 0);
+
+  // Launch
+  wrapper.style.transition = `transform ${duration}ms cubic-bezier(.2,.7,.3,1)`;
+  wrapper.style.transform = `translateY(-${motionHeight}px)`;
+
+  shadow.style.transition = `transform ${duration}ms ease, opacity ${duration}ms ease`;
+  shadow.style.transform = "scale(0.55)";
+  shadow.style.opacity = "0.25";
+
+  // Spin
+  coin.style.transition = `transform ${duration}ms cubic-bezier(.2,.8,.2,1)`;
+  rotation += finalRotation;
+  coin.style.transform = `rotateX(${rotation}deg)`;
+
+  // Land
+  setTimeout(() => {
+    wrapper.style.transform = "translateY(0)";
+    shadow.style.transform = "scale(1)";
+    shadow.style.opacity = "0.55";
+  }, duration * 0.55);
+
+  setTimeout(() => {
+    spinning = false;
+  }, duration + 30);
+
+  resetAuto();
+}
+
+/* =========================
+   Auto flip
+========================= */
+function resetAuto() {
+  if (!auto || !autoSeconds) return;
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(flip, autoSeconds * 1000);
+}
+
+document.getElementById("scene").addEventListener("click", flip);
+resetAuto();
+</script>
+
+</body>
+</html>
