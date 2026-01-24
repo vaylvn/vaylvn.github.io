@@ -185,7 +185,10 @@ function handleWebSocketMessage(msg) {
 			closeBotModal()
 		}
 
-
+		if (data.type == "bot_url") {
+			const input = document.getElementById("bot-auth-url");
+			input.value = data.url;
+		}
 
 
 
