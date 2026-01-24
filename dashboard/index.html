@@ -29,7 +29,8 @@
 		<div id="tab-playlist" class="topbar-tab" onclick="switchMode('playlist')">Playlist</div>
     </div>
 	
-	<div id="share-btn" onclick="openShareModal()">connect device</div>
+	<div id="addbot-btn" onclick="openBotModal()">add bot account</div>
+	<div id="share-btn" onclick="openShareModal()">connect</div>
 	
 </div>
 
@@ -41,6 +42,18 @@
         <div id="qr-canvas"></div>
 
         <div id="share-close" onclick="closeShareModal()">Close</div>
+    </div>
+</div>
+
+
+<div id="addbot-modal" class="hidden">
+    <div id="addbot-modal-content">
+        <h3>Add Bot Account</h3>
+        <p>Scan this QR code from your phone/tablet:</p>
+
+
+
+        <div id="addbot-close" onclick="closeBotModal()">Close</div>
     </div>
 </div>
 
@@ -203,10 +216,10 @@
 <div id="welcome-modal" class="bootmodal hidden">
     <div class="bootmodal-content">
 		<img src="assets/logo.png" class="welcome-logo" />
-        <h2>Welcome to Vayl Dashboard</h2>
+        <h2>Welcome to the Vayl Dashboard</h2>
 		<p>Vayl.exe now runs quietly in the background.</p>
 		<p>You can close this tab anytime — just revisit:</p>
-		<h3>https://widget.vayl.uk/vayl/</h3>
+		<h3>https://vayl.uk/dashboard/</h3>
         <button id="welcome-close" class="welcome-btn">CLOSE</button>
     </div>
 </div>

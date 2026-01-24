@@ -199,6 +199,56 @@ body {
 
 
 
+#addbot-btn {
+    margin-left: auto;
+    padding: 6px 12px;
+    background: #131316;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    opacity: 1;
+	padding-left: 7px;
+}
+#addbot-btn:hover { opacity: 0.7; }
+
+/* Modal overlay */
+#addbot-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+}
+#addbot-modal.hidden {
+    display: none;
+}
+
+#addbot-modal-content {
+    background: #181818;
+    padding: 20px 24px;
+    border-radius: 8px;
+    text-align: center;
+    width: 280px;
+}
+
+#addbot-close {
+    margin-top: 15px;
+    padding: 6px 10px;
+    background: #333;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#addbot-close:hover {
+    background: #444;
+}
+
+
+
+
 
 
 
