@@ -176,7 +176,14 @@ function handleWebSocketMessage(msg) {
 			renderMacroPanel(data.macro);
 		}
 		
+		
+		if (data.type == "bot_auth_success") {
+			closeBotModal()
+		}
 
+		if (data.type == "bot_auth_error") {
+			closeBotModal()
+		}
 
 
 
@@ -202,11 +209,31 @@ function openBotModal() {
     const modal = document.getElementById("addbot-modal");
     modal.classList.remove("hidden");
 
+	socket.send(JSON.stringify({
+      type: "addbot"
+    }));
 
 }
 
 function closeBotModal() {
     document.getElementById("addbot-modal").classList.add("hidden");
+}
+
+
+function copyBotAuthUrl() {
+    const input = document.getElementById("bot-auth-url");
+    input.select();
+    input.setSelectionRange(0, 99999); // mobile safety
+
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = document.getElementById("copy-auth-btn");
+        const oldText = btn.innerText;
+
+        btn.innerText = "Copied!";
+        setTimeout(() => {
+            btn.innerText = oldText;
+        }, 1200);
+    });
 }
 
 

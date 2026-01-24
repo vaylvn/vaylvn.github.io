@@ -254,6 +254,48 @@ body {
 }
 
 
+.auth-url-container {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0;
+}
+
+#bot-auth-url {
+    flex: 1;
+    padding: 6px 8px;
+    background: #101012;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#bot-auth-url::selection {
+    background: #444;
+}
+
+#copy-auth-btn {
+    padding: 6px 10px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #ccc;
+}
+
+#copy-auth-btn:hover {
+    background: #2a2a2a;
+}
+
+.auth-hint {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 6px;
+}
+
+
+
 
 
 

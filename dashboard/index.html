@@ -51,13 +51,31 @@
 <div id="addbot-modal" class="hidden">
     <div id="addbot-modal-content">
         <h3>Add Bot Account</h3>
-        <p>Scan this QR code from your phone/tablet:</p>
 
+        <p>
+            Open this link in a browser while logged into your
+            <strong>bot account</strong>:
+        </p>
 
+        <div class="auth-url-container">
+            <input
+                id="bot-auth-url"
+                type="text"
+                readonly
+                value="https://YOUR_AUTH_URL_HERE"
+                onclick="copyBotAuthUrl()"
+            />
+            <button id="copy-auth-btn" onclick="copyBotAuthUrl()">Copy</button>
+        </div>
+
+        <p class="auth-hint">
+            ⚠️ Make sure you are logged into Twitch as the bot account.
+        </p>
 
         <div id="addbot-close" onclick="closeBotModal()">Close</div>
     </div>
 </div>
+
 
 
 
