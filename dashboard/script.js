@@ -194,6 +194,25 @@ function handleWebSocketMessage(msg) {
 
 
 
+
+
+
+function openBotModal() {
+
+    const modal = document.getElementById("addbot-modal");
+    modal.classList.remove("hidden");
+
+
+}
+
+function closeBotModal() {
+    document.getElementById("addbot-modal").classList.add("hidden");
+}
+
+
+
+
+
 function openShareModal() {
     if (!serverInfo) {
         alert("Server info not received yet");
