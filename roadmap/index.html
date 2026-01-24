@@ -3,33 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vayl – Development Board</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Vayl – Roadmap</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #0e0e10;
+      color: #e6e6eb;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    header {
+      padding: 1.25rem;
+      border-bottom: 1px solid #1f1f24;
+    }
+
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.4rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #9a9aa3;
+    }
+
+    iframe {
+      width: 100%;
+      height: calc(100vh - 86px);
+      border: none;
+    }
+  </style>
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>Vayl Development</h1>
-      <p class="subtitle">
-        Lightweight public roadmap. Not everything makes it here.
-      </p>
-    </header>
+  <header>
+    <h1>Vayl Roadmap</h1>
+    <p>Read-only. Small changes may ship without appearing here.</p>
+  </header>
 
-    <section class="board">
-      <blockquote class="trello-board-compact">
-
-		<iframe src="https://trello.com/b/RnYDpqcV.html" frameBorder="0" width="100%" height="600"></iframe> 
-
-      </blockquote>
-    </section>
-
-    <footer>
-      <p>
-        This board is intentionally minimal and may lag behind actual development.
-      </p>
-    </footer>
-  </main>
-
-  <script src="https://p.trellocdn.com/embed.min.js"></script>
+  <iframe
+    src="https://trello.com/b/RnYDpqcV.html"
+    loading="lazy"
+  ></iframe>
 </body>
 </html>
