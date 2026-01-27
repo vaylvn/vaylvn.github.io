@@ -54,52 +54,78 @@
     .token.user { font-weight: 900; }
 
     /* ===== Animations ===== */
-    .anim-out-fadeDown { animation: outFadeDown var(--out-ms, 450ms) ease-in both; }
-    .anim-out-fade { animation: outFade var(--out-ms, 320ms) ease-in both; }
-
-
-    @keyframes outFadeDown {
-      from { opacity: 1; transform: translateY(0) scale(1); }
-      to   { opacity: 0; transform: translateY(18px) scale(0.985); }
-    }
-
-    @keyframes outFade {
-      from { opacity: 1; }
-      to   { opacity: 0; }
-    }
 	
-
-
-	.anim-out-spin {
-	  animation: outSpin var(--out-ms, 320ms) ease-in both;
+	.inFx {
+		margin-top: 5px;
 	}
-	@keyframes outSpin {
-	  from {
-		opacity: 1;
-		transform: rotate(0deg) scale(1);
-	  }
-	  to {
-		opacity: 0;
-		transform: rotate(6deg) scale(0.96);
-	  }
+	
+	/* FADE OUT */
+	.anim-out-fadeUp    { animation: outFadeUp var(--out-ms,450ms) ease-in both; }
+	.anim-out-fadeDown  { animation: outFadeDown var(--out-ms,450ms) ease-in both; }
+	.anim-out-fadeLeft  { animation: outFadeLeft var(--out-ms,450ms) ease-in both; }
+	.anim-out-fadeRight { animation: outFadeRight var(--out-ms,450ms) ease-in both; }
+
+	@keyframes outFadeUp {
+	  from { opacity: 1; transform: translateY(0); }
+	  to   { opacity: 0; transform: translateY(-20px); }
 	}
 
-
-
-	.anim-out-slideRight {
-	  animation: outSlideRight var(--out-ms, 320ms) ease-in both;
+	@keyframes outFadeDown {
+	  from { opacity: 1; transform: translateY(0); }
+	  to   { opacity: 0; transform: translateY(20px); }
 	}
+
+	@keyframes outFadeLeft {
+	  from { opacity: 1; transform: translateX(0); }
+	  to   { opacity: 0; transform: translateX(-20px); }
+	}
+
+	@keyframes outFadeRight {
+	  from { opacity: 1; transform: translateX(0); }
+	  to   { opacity: 0; transform: translateX(20px); }
+	}
+
+	/* SLIDE OUT */
+	.anim-out-slideUp    { animation: outSlideUp var(--out-ms,320ms) ease-in both; }
+	.anim-out-slideDown  { animation: outSlideDown var(--out-ms,320ms) ease-in both; }
+	.anim-out-slideLeft  { animation: outSlideLeft var(--out-ms,320ms) ease-in both; }
+	.anim-out-slideRight { animation: outSlideRight var(--out-ms,320ms) ease-in both; }
+
+	@keyframes outSlideUp {
+	  from { opacity: 1; transform: translateY(0); }
+	  to   { opacity: 1; transform: translateY(-40px); }
+	}
+
+	@keyframes outSlideDown {
+	  from { opacity: 1; transform: translateY(0); }
+	  to   { opacity: 1; transform: translateY(40px); }
+	}
+
+	@keyframes outSlideLeft {
+	  from { opacity: 1; transform: translateX(0); }
+	  to   { opacity: 1; transform: translateX(-40px); }
+	}
+
 	@keyframes outSlideRight {
 	  from { opacity: 1; transform: translateX(0); }
-	  to   { opacity: 0; transform: translateX(40px); }
+	  to   { opacity: 1; transform: translateX(40px); }
 	}
 
+	/* TRANSFORM OUT */
+	.anim-out-spin {
+	  animation: outSpin var(--out-ms,320ms) ease-in both;
+	}
 
-
-
+	@keyframes outSpin {
+	  from { opacity: 1; transform: rotate(0deg) scale(1); }
+	  to   { opacity: 0; transform: rotate(6deg) scale(0.96); }
+	}
+	
+	/* BLUR OUT */
 	.anim-out-zoomBlur {
-	  animation: outZoomBlur var(--out-ms, 320ms) ease-in both;
+	  animation: outZoomBlur var(--out-ms,320ms) ease-in both;
 	}
+
 	@keyframes outZoomBlur {
 	  from {
 		opacity: 1;
@@ -112,7 +138,8 @@
 		filter: blur(6px);
 	  }
 	}
-	
+
+
 	
 	
 	/* FADE IN */
@@ -148,22 +175,22 @@
 	.anim-in-slideRight { animation: inSlideRight var(--in-ms,420ms) ease-out both; }
 
 	@keyframes inSlideUp {
-	  from { opacity: 0; transform: translateY(40px); }
+	  from { opacity: 1; transform: translateY(40px); }
 	  to   { opacity: 1; transform: translateY(0); }
 	}
 
 	@keyframes inSlideDown {
-	  from { opacity: 0; transform: translateY(-40px); }
+	  from { opacity: 1; transform: translateY(-40px); }
 	  to   { opacity: 1; transform: translateY(0); }
 	}
 
 	@keyframes inSlideLeft {
-	  from { opacity: 0; transform: translateX(40px); }
+	  from { opacity: 1; transform: translateX(40px); }
 	  to   { opacity: 1; transform: translateX(0); }
 	}
 
 	@keyframes inSlideRight {
-	  from { opacity: 0; transform: translateX(-40px); }
+	  from { opacity: 1; transform: translateX(-40px); }
 	  to   { opacity: 1; transform: translateX(0); }
 	}
 
@@ -409,19 +436,27 @@
 					<!-- populated dynamically -->
 				  </select>
 				</div>
-
-
             </div>
+
             <div>
               <label>Out effect</label>
-              <select id="outFx">
-                <option value="fadeDown">Fade Down</option>
-				<option value="spin">Spin</option>
-                <option value="fade">Fade</option>
-				<option value="slideRight">Slide Right</option>
-				<option value="zoomBlur">Zoom Blur</option>
-              </select>
+			  <div>
+				<select id="outFxCategory">
+				  <option value="fade">Fade</option>
+				  <option value="slide">Slide</option>
+				  <option value="transform">Transform</option>
+				  <option value="blur">Blur</option>
+				</select>
+
+				<select id="outFx">
+				  <!-- populated dynamically -->
+				</select>
+			  </div>
+			</div>
+
             </div>
+			
+			
             <div>
               <label>Text FX</label>
               <select id="textFx">
@@ -516,6 +551,67 @@ const IN_EFFECTS = {
     { value: "zoomBlur", label: "Zoom Blur" }
   ]
 };
+
+
+const OUT_EFFECTS = {
+  fade: [
+    { value: "fadeUp", label: "Fade Up" },
+    { value: "fadeDown", label: "Fade Down" },
+    { value: "fadeLeft", label: "Fade Left" },
+    { value: "fadeRight", label: "Fade Right" }
+  ],
+
+  slide: [
+    { value: "slideUp", label: "Slide Up" },
+    { value: "slideDown", label: "Slide Down" },
+    { value: "slideLeft", label: "Slide Left" },
+    { value: "slideRight", label: "Slide Right" }
+  ],
+
+  transform: [
+    { value: "spin", label: "Spin" }
+  ],
+
+  blur: [
+    { value: "zoomBlur", label: "Zoom Blur" }
+  ]
+};
+
+
+const outCatSel = document.getElementById("outFxCategory");
+const outFxSel  = document.getElementById("outFx");
+
+function populateOutFx(category, preserveValue = true) {
+  const prev = outFxSel.value;
+  outFxSel.innerHTML = "";
+
+  for (const fx of OUT_EFFECTS[category] || []) {
+    const opt = document.createElement("option");
+    opt.value = fx.value;
+    opt.textContent = fx.label;
+    outFxSel.appendChild(opt);
+  }
+
+  if (preserveValue && [...outFxSel.options].some(o => o.value === prev)) {
+    outFxSel.value = prev;
+  }
+}
+
+outCatSel.addEventListener("change", () => {
+  populateOutFx(outCatSel.value, false);
+});
+
+function setOutFxFromConfig(value) {
+  for (const [cat, list] of Object.entries(OUT_EFFECTS)) {
+    if (list.some(fx => fx.value === value)) {
+      outCatSel.value = cat;
+      populateOutFx(cat, false);
+      outFxSel.value = value;
+      return;
+    }
+  }
+}
+
 
 
 
@@ -841,6 +937,7 @@ function bootEditor() {
   editor.style.display = "block";
 
   populateInFx(catSel.value, false);
+  populateOutFx(outCatSel.value, false);
 
 
   const els = {
@@ -892,9 +989,10 @@ function bootEditor() {
 		if (cfg.fontSize) els.fontSize.value = cfg.fontSize;
 		if (cfg.color) els.color.value = cfg.color;
 		if (cfg.tokenColors?.user) els.userColor.value = cfg.tokenColors.user;
+		
 		if (cfg.inFx) setInFxFromConfig(cfg.inFx);
+		if (cfg.outFx) setOutFxFromConfig(cfg.outFx);
 
-		if (cfg.outFx) els.outFx.value = cfg.outFx;
 		if (cfg.textFx) els.textFx.value = cfg.textFx;
 		if (cfg.durationMs) els.dur.value = cfg.durationMs;
 		if (cfg.inMs) els.inMs.value = cfg.inMs;
