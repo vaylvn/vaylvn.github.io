@@ -299,17 +299,12 @@
 
         <div class="card">
           <h2>Preview</h2>
-          <div class="mini">This preview is the same page loaded in LIVE mode with a fake event.</div>
+          <div class="mini"></div>
           <div id="previewBox">
             <iframe id="previewFrame" title="Preview"></iframe>
           </div>
 
-          <h2 style="margin-top:12px;">Advanced</h2>
-          <label>Vayl client base URL (polling)</label>
-          <input id="vaylBase" value="http://127.0.0.1:5000" />
-
           <div class="btnRow">
-            <button class="secondary" id="saveBase">Save base</button>
             <button class="secondary" id="testAnim">Test animation</button>
           </div>
         </div>
@@ -532,7 +527,7 @@ async function fetchJson(url, opts) {
 }
 
 async function pollLoop(cfg) {
-  const base = (cfg.vaylBase || "http://127.0.0.1:5000").replace(/\/+$/,"");
+  const base = "http://127.0.0.1:5000";
   const type = cfg.type || "follow";
   const source = cfg.source || "followWidget";
 
@@ -617,7 +612,6 @@ function bootEditor() {
     inMs: document.getElementById("inMs"),
     outMs: document.getElementById("outMs"),
     sound: document.getElementById("sound"),
-    vaylBase: document.getElementById("vaylBase"),
     saveBase: document.getElementById("saveBase"),
     copyUrl: document.getElementById("copyUrl"),
     openLive: document.getElementById("openLive"),
@@ -660,7 +654,6 @@ function bootEditor() {
 		if (cfg.inMs) els.inMs.value = cfg.inMs;
 		if (cfg.outMs) els.outMs.value = cfg.outMs;
 		if (cfg.sound) els.sound.value = cfg.sound;
-		if (cfg.vaylBase) els.vaylBase.value = cfg.vaylBase;
 
 		refreshPreview();
 
@@ -675,9 +668,6 @@ function bootEditor() {
 
 
 
-  // Load saved base
-  const savedBase = localStorage.getItem("vayl.alert.vaylBase");
-  if (savedBase) els.vaylBase.value = savedBase;
 
   function buildCfg() {
     return {
@@ -698,7 +688,7 @@ function bootEditor() {
       outMs: Number(els.outMs.value || 450),
       sound: els.sound.value.trim(),
       // polling config (used only if you load live mode against your local client)
-      vaylBase: els.vaylBase.value.trim() || "http://127.0.0.1:5000",
+      vaylBase: "http://127.0.0.1:5000",
       pollMs: 300,
       idleBackoffMs: 700,
       source: "followWidget",
@@ -767,8 +757,7 @@ async function bootLive() {
   }
 
   // Support overriding base in localStorage even in live mode if desired
-  const savedBase = localStorage.getItem("vayl.alert.vaylBase");
-  if (savedBase && !cfg.vaylBase) cfg.vaylBase = savedBase;
+  cfg.vaylBase = "http://127.0.0.1:5000";
 
   // Demo mode: plays a fake event once, then idles (no polling)
   const demo = QS.get("demo") === "1";
