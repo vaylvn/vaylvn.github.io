@@ -185,6 +185,7 @@
       </div>
     </div>
   </div>
+  <div id="hud"></div>
 
   <!-- EDITOR -->
   <div id="editor">
@@ -280,17 +281,29 @@
             <button id="copyUrl">Copy LIVE URL</button>
             <button class="secondary" id="openLive">Open LIVE preview</button>
           </div>
-       
+          <div class="mini" style="margin-top:10px;">
+            LIVE mode triggers when <b>?data=...</b> is present. Editor mode is the bare page URL.
+          </div>
         </div>
 
         <div class="card">
           <h2>Preview</h2>
+          <div class="mini">This preview is the same page loaded in LIVE mode with a fake event.</div>
           <div id="previewBox">
             <iframe id="previewFrame" title="Preview"></iframe>
           </div>
 
+          <h2 style="margin-top:12px;">Advanced</h2>
+          <label>Vayl client base URL (polling)</label>
+          <input id="vaylBase" value="http://127.0.0.1:5000" />
+          <div class="mini" style="margin-top:8px;">
+            LIVE mode calls:
+            <div class="mini">GET {base}/alerts/next?type=follow&amp;source=followWidget</div>
+            <div class="mini">POST {base}/alerts/consume</div>
+          </div>
 
           <div class="btnRow">
+            <button class="secondary" id="saveBase">Save base</button>
             <button class="secondary" id="testAnim">Test animation</button>
           </div>
         </div>
@@ -492,7 +505,7 @@ async function playOnce(cfg, payload) {
   await sleep(outMs);
 
   stage.classList.remove(outClass);
-  stage.style.opacity = "0";
+  stage.style.opacity = "1";
 
 
 }
@@ -599,6 +612,7 @@ function bootEditor() {
     outMs: document.getElementById("outMs"),
     sound: document.getElementById("sound"),
     vaylBase: document.getElementById("vaylBase"),
+    saveBase: document.getElementById("saveBase"),
     copyUrl: document.getElementById("copyUrl"),
     openLive: document.getElementById("openLive"),
     previewFrame: document.getElementById("previewFrame"),
@@ -657,7 +671,10 @@ function bootEditor() {
     els.inFx, els.outFx, els.textFx, els.dur, els.inMs, els.outMs, els.sound
   ].forEach(el => el.addEventListener("input", refreshPreview));
 
-
+  els.saveBase.addEventListener("click", () => {
+    localStorage.setItem("vayl.alert.vaylBase", els.vaylBase.value.trim());
+    refreshPreview();
+  });
 
   els.copyUrl.addEventListener("click", async () => {
     const cfg = buildCfg();
