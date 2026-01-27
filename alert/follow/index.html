@@ -335,7 +335,7 @@
             </div>
             <div>
               <label>{tag} color</label>
-              <input id="userColor" type="text" value="#00FFCC" />
+              <input id="userColor" type="text" value="#EF767A" />
             </div>
           </div>
 
@@ -343,12 +343,24 @@
             <div>
               <label>In effect</label>
               <select id="inFx">
-                <option value="fadeUp">Fade Up</option>
-				<option value="spin">Spin</option>
-                <option value="pop">Pop</option>
-				<option value="slideLeft">Slide Left</option>
-				<option value="zoomBlur">Zoom Blur</option>
-              </select>
+				  <optgroup label="Fade">
+					<option value="fadeUp">Fade Up</option>
+				  </optgroup>
+
+				  <optgroup label="Transform">
+					<option value="pop">Pop</option>
+					<option value="spin">Spin</option>
+				  </optgroup>
+
+				  <optgroup label="Slide">
+					<option value="slideLeft">Slide Left</option>
+				  </optgroup>
+
+				  <optgroup label="Blur">
+					<option value="zoomBlur">Zoom Blur</option>
+				  </optgroup>
+				</select>
+
             </div>
             <div>
               <label>Out effect</label>
@@ -546,22 +558,17 @@ function applyCfgToDOM(cfg, payload) {
   alertText.style.color = cfg.color || "#FFFFFF";
 
   // Token color
-  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#81A4CD");
+  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#EF767A");
   // Apply via inline style tagless: set CSS variable or just set style on spans after render.
   alertText.innerHTML = renderTextWithTokens(cfg.text, payload, cfg);
   const userSpans = alertText.querySelectorAll(".token.user");
   userSpans.forEach(sp => sp.style.color = userColor);
 
-  // Text FX class
-  alertText.classList.remove("fx-none", "fx-wiggle", "fx-bounce", "fx-pulse", "fx-float", "fx-jitter");
+
+  removeClassesByPrefix(alertText, ["fx-"]);
   alertText.classList.add("fx-" + (cfg.textFx || "none"));
 
-  // Clear any existing anim classes on stage
-  stage.classList.remove(
-    "anim-in-fadeUp","anim-in-pop",
-    "anim-out-fadeDown","anim-out-fade","anim-in-spin","anim-out-spin",
-	"anim-in-slideLeft","anim-out-slideRight","anim-in-zoomBlur","anim-out-zoomBlur"
-  );
+  removeClassesByPrefix(stage, ["anim-in-", "anim-out-"]);
 
   // Animation durations
   stage.style.setProperty("--in-ms", `${Number(cfg.inMs || 450)}ms`);
@@ -589,6 +596,15 @@ async function playSound(cfg) {
 
 /* ---------- Live playback ---------- */
 function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+function removeClassesByPrefix(el, prefixes) {
+  [...el.classList].forEach(cls => {
+    if (prefixes.some(p => cls.startsWith(p))) {
+      el.classList.remove(cls);
+    }
+  });
+}
+
 
 async function playOnce(cfg, payload) {
   applyCfgToDOM(cfg, payload);
