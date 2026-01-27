@@ -476,6 +476,8 @@ function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
 
 async function playOnce(cfg, payload) {
   applyCfgToDOM(cfg, payload);
+  stage.style.opacity = "1";
+
 
   // Force reflow to restart animations
   void stage.offsetHeight;
@@ -503,6 +505,9 @@ async function playOnce(cfg, payload) {
   await sleep(outMs);
 
   stage.classList.remove(outClass);
+  stage.style.opacity = "0";
+
+
 }
 
 /* ---------- Polling (queue consumer) ---------- */
