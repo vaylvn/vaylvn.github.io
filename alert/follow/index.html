@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vayl Alert Widget (Follow)</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: transparent; overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* ===== Live overlay root ===== */
+    #overlay {
+      position: fixed; inset: 0;
+      display: none; /* enabled in LIVE mode */
+      align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    #stage {
+      position: relative;
+      width: min(92vw, 1280px);
+      height: min(40vh, 360px);
+      transform-origin: center center;
+    }
+    #bg {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: 18px;
+      opacity: 1;
+    }
+    #textWrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    #alertText {
+      white-space: pre-wrap;
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));
+      transform-origin: center center;
+    }
+    .token.user { font-weight: 900; }
+
+    /* ===== Animations ===== */
+    .anim-in-fadeUp { animation: inFadeUp var(--in-ms, 450ms) ease-out both; }
+    .anim-out-fadeDown { animation: outFadeDown var(--out-ms, 450ms) ease-in both; }
+    .anim-in-pop { animation: inPop var(--in-ms, 360ms) cubic-bezier(.2,1.5,.2,1) both; }
+    .anim-out-fade { animation: outFade var(--out-ms, 320ms) ease-in both; }
+
+    @keyframes inFadeUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes outFadeDown {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to   { opacity: 0; transform: translateY(18px) scale(0.985); }
+    }
+    @keyframes inPop {
+      0%   { opacity: 0; transform: scale(0.86); }
+      70%  { opacity: 1; transform: scale(1.04); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes outFade {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* Text FX */
+    .fx-none {}
+    .fx-wiggle { animation: wiggle 900ms ease-in-out infinite; }
+    @keyframes wiggle {
+      0%,100% { transform: rotate(0deg) }
+      25% { transform: rotate(-0.6deg) }
+      75% { transform: rotate(0.6deg) }
+    }
+    .fx-bounce { animation: bounce 750ms ease-in-out infinite; }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0) }
+      50% { transform: translateY(-4px) }
+    }
+
+    /* ===== Debug HUD ===== */
+    #hud {
+      position: fixed; left: 10px; top: 10px;
+      display: none;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #eaeaea;
+      pointer-events: none;
+      max-width: 65vw;
+      white-space: pre-wrap;
+    }
+
+    /* ===== Editor UI ===== */
+    #editor {
+      display: none; /* enabled in EDITOR mode */
+      position: fixed; inset: 0;
+      background: #0b0c10;
+      color: #e9e9e9;
+      overflow: auto;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px 16px 34px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    h1 { margin: 6px 0 10px; font-size: 16px; font-weight: 800; opacity: 0.95; }
+    h2 { margin: 0 0 10px; font-size: 13px; font-weight: 800; opacity: 0.9; }
+    label { display: block; margin: 10px 0 6px; font-size: 12px; opacity: 0.92; }
+    input, select, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      padding: 10px 10px;
+      outline: none;
+    }
+    textarea { min-height: 68px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .btnRow { display: flex; gap: 10px; margin-top: 12px; }
+    button { cursor: pointer; font-weight: 800; }
+    button.secondary { background: rgba(255,255,255,0.02); }
+    .mini {
+      font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      opacity: 0.85;
+    }
+
+    /* Editor preview */
+    #previewBox {
+      margin-top: 10px;
+      height: 240px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+    #previewBox iframe {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      border: 0;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LIVE overlay -->
+  <div id="overlay">
+    <div id="stage">
+      <div id="bg"></div>
+      <div id="textWrap">
+        <div id="alertText"></div>
+      </div>
+    </div>
+  </div>
+  <div id="hud"></div>
+
+  <!-- EDITOR -->
+  <div id="editor">
+    <div class="wrap">
+      <h1>Vayl Alert Widget — Follow</h1>
+      <div class="row">
+        <div class="card">
+          <h2>Template & Text</h2>
+
+          <label>Template</label>
+          <select id="tpl">
+            <option value="neo_fade">neo_fade</option>
+            <option value="minimal_pop">minimal_pop</option>
+          </select>
+
+          <label>Background image URL (optional)</label>
+          <input id="bgUrl" placeholder="https://.../bg.png" />
+
+          <label>Text template (use {user})</label>
+          <textarea id="txt">{user} — NEW FOLLOWER</textarea>
+
+          <div class="grid2">
+            <div>
+              <label>Font family</label>
+              <select id="font">
+                <option value="system">System</option>
+                <option value="Inter">Inter (if available)</option>
+                <option value="Arial">Arial</option>
+                <option value="Impact">Impact</option>
+              </select>
+            </div>
+            <div>
+              <label>Font size</label>
+              <input id="fontSize" type="number" min="10" max="140" value="56" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label>Text color</label>
+              <input id="color" type="text" value="#FFFFFF" />
+            </div>
+            <div>
+              <label>{user} color</label>
+              <input id="userColor" type="text" value="#00FFCC" />
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div>
+              <label>In effect</label>
+              <select id="inFx">
+                <option value="fadeUp">fadeUp</option>
+                <option value="pop">pop</option>
+              </select>
+            </div>
+            <div>
+              <label>Out effect</label>
+              <select id="outFx">
+                <option value="fadeDown">fadeDown</option>
+                <option value="fade">fade</option>
+              </select>
+            </div>
+            <div>
+              <label>Text FX</label>
+              <select id="textFx">
+                <option value="none">none</option>
+                <option value="wiggle">wiggle</option>
+                <option value="bounce">bounce</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div>
+              <label>Duration (ms)</label>
+              <input id="dur" type="number" min="800" max="30000" value="5500" />
+            </div>
+            <div>
+              <label>In ms</label>
+              <input id="inMs" type="number" min="50" max="5000" value="450" />
+            </div>
+            <div>
+              <label>Out ms</label>
+              <input id="outMs" type="number" min="50" max="5000" value="450" />
+            </div>
+          </div>
+
+          <label>Sound (URL or filename)</label>
+          <input id="sound" placeholder="follow_pop.wav OR https://.../sound.wav" value="follow_pop.wav" />
+
+          <div class="btnRow">
+            <button id="copyUrl">Copy LIVE URL</button>
+            <button class="secondary" id="openLive">Open LIVE preview</button>
+          </div>
+          <div class="mini" style="margin-top:10px;">
+            LIVE mode triggers when <b>?data=...</b> is present. Editor mode is the bare page URL.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Preview</h2>
+          <div class="mini">This preview is the same page loaded in LIVE mode with a fake event.</div>
+          <div id="previewBox">
+            <iframe id="previewFrame" title="Preview"></iframe>
+          </div>
+
+          <h2 style="margin-top:12px;">Advanced</h2>
+          <label>Vayl client base URL (polling)</label>
+          <input id="vaylBase" value="http://127.0.0.1:8123" />
+          <div class="mini" style="margin-top:8px;">
+            LIVE mode calls:
+            <div class="mini">GET {base}/alerts/next?type=follow&amp;source=followWidget</div>
+            <div class="mini">POST {base}/alerts/consume</div>
+          </div>
+
+          <div class="btnRow">
+            <button class="secondary" id="saveBase">Save base</button>
+            <button class="secondary" id="testAnim">Test animation</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ==============================
+   Vayl Alert Widget (Single Page)
+   - Editor mode: no ?data=...
+   - Live mode:   ?data=<base64url(JSON)>
+   ============================== */
+
+const QS = new URLSearchParams(location.search);
+const isLive = QS.has("data");
+const isDebug = QS.get("debug") === "1" || QS.get("debug") === "true";
+
+const overlay = document.getElementById("overlay");
+const editor = document.getElementById("editor");
+const hud = document.getElementById("hud");
+
+function showHUD(msg) {
+  if (!isDebug) return;
+  hud.style.display = "block";
+  hud.textContent = msg;
+}
+
+/* ---------- Config encode/decode (simple base64url JSON) ----------
+   NOTE: This is not compressed to keep this file dependency-free.
+   If you want compression, swap these with pako deflate/inflate.
+------------------------------------------------------------------ */
+function b64urlEncode(str) {
+  const b64 = btoa(unescape(encodeURIComponent(str)));
+  return b64.replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+}
+function b64urlDecode(b64url) {
+  let b64 = b64url.replaceAll("-","+").replaceAll("_","/");
+  const pad = b64.length % 4;
+  if (pad) b64 += "=".repeat(4 - pad);
+  return decodeURIComponent(escape(atob(b64)));
+}
+function encodeConfig(obj) {
+  return b64urlEncode(JSON.stringify(obj));
+}
+function decodeConfig(data) {
+  return JSON.parse(b64urlDecode(data));
+}
+
+/* ---------- Templates (keep small; can expand later) ---------- */
+const TEMPLATES = {
+  neo_fade: {
+    name: "neo_fade",
+    bgFallback: "",
+    stageScale: 1,
+    // If bgUrl not provided, use a subtle gradient.
+    applyBg(bgEl, cfg) {
+      if (cfg.bgUrl) {
+        bgEl.style.backgroundImage = `url("${cfg.bgUrl}")`;
+        bgEl.style.backgroundColor = "transparent";
+      } else {
+        bgEl.style.backgroundImage = "";
+        bgEl.style.backgroundColor = "rgba(255,255,255,0.04)";
+        bgEl.style.border = "1px solid rgba(255,255,255,0.12)";
+      }
+    }
+  },
+  minimal_pop: {
+    name: "minimal_pop",
+    bgFallback: "",
+    stageScale: 1,
+    applyBg(bgEl, cfg) {
+      if (cfg.bgUrl) {
+        bgEl.style.backgroundImage = `url("${cfg.bgUrl}")`;
+        bgEl.style.backgroundColor = "transparent";
+      } else {
+        bgEl.style.backgroundImage = "";
+        bgEl.style.backgroundColor = "rgba(0,0,0,0.55)";
+        bgEl.style.border = "1px solid rgba(255,255,255,0.14)";
+      }
+    }
+  }
+};
+
+/* ---------- Rendering ---------- */
+const stage = document.getElementById("stage");
+const bg = document.getElementById("bg");
+const alertText = document.getElementById("alertText");
+
+function cssFontFamily(font) {
+  if (!font || font === "system") return "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  return `"${font}", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+}
+
+function renderTextWithTokens(template, payload, cfg) {
+  // Basic token replacement with styling for {user}.
+  // Extend later for more tokens like {tier}, {amount}, etc.
+  const user = (payload && payload.user) ? String(payload.user) : "Someone";
+
+  // We build HTML with minimal escaping (escape template & payload).
+  const escapeHtml = (s) => s
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+  const safeTemplate = escapeHtml(String(template ?? "{user} — NEW FOLLOWER"));
+  const safeUser = escapeHtml(user);
+
+  // Replace {user} occurrences with span
+  const html = safeTemplate.replaceAll("{user}", `<span class="token user">${safeUser}</span>`);
+  return html;
+}
+
+function applyCfgToDOM(cfg, payload) {
+  const tpl = TEMPLATES[cfg.template] || TEMPLATES.neo_fade;
+
+  tpl.applyBg(bg, cfg);
+
+  stage.style.transform = `scale(${tpl.stageScale || 1})`;
+
+  alertText.style.fontFamily = cssFontFamily(cfg.font);
+  alertText.style.fontSize = `${Number(cfg.fontSize || 56)}px`;
+  alertText.style.color = cfg.color || "#FFFFFF";
+
+  // Token color
+  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#00FFCC");
+  // Apply via inline style tagless: set CSS variable or just set style on spans after render.
+  alertText.innerHTML = renderTextWithTokens(cfg.text, payload, cfg);
+  const userSpans = alertText.querySelectorAll(".token.user");
+  userSpans.forEach(sp => sp.style.color = userColor);
+
+  // Text FX class
+  alertText.classList.remove("fx-none", "fx-wiggle", "fx-bounce");
+  alertText.classList.add("fx-" + (cfg.textFx || "none"));
+
+  // Clear any existing anim classes on stage
+  stage.classList.remove(
+    "anim-in-fadeUp","anim-in-pop",
+    "anim-out-fadeDown","anim-out-fade"
+  );
+
+  // Animation durations
+  stage.style.setProperty("--in-ms", `${Number(cfg.inMs || 450)}ms`);
+  stage.style.setProperty("--out-ms", `${Number(cfg.outMs || 450)}ms`);
+}
+
+/* ---------- Audio ---------- */
+async function playSound(cfg) {
+  const s = (cfg.sound || "").trim();
+  if (!s) return;
+
+  // If it looks like a URL, use it, otherwise assume relative to current path /sounds/
+  const isUrl = /^https?:\/\//i.test(s);
+  const url = isUrl ? s : `${location.origin}/alert/sounds/${encodeURIComponent(s)}`;
+
+  try {
+    const audio = new Audio(url);
+    audio.volume = 1.0;
+    // Some environments require user interaction; OBS usually allows autoplay.
+    await audio.play();
+  } catch (e) {
+    showHUD((hud.textContent || "") + `\n[sound] failed: ${String(e)}`);
+  }
+}
+
+/* ---------- Live playback ---------- */
+function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function playOnce(cfg, payload) {
+  applyCfgToDOM(cfg, payload);
+
+  // Force reflow to restart animations
+  void stage.offsetHeight;
+
+  // In
+  const inClass = "anim-in-" + (cfg.inFx || "fadeUp");
+  stage.classList.add(inClass);
+
+  // Sound near start
+  if (cfg.playSound !== false) playSound(cfg);
+
+  // Hold
+  const total = Number(cfg.durationMs || 5500);
+  const inMs = Number(cfg.inMs || 450);
+  const outMs = Number(cfg.outMs || 450);
+  const holdMs = Math.max(0, total - inMs - outMs);
+
+  await sleep(inMs + holdMs);
+
+  // Out
+  stage.classList.remove(inClass);
+  const outClass = "anim-out-" + (cfg.outFx || "fadeDown");
+  stage.classList.add(outClass);
+
+  await sleep(outMs);
+
+  stage.classList.remove(outClass);
+}
+
+/* ---------- Polling (queue consumer) ---------- */
+let locked = false;
+let lastPollAt = 0;
+
+async function fetchJson(url, opts) {
+  const res = await fetch(url, opts);
+  if (res.status === 204) return { _noContent: true };
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const txt = await res.text();
+    throw new Error(`Expected JSON, got: ${ct} :: ${txt.slice(0,120)}`);
+  }
+  return await res.json();
+}
+
+async function pollLoop(cfg) {
+  const base = (cfg.vaylBase || "http://127.0.0.1:8123").replace(/\/+$/,"");
+  const type = cfg.type || "follow";
+  const source = cfg.source || "followWidget";
+
+  const pollEveryMs = Number(cfg.pollMs || 300); // "few times a second"
+  const idleBackoffMs = Number(cfg.idleBackoffMs || 700); // when empty
+
+  while (true) {
+    if (locked) {
+      await sleep(200);
+      continue;
+    }
+
+    lastPollAt = Date.now();
+    showHUD(`mode=LIVE debug=1\npolling=${base}\nlastPoll=${new Date(lastPollAt).toLocaleTimeString()}\nlocked=${locked}`);
+
+    let next;
+    try {
+      next = await fetchJson(`${base}/alerts/next?type=${encodeURIComponent(type)}&source=${encodeURIComponent(source)}`, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+    } catch (e) {
+      showHUD(`mode=LIVE debug=1\nERROR polling\n${String(e)}\nRetrying...`);
+      await sleep(1000);
+      continue;
+    }
+
+    if (next && next._noContent) {
+      await sleep(idleBackoffMs);
+      continue;
+    }
+
+    if (!next || !next.id || !next.payload) {
+      // Defensive: treat as empty
+      await sleep(idleBackoffMs);
+      continue;
+    }
+
+    // Lock and play
+    locked = true;
+    showHUD(`mode=LIVE debug=1\nCLAIMED id=${next.id}\nuser=${next.payload.user ?? ""}`);
+
+    try {
+      await playOnce(cfg, next.payload);
+    } catch (e) {
+      showHUD(`mode=LIVE debug=1\nPLAY ERROR id=${next.id}\n${String(e)}`);
+    }
+
+    // Consume
+    try {
+      await fetchJson(`${base}/alerts/consume`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ id: next.id, source })
+      });
+    } catch (e) {
+      // If consume fails, you may replay on next startup depending on server logic.
+      showHUD(`mode=LIVE debug=1\nCONSUME ERROR id=${next.id}\n${String(e)}`);
+    }
+
+    locked = false;
+    await sleep(pollEveryMs);
+  }
+}
+
+/* ---------- Mode bootstrap ---------- */
+function bootEditor() {
+  editor.style.display = "block";
+
+  const els = {
+    tpl: document.getElementById("tpl"),
+    bgUrl: document.getElementById("bgUrl"),
+    txt: document.getElementById("txt"),
+    font: document.getElementById("font"),
+    fontSize: document.getElementById("fontSize"),
+    color: document.getElementById("color"),
+    userColor: document.getElementById("userColor"),
+    inFx: document.getElementById("inFx"),
+    outFx: document.getElementById("outFx"),
+    textFx: document.getElementById("textFx"),
+    dur: document.getElementById("dur"),
+    inMs: document.getElementById("inMs"),
+    outMs: document.getElementById("outMs"),
+    sound: document.getElementById("sound"),
+    vaylBase: document.getElementById("vaylBase"),
+    saveBase: document.getElementById("saveBase"),
+    copyUrl: document.getElementById("copyUrl"),
+    openLive: document.getElementById("openLive"),
+    previewFrame: document.getElementById("previewFrame"),
+    testAnim: document.getElementById("testAnim"),
+  };
+
+  // Load saved base
+  const savedBase = localStorage.getItem("vayl.alert.vaylBase");
+  if (savedBase) els.vaylBase.value = savedBase;
+
+  function buildCfg() {
+    return {
+      v: 1,
+      type: "follow",
+      template: els.tpl.value,
+      bgUrl: els.bgUrl.value.trim(),
+      text: els.txt.value,
+      font: els.font.value,
+      fontSize: Number(els.fontSize.value || 56),
+      color: els.color.value.trim() || "#FFFFFF",
+      tokenColors: { user: (els.userColor.value.trim() || "#00FFCC") },
+      inFx: els.inFx.value,
+      outFx: els.outFx.value,
+      textFx: els.textFx.value,
+      durationMs: Number(els.dur.value || 5500),
+      inMs: Number(els.inMs.value || 450),
+      outMs: Number(els.outMs.value || 450),
+      sound: els.sound.value.trim(),
+      // polling config (used only if you load live mode against your local client)
+      vaylBase: els.vaylBase.value.trim() || "http://127.0.0.1:8123",
+      pollMs: 300,
+      idleBackoffMs: 700,
+      source: "followWidget",
+      // editor-only: allow fake event via ?demo=1
+    };
+  }
+
+  function liveUrl(cfg, extraParams = {}) {
+    const data = encodeConfig(cfg);
+    const u = new URL(location.href);
+    u.search = ""; // reset
+    u.searchParams.set("data", data);
+    for (const [k,v] of Object.entries(extraParams)) u.searchParams.set(k, String(v));
+    return u.toString();
+  }
+
+  function refreshPreview() {
+    const cfg = buildCfg();
+    const url = liveUrl(cfg, { demo: "1" });
+    els.previewFrame.src = url;
+  }
+
+  // Bind changes
+  [
+    els.tpl, els.bgUrl, els.txt, els.font, els.fontSize, els.color, els.userColor,
+    els.inFx, els.outFx, els.textFx, els.dur, els.inMs, els.outMs, els.sound
+  ].forEach(el => el.addEventListener("input", refreshPreview));
+
+  els.saveBase.addEventListener("click", () => {
+    localStorage.setItem("vayl.alert.vaylBase", els.vaylBase.value.trim());
+    refreshPreview();
+  });
+
+  els.copyUrl.addEventListener("click", async () => {
+    const cfg = buildCfg();
+    const url = liveUrl(cfg);
+    await navigator.clipboard.writeText(url);
+    els.copyUrl.textContent = "Copied!";
+    setTimeout(() => els.copyUrl.textContent = "Copy LIVE URL", 900);
+  });
+
+  els.openLive.addEventListener("click", () => {
+    const cfg = buildCfg();
+    window.open(liveUrl(cfg, { debug: "1" }), "_blank");
+  });
+
+  els.testAnim.addEventListener("click", () => {
+    const cfg = buildCfg();
+    const url = liveUrl(cfg, { demo: "1", debug: "1" });
+    els.previewFrame.src = url;
+  });
+
+  refreshPreview();
+}
+
+async function bootLive() {
+  overlay.style.display = "flex";
+  if (isDebug) hud.style.display = "block";
+
+  let cfg;
+  try {
+    cfg = decodeConfig(QS.get("data"));
+  } catch (e) {
+    showHUD(`Invalid data param.\n${String(e)}`);
+    return;
+  }
+
+  // Support overriding base in localStorage even in live mode if desired
+  const savedBase = localStorage.getItem("vayl.alert.vaylBase");
+  if (savedBase && !cfg.vaylBase) cfg.vaylBase = savedBase;
+
+  // Demo mode: plays a fake event once, then idles (no polling)
+  const demo = QS.get("demo") === "1";
+  if (demo) {
+    showHUD(`mode=LIVE demo=1 debug=${isDebug ? 1 : 0}\n(no polling)`);
+    const payload = { user: "Valon" };
+    await playOnce(cfg, payload);
+    return;
+  }
+
+  showHUD(`mode=LIVE debug=${isDebug ? 1 : 0}\nwaiting...`);
+  pollLoop(cfg);
+}
+
+/* ---------- Kick off ---------- */
+if (isLive) bootLive();
+else bootEditor();
+</script>
+
+</body>
+</html>
