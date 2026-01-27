@@ -806,10 +806,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px;
+    padding: 5px 12px;
     position: relative;
     z-index: 20; /* always stay above grid */
-    background: #1a1a1a; /* optional - keeps contrast */
+    background: #131316; /* optional - keeps contrast */
 }
 
 #macro-items {
@@ -1181,8 +1181,7 @@ input:checked + .slider:before {
 
 
 #sidebar,
-#editor-panel,
-#macro-panel {
+#editor-panel {
   background: var(--bg-panel);
 }
 
