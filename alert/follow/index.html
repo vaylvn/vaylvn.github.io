@@ -657,10 +657,7 @@ function bootEditor() {
     els.inFx, els.outFx, els.textFx, els.dur, els.inMs, els.outMs, els.sound
   ].forEach(el => el.addEventListener("input", refreshPreview));
 
-  els.saveBase.addEventListener("click", () => {
-    localStorage.setItem("vayl.alert.vaylBase", els.vaylBase.value.trim());
-    refreshPreview();
-  });
+
 
   els.copyUrl.addEventListener("click", async () => {
     const cfg = buildCfg();
