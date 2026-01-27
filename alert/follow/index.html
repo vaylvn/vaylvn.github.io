@@ -332,9 +332,9 @@ const editor = document.getElementById("editor");
 const hud = document.getElementById("hud");
 
 function showHUD(msg) {
-  return;
-  hud.style.display = "block";
+  hud.style.display = "none";
   hud.textContent = msg;
+  return;
 }
 
 /* ---------- Config encode/decode (simple base64url JSON) ----------
