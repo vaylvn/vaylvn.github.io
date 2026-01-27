@@ -304,10 +304,6 @@
             <iframe id="previewFrame" title="Preview"></iframe>
           </div>
 
-          <h2 style="margin-top:12px;">Advanced</h2>
-          <label>Vayl client base URL (polling)</label>
-          <input id="vaylBase" value="http://127.0.0.1:5000" />
-
           <div class="btnRow">
             <button class="secondary" id="testAnim">Test animation</button>
           </div>
@@ -322,6 +318,9 @@
    - Editor mode: no ?data=...
    - Live mode:   ?data=<base64url(JSON)>
    ============================== */
+
+
+const VAYL_BASE = "http://127.0.0.1:5000";
 
 const QS = new URLSearchParams(location.search);
 const isLive = QS.has("data");
@@ -472,7 +471,7 @@ async function playSound(cfg) {
     // Some environments require user interaction; OBS usually allows autoplay.
     await audio.play();
   } catch (e) {
-    showHUD((hud.textContent || "") + `\n[sound] failed: ${String(e)}`);
+    // showHUD((hud.textContent || "") + `\n[sound] failed: ${String(e)}`);
   }
 }
 
@@ -531,7 +530,7 @@ async function fetchJson(url, opts) {
 }
 
 async function pollLoop(cfg) {
-  const base = (cfg.vaylBase || "http://127.0.0.1:5000").replace(/\/+$/,"");
+  const base = VAYL_BASE;
   const type = cfg.type || "follow";
   const source = cfg.source || "followWidget";
 
@@ -545,7 +544,7 @@ async function pollLoop(cfg) {
     }
 
     lastPollAt = Date.now();
-    showHUD(`mode=LIVE debug=1\npolling=${base}\nlastPoll=${new Date(lastPollAt).toLocaleTimeString()}\nlocked=${locked}`);
+    // showHUD(`mode=LIVE debug=1\npolling=${base}\nlastPoll=${new Date(lastPollAt).toLocaleTimeString()}\nlocked=${locked}`);
 
     let next;
     try {
@@ -554,7 +553,7 @@ async function pollLoop(cfg) {
         headers: { "Accept": "application/json" }
       });
     } catch (e) {
-      showHUD(`mode=LIVE debug=1\nERROR polling\n${String(e)}\nRetrying...`);
+      // showHUD(`mode=LIVE debug=1\nERROR polling\n${String(e)}\nRetrying...`);
       await sleep(1000);
       continue;
     }
@@ -572,12 +571,12 @@ async function pollLoop(cfg) {
 
     // Lock and play
     locked = true;
-    showHUD(`mode=LIVE debug=1\nCLAIMED id=${next.id}\nuser=${next.payload.user ?? ""}`);
+    // showHUD(`mode=LIVE debug=1\nCLAIMED id=${next.id}\nuser=${next.payload.user ?? ""}`);
 
     try {
       await playOnce(cfg, next.payload);
     } catch (e) {
-      showHUD(`mode=LIVE debug=1\nPLAY ERROR id=${next.id}\n${String(e)}`);
+      // showHUD(`mode=LIVE debug=1\nPLAY ERROR id=${next.id}\n${String(e)}`);
     }
 
     // Consume
@@ -589,7 +588,7 @@ async function pollLoop(cfg) {
       });
     } catch (e) {
       // If consume fails, you may replay on next startup depending on server logic.
-      showHUD(`mode=LIVE debug=1\nCONSUME ERROR id=${next.id}\n${String(e)}`);
+      // showHUD(`mode=LIVE debug=1\nCONSUME ERROR id=${next.id}\n${String(e)}`);
     }
 
     locked = false;
@@ -616,7 +615,6 @@ function bootEditor() {
     inMs: document.getElementById("inMs"),
     outMs: document.getElementById("outMs"),
     sound: document.getElementById("sound"),
-    vaylBase: document.getElementById("vaylBase"),
     copyUrl: document.getElementById("copyUrl"),
     openLive: document.getElementById("openLive"),
     previewFrame: document.getElementById("previewFrame"),
@@ -658,7 +656,6 @@ function bootEditor() {
 		if (cfg.inMs) els.inMs.value = cfg.inMs;
 		if (cfg.outMs) els.outMs.value = cfg.outMs;
 		if (cfg.sound) els.sound.value = cfg.sound;
-		if (cfg.vaylBase) els.vaylBase.value = cfg.vaylBase;
 
 		refreshPreview();
 
@@ -673,9 +670,7 @@ function bootEditor() {
 
 
 
-  // Load saved base
-  const savedBase = localStorage.getItem("vayl.alert.vaylBase");
-  if (savedBase) els.vaylBase.value = savedBase;
+
 
   function buildCfg() {
     return {
@@ -695,8 +690,6 @@ function bootEditor() {
       inMs: Number(els.inMs.value || 450),
       outMs: Number(els.outMs.value || 450),
       sound: els.sound.value.trim(),
-      // polling config (used only if you load live mode against your local client)
-      vaylBase: els.vaylBase.value.trim() || "http://127.0.0.1:5000",
       pollMs: 300,
       idleBackoffMs: 700,
       source: "followWidget",
@@ -756,24 +749,22 @@ async function bootLive() {
   try {
     cfg = decodeConfig(QS.get("data"));
   } catch (e) {
-    showHUD(`Invalid data param.\n${String(e)}`);
+    // showHUD(`Invalid data param.\n${String(e)}`);
     return;
   }
 
-  // Support overriding base in localStorage even in live mode if desired
-  const savedBase = localStorage.getItem("vayl.alert.vaylBase");
-  if (savedBase && !cfg.vaylBase) cfg.vaylBase = savedBase;
+
 
   // Demo mode: plays a fake event once, then idles (no polling)
   const demo = QS.get("demo") === "1";
   if (demo) {
-    showHUD(`mode=LIVE demo=1 debug=${isDebug ? 1 : 0}\n(no polling)`);
+    // showHUD(`mode=LIVE demo=1 debug=${isDebug ? 1 : 0}\n(no polling)`);
     const payload = { user: "Valon" };
     await playOnce(cfg, payload);
     return;
   }
 
-  showHUD(`mode=LIVE debug=${isDebug ? 1 : 0}\nwaiting...`);
+  // showHUD(`mode=LIVE debug=${isDebug ? 1 : 0}\nwaiting...`);
   pollLoop(cfg);
 }
 
