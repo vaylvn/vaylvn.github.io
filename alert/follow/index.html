@@ -59,11 +59,22 @@
 		margin-top: 5px;
 	}
 	
+	
+	
+
+
+	
 	/* FADE OUT */
-	.anim-out-fadeUp    { animation: outFadeUp var(--out-ms,450ms) ease-in both; }
-	.anim-out-fadeDown  { animation: outFadeDown var(--out-ms,450ms) ease-in both; }
-	.anim-out-fadeLeft  { animation: outFadeLeft var(--out-ms,450ms) ease-in both; }
+	.anim-out-fade      { animation: outFade var(--out-ms,320ms) ease-in both;      }
+	.anim-out-fadeUp    { animation: outFadeUp var(--out-ms,450ms) ease-in both;    }
+	.anim-out-fadeDown  { animation: outFadeDown var(--out-ms,450ms) ease-in both;  }
+	.anim-out-fadeLeft  { animation: outFadeLeft var(--out-ms,450ms) ease-in both;  }
 	.anim-out-fadeRight { animation: outFadeRight var(--out-ms,450ms) ease-in both; }
+
+	@keyframes outFade {
+	  from { opacity: 1; }
+	  to   { opacity: 0; }
+	}
 
 	@keyframes outFadeUp {
 	  from { opacity: 1; transform: translateY(0); }
@@ -144,10 +155,16 @@
 	
 	
 	/* FADE IN */
+	.anim-in-fade       { animation: inFade var(--in-ms,450ms) ease-out both;       }
 	.anim-in-fadeUp    { animation: inFadeUp var(--in-ms,450ms) ease-out both; }
 	.anim-in-fadeDown  { animation: inFadeDown var(--in-ms,450ms) ease-out both; }
 	.anim-in-fadeLeft  { animation: inFadeLeft var(--in-ms,450ms) ease-out both; }
 	.anim-in-fadeRight { animation: inFadeRight var(--in-ms,450ms) ease-out both; }
+
+	@keyframes inFade {
+	  from { opacity: 0; }
+	  to   { opacity: 1; }
+	}
 
 	@keyframes inFadeUp {
 	  from { opacity: 0; transform: translateY(20px); }
@@ -530,12 +547,14 @@
    ============================== */
 
 const IN_EFFECTS = {
-  fade: [
-    { value: "fadeUp", label: "Fade Up" },
-    { value: "fadeDown", label: "Fade Down" },
-    { value: "fadeLeft", label: "Fade Left" },
-    { value: "fadeRight", label: "Fade Right" }
-  ],
+	fade: [
+	  { value: "fade", label: "Fade" },
+	  { value: "fadeUp", label: "Fade Up" },
+	  { value: "fadeDown", label: "Fade Down" },
+	  { value: "fadeLeft", label: "Fade Left" },
+	  { value: "fadeRight", label: "Fade Right" }
+	],
+
 
   slide: [
     { value: "slideUp", label: "Slide Up" },
@@ -557,11 +576,13 @@ const IN_EFFECTS = {
 
 const OUT_EFFECTS = {
   fade: [
-    { value: "fadeUp", label: "Fade Up" },
-    { value: "fadeDown", label: "Fade Down" },
-    { value: "fadeLeft", label: "Fade Left" },
-    { value: "fadeRight", label: "Fade Right" }
-  ],
+	  { value: "fade", label: "Fade" },
+	  { value: "fadeUp", label: "Fade Up" },
+	  { value: "fadeDown", label: "Fade Down" },
+	  { value: "fadeLeft", label: "Fade Left" },
+	  { value: "fadeRight", label: "Fade Right" }
+	],
+
 
   slide: [
     { value: "slideUp", label: "Slide Up" },
