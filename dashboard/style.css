@@ -824,13 +824,14 @@ body {
 #macro-add {
 	margin-left: auto;
 	padding: 6px 12px;
-	background: #222;
+	background: #131316;
 	border: 1px solid #333;
 	border-radius: 4px;
 	cursor: pointer;
 	user-select: none;
 	opacity: 1;
 	color: white;
+	font-family: Consolas, monospace;
 }
 #macro-add :hover { opacity: 0.7; }
 
