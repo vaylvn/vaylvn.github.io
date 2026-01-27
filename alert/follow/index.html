@@ -280,6 +280,14 @@
             <button id="copyUrl">Copy LIVE URL</button>
             <button class="secondary" id="openLive">Open LIVE preview</button>
           </div>
+		  
+		  <div class="row">
+			  <label>Load config from URL</label>
+			  <input id="loadUrl" placeholder="Paste LIVE alert URL here" />
+			  <button id="loadBtn">Load</button>
+			</div>
+
+		  
           <div class="mini" style="margin-top:10px;">
             LIVE mode triggers when <b>?data=...</b> is present. Editor mode is the bare page URL.
           </div>
@@ -715,6 +723,54 @@ async function bootLive() {
   showHUD(`mode=LIVE debug=${isDebug ? 1 : 0}\nwaiting...`);
   pollLoop(cfg);
 }
+
+
+
+
+els.loadUrl = document.getElementById("loadUrl");
+els.loadBtn = document.getElementById("loadBtn");
+
+els.loadBtn.onclick = () => {
+  try {
+    const url = new URL(els.loadUrl.value.trim());
+    const data = url.searchParams.get("data");
+
+    if (!data) {
+      alert("No ?data= found in URL");
+      return;
+    }
+
+    const cfg = decodeConfig(data);
+
+    // Hydrate editor inputs (best-effort)
+    if (cfg.template) els.tpl.value = cfg.template;
+    if (cfg.bgUrl) els.bgUrl.value = cfg.bgUrl;
+    if (cfg.text) els.txt.value = cfg.text;
+    if (cfg.font) els.font.value = cfg.font;
+    if (cfg.fontSize) els.fontSize.value = cfg.fontSize;
+    if (cfg.color) els.color.value = cfg.color;
+    if (cfg.tokenColors?.user) els.userColor.value = cfg.tokenColors.user;
+    if (cfg.inFx) els.inFx.value = cfg.inFx;
+    if (cfg.outFx) els.outFx.value = cfg.outFx;
+    if (cfg.textFx) els.textFx.value = cfg.textFx;
+    if (cfg.durationMs) els.dur.value = cfg.durationMs;
+    if (cfg.inMs) els.inMs.value = cfg.inMs;
+    if (cfg.outMs) els.outMs.value = cfg.outMs;
+    if (cfg.sound) els.sound.value = cfg.sound;
+    if (cfg.vaylBase) els.vaylBase.value = cfg.vaylBase;
+
+    refreshPreview();
+
+  } catch (e) {
+    console.error(e);
+    alert("Invalid URL or config");
+  }
+};
+
+
+
+
+
 
 /* ---------- Kick off ---------- */
 if (isLive) bootLive();
