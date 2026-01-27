@@ -426,7 +426,7 @@ function applyCfgToDOM(cfg, payload) {
   alertText.style.color = cfg.color || "#FFFFFF";
 
   // Token color
-  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#00FFCC");
+  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#81A4CD");
   // Apply via inline style tagless: set CSS variable or just set style on spans after render.
   alertText.innerHTML = renderTextWithTokens(cfg.text, payload, cfg);
   const userSpans = alertText.querySelectorAll(".token.user");
@@ -628,7 +628,7 @@ function bootEditor() {
       font: els.font.value,
       fontSize: Number(els.fontSize.value || 56),
       color: els.color.value.trim() || "#FFFFFF",
-      tokenColors: { user: (els.userColor.value.trim() || "#00FFCC") },
+      tokenColors: { user: (els.userColor.value.trim() || "#81A4CD") },
       inFx: els.inFx.value,
       outFx: els.outFx.value,
       textFx: els.textFx.value,
