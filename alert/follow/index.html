@@ -125,6 +125,7 @@
       grid-template-columns: 1.1fr 0.9fr;
       gap: 14px;
       align-items: start;
+	  margin-top: 10px;
     }
     .card {
       background: rgba(255,255,255,0.04);
@@ -283,6 +284,7 @@
             <button id="copyUrl">Copy LIVE URL</button>
             <button class="secondary" id="openLive">Open LIVE preview</button>
           </div>
+		  
 		  <div class="row">
 			  <input
 				id="loadUrl"
@@ -331,7 +333,7 @@ const editor = document.getElementById("editor");
 const hud = document.getElementById("hud");
 
 function showHUD(msg) {
-  if (!isDebug) return;
+  return;
   hud.style.display = "block";
   hud.textContent = msg;
 }
