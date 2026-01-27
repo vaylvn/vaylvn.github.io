@@ -91,25 +91,26 @@
 	.anim-out-slideLeft  { animation: outSlideLeft var(--out-ms,320ms) ease-in both; }
 	.anim-out-slideRight { animation: outSlideRight var(--out-ms,320ms) ease-in both; }
 
-	@keyframes outSlideUp {
-	  from { opacity: 1; transform: translateY(0); }
-	  to   { opacity: 1; transform: translateY(-40px); }
-	}
-
-	@keyframes outSlideDown {
-	  from { opacity: 1; transform: translateY(0); }
-	  to   { opacity: 1; transform: translateY(40px); }
-	}
-
 	@keyframes outSlideLeft {
 	  from { opacity: 1; transform: translateX(0); }
-	  to   { opacity: 1; transform: translateX(-40px); }
+	  to   { opacity: 0; transform: translateX(100%); }
 	}
 
 	@keyframes outSlideRight {
 	  from { opacity: 1; transform: translateX(0); }
-	  to   { opacity: 1; transform: translateX(40px); }
+	  to   { opacity: 0; transform: translateX(-100%); }
 	}
+
+	@keyframes outSlideUp {
+	  from { opacity: 1; transform: translateY(0); }
+	  to   { opacity: 0; transform: translateY(100%); }
+	}
+
+	@keyframes outSlideDown {
+	  from { opacity: 1; transform: translateY(0); }
+	  to   { opacity: 0; transform: translateY(-100%); }
+	}
+
 
 	/* TRANSFORM OUT */
 	.anim-out-spin {
@@ -174,25 +175,26 @@
 	.anim-in-slideLeft  { animation: inSlideLeft var(--in-ms,420ms) ease-out both; }
 	.anim-in-slideRight { animation: inSlideRight var(--in-ms,420ms) ease-out both; }
 
-	@keyframes inSlideUp {
-	  from { opacity: 1; transform: translateY(100px); }
-	  to   { opacity: 1; transform: translateY(0); }
-	}
-
-	@keyframes inSlideDown {
-	  from { opacity: 1; transform: translateY(-100px); }
-	  to   { opacity: 1; transform: translateY(0); }
-	}
-
 	@keyframes inSlideLeft {
-	  from { opacity: 1; transform: translateX(100px); }
+	  from { opacity: 0; transform: translateX(100%); }
 	  to   { opacity: 1; transform: translateX(0); }
 	}
 
 	@keyframes inSlideRight {
-	  from { opacity: 1; transform: translateX(-100px); }
+	  from { opacity: 0; transform: translateX(-100%); }
 	  to   { opacity: 1; transform: translateX(0); }
 	}
+
+	@keyframes inSlideUp {
+	  from { opacity: 0; transform: translateY(100%); }
+	  to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes inSlideDown {
+	  from { opacity: 0; transform: translateY(-100%); }
+	  to   { opacity: 1; transform: translateY(0); }
+	}
+
 
 	/* TRANSFORM IN */
 	.anim-in-pop {
