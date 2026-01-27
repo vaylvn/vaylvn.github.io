@@ -104,6 +104,15 @@
 	  0%,100% { transform: translateY(0); }
 	  50% { transform: translateY(-6px); }
 	}
+	.fx-jitter {
+	  animation: jitter 300ms steps(2,end) infinite;
+	}
+	@keyframes jitter {
+	  0% { transform: translate(0,0); }
+	  25% { transform: translate(-1px,1px); }
+	  50% { transform: translate(1px,-1px); }
+	  75% { transform: translate(-1px,-1px); }
+	}
 
 
 
@@ -276,6 +285,7 @@
                 <option value="bounce">bounce</option>
 				<option value="pulse">pulse</option>
 				<option value="float">float</option>
+				<option value="jitter">jitter</option>
               </select>
             </div>
           </div>
@@ -460,7 +470,7 @@ function applyCfgToDOM(cfg, payload) {
   userSpans.forEach(sp => sp.style.color = userColor);
 
   // Text FX class
-  alertText.classList.remove("fx-none", "fx-wiggle", "fx-bounce", "fx-pulse", "fx-float");
+  alertText.classList.remove("fx-none", "fx-wiggle", "fx-bounce", "fx-pulse", "fx-float", "fx-jitter");
   alertText.classList.add("fx-" + (cfg.textFx || "none"));
 
   // Clear any existing anim classes on stage
