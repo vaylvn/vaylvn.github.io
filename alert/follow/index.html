@@ -521,7 +521,7 @@ async function fetchJson(url, opts) {
 }
 
 async function pollLoop(cfg) {
-  const base = (cfg.vaylBase || "http://127.0.0.1:8123").replace(/\/+$/,"");
+  const base = (cfg.vaylBase || "http://127.0.0.1:5000").replace(/\/+$/,"");
   const type = cfg.type || "follow";
   const source = cfg.source || "followWidget";
 
