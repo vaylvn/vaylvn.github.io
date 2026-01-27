@@ -309,7 +309,6 @@
           <input id="vaylBase" value="http://127.0.0.1:5000" />
 
           <div class="btnRow">
-            <button class="secondary" id="saveBase">Save base</button>
             <button class="secondary" id="testAnim">Test animation</button>
           </div>
         </div>
@@ -618,7 +617,6 @@ function bootEditor() {
     outMs: document.getElementById("outMs"),
     sound: document.getElementById("sound"),
     vaylBase: document.getElementById("vaylBase"),
-    saveBase: document.getElementById("saveBase"),
     copyUrl: document.getElementById("copyUrl"),
     openLive: document.getElementById("openLive"),
     previewFrame: document.getElementById("previewFrame"),
@@ -727,10 +725,6 @@ function bootEditor() {
     els.inFx, els.outFx, els.textFx, els.dur, els.inMs, els.outMs, els.sound
   ].forEach(el => el.addEventListener("input", refreshPreview));
 
-  els.saveBase.addEventListener("click", () => {
-    localStorage.setItem("vayl.alert.vaylBase", els.vaylBase.value.trim());
-    refreshPreview();
-  });
 
   els.copyUrl.addEventListener("click", async () => {
     const cfg = buildCfg();
