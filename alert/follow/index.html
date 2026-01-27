@@ -342,24 +342,21 @@
           <div class="grid3">
             <div>
               <label>In effect</label>
-              <select id="inFx">
-				  <optgroup label="Fade">
-					<option value="fadeUp">Fade Up</option>
-				  </optgroup>
+              <div>
+				  <label>In effect</label>
 
-				  <optgroup label="Transform">
-					<option value="pop">Pop</option>
-					<option value="spin">Spin</option>
-				  </optgroup>
+				  <select id="inFxCategory">
+					<option value="fade">Fade</option>
+					<option value="transform">Transform</option>
+					<option value="slide">Slide</option>
+					<option value="blur">Blur</option>
+				  </select>
 
-				  <optgroup label="Slide">
-					<option value="slideLeft">Slide Left</option>
-				  </optgroup>
+				  <select id="inFx">
+					<!-- populated dynamically -->
+				  </select>
+				</div>
 
-				  <optgroup label="Blur">
-					<option value="zoomBlur">Zoom Blur</option>
-				  </optgroup>
-				</select>
 
             </div>
             <div>
@@ -441,6 +438,60 @@
    - Editor mode: no ?data=...
    - Live mode:   ?data=<base64url(JSON)>
    ============================== */
+
+const IN_EFFECTS = {
+  fade: [
+    { value: "fadeUp", label: "Fade Up" },
+    { value: "fadeDown", label: "Fade Down" }
+  ],
+  transform: [
+    { value: "pop", label: "Pop" },
+    { value: "spin", label: "Spin" }
+  ],
+  slide: [
+    { value: "slideLeft", label: "Slide Left" },
+    { value: "slideRight", label: "Slide Right" }
+  ],
+  blur: [
+    { value: "zoomBlur", label: "Zoom Blur" }
+  ]
+};
+
+
+const catSel = document.getElementById("inFxCategory");
+const fxSel  = document.getElementById("inFx");
+
+function populateInFx(category, preserveValue = true) {
+  const prev = fxSel.value;
+  fxSel.innerHTML = "";
+
+  for (const fx of IN_EFFECTS[category] || []) {
+    const opt = document.createElement("option");
+    opt.value = fx.value;
+    opt.textContent = fx.label;
+    fxSel.appendChild(opt);
+  }
+
+  if (preserveValue && [...fxSel.options].some(o => o.value === prev)) {
+    fxSel.value = prev;
+  }
+}
+
+catSel.addEventListener("change", () => {
+  populateInFx(catSel.value, false);
+});
+
+function setInFxFromConfig(value) {
+  for (const [cat, list] of Object.entries(IN_EFFECTS)) {
+    if (list.some(fx => fx.value === value)) {
+      catSel.value = cat;
+      populateInFx(cat, false);
+      fxSel.value = value;
+      return;
+    }
+  }
+}
+
 
 
 const VAYL_BASE = "http://127.0.0.1:5000";
@@ -728,6 +779,9 @@ async function pollLoop(cfg) {
 function bootEditor() {
   editor.style.display = "block";
 
+  populateInFx(catSel.value, false);
+
+
   const els = {
     tpl: document.getElementById("tpl"),
     bgUrl: document.getElementById("bgUrl"),
@@ -777,7 +831,8 @@ function bootEditor() {
 		if (cfg.fontSize) els.fontSize.value = cfg.fontSize;
 		if (cfg.color) els.color.value = cfg.color;
 		if (cfg.tokenColors?.user) els.userColor.value = cfg.tokenColors.user;
-		if (cfg.inFx) els.inFx.value = cfg.inFx;
+		if (cfg.inFx) setInFxFromConfig(cfg.inFx);
+
 		if (cfg.outFx) els.outFx.value = cfg.outFx;
 		if (cfg.textFx) els.textFx.value = cfg.textFx;
 		if (cfg.durationMs) els.dur.value = cfg.durationMs;
