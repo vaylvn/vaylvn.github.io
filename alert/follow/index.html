@@ -54,40 +54,21 @@
     .token.user { font-weight: 900; }
 
     /* ===== Animations ===== */
-    .anim-in-fadeUp { animation: inFadeUp var(--in-ms, 450ms) ease-out both; }
     .anim-out-fadeDown { animation: outFadeDown var(--out-ms, 450ms) ease-in both; }
-    .anim-in-pop { animation: inPop var(--in-ms, 360ms) cubic-bezier(.2,1.5,.2,1) both; }
     .anim-out-fade { animation: outFade var(--out-ms, 320ms) ease-in both; }
-	.anim-in-spin { animation: inSpin var(--in-ms, 420ms) ease-out both; }
 
-    @keyframes inFadeUp {
-      from { opacity: 0; transform: translateY(20px) scale(0.98); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
+
     @keyframes outFadeDown {
       from { opacity: 1; transform: translateY(0) scale(1); }
       to   { opacity: 0; transform: translateY(18px) scale(0.985); }
     }
-    @keyframes inPop {
-      0%   { opacity: 0; transform: scale(0.86); }
-      70%  { opacity: 1; transform: scale(1.04); }
-      100% { opacity: 1; transform: scale(1); }
-    }
+
     @keyframes outFade {
       from { opacity: 1; }
       to   { opacity: 0; }
     }
 	
-	@keyframes inSpin {
-	  from {
-		opacity: 0;
-		transform: rotate(-6deg) scale(0.95);
-	  }
-	  to {
-		opacity: 1;
-		transform: rotate(0deg) scale(1);
-	  }
-	}
+
 
 	.anim-out-spin {
 	  animation: outSpin var(--out-ms, 320ms) ease-in both;
@@ -103,13 +84,7 @@
 	  }
 	}
 
-	.anim-in-slideLeft {
-	  animation: inSlideLeft var(--in-ms, 420ms) ease-out both;
-	}
-	@keyframes inSlideLeft {
-	  from { opacity: 0; transform: translateX(-40px); }
-	  to   { opacity: 1; transform: translateX(0); }
-	}
+
 
 	.anim-out-slideRight {
 	  animation: outSlideRight var(--out-ms, 320ms) ease-in both;
@@ -120,21 +95,7 @@
 	}
 
 
-	.anim-in-zoomBlur {
-	  animation: inZoomBlur var(--in-ms, 420ms) ease-out both;
-	}
-	@keyframes inZoomBlur {
-	  from {
-		opacity: 0;
-		transform: scale(1.12);
-		filter: blur(8px);
-	  }
-	  to {
-		opacity: 1;
-		transform: scale(1);
-		filter: blur(0);
-	  }
-	}
+
 
 	.anim-out-zoomBlur {
 	  animation: outZoomBlur var(--out-ms, 320ms) ease-in both;
@@ -151,6 +112,99 @@
 		filter: blur(6px);
 	  }
 	}
+	
+	
+	
+	/* FADE IN */
+	.anim-in-fadeUp    { animation: inFadeUp var(--in-ms,450ms) ease-out both; }
+	.anim-in-fadeDown  { animation: inFadeDown var(--in-ms,450ms) ease-out both; }
+	.anim-in-fadeLeft  { animation: inFadeLeft var(--in-ms,450ms) ease-out both; }
+	.anim-in-fadeRight { animation: inFadeRight var(--in-ms,450ms) ease-out both; }
+
+	@keyframes inFadeUp {
+	  from { opacity: 0; transform: translateY(20px); }
+	  to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes inFadeDown {
+	  from { opacity: 0; transform: translateY(-20px); }
+	  to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes inFadeLeft {
+	  from { opacity: 0; transform: translateX(20px); }
+	  to   { opacity: 1; transform: translateX(0); }
+	}
+
+	@keyframes inFadeRight {
+	  from { opacity: 0; transform: translateX(-20px); }
+	  to   { opacity: 1; transform: translateX(0); }
+	}
+
+	/* SLIDE IN */
+	.anim-in-slideUp    { animation: inSlideUp var(--in-ms,420ms) ease-out both; }
+	.anim-in-slideDown  { animation: inSlideDown var(--in-ms,420ms) ease-out both; }
+	.anim-in-slideLeft  { animation: inSlideLeft var(--in-ms,420ms) ease-out both; }
+	.anim-in-slideRight { animation: inSlideRight var(--in-ms,420ms) ease-out both; }
+
+	@keyframes inSlideUp {
+	  from { opacity: 0; transform: translateY(40px); }
+	  to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes inSlideDown {
+	  from { opacity: 0; transform: translateY(-40px); }
+	  to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes inSlideLeft {
+	  from { opacity: 0; transform: translateX(40px); }
+	  to   { opacity: 1; transform: translateX(0); }
+	}
+
+	@keyframes inSlideRight {
+	  from { opacity: 0; transform: translateX(-40px); }
+	  to   { opacity: 1; transform: translateX(0); }
+	}
+
+	/* TRANSFORM IN */
+	.anim-in-pop {
+	  animation: inPop var(--in-ms,360ms) cubic-bezier(.2,1.5,.2,1) both;
+	}
+
+	@keyframes inPop {
+	  0%   { opacity: 0; transform: scale(0.86); }
+	  70%  { opacity: 1; transform: scale(1.04); }
+	  100% { opacity: 1; transform: scale(1); }
+	}
+
+	.anim-in-spin {
+	  animation: inSpin var(--in-ms,420ms) ease-out both;
+	}
+
+	@keyframes inSpin {
+	  from { opacity: 0; transform: rotate(-6deg) scale(0.95); }
+	  to   { opacity: 1; transform: rotate(0deg) scale(1); }
+	}
+
+	/* BLUR IN */
+	.anim-in-zoomBlur {
+	  animation: inZoomBlur var(--in-ms,420ms) ease-out both;
+	}
+
+	@keyframes inZoomBlur {
+	  from {
+		opacity: 0;
+		transform: scale(1.12);
+		filter: blur(8px);
+	  }
+	  to {
+		opacity: 1;
+		transform: scale(1);
+		filter: blur(0);
+	  }
+	}
+
 
 
 
@@ -441,20 +495,28 @@
 const IN_EFFECTS = {
   fade: [
     { value: "fadeUp", label: "Fade Up" },
-    { value: "fadeDown", label: "Fade Down" }
+    { value: "fadeDown", label: "Fade Down" },
+    { value: "fadeLeft", label: "Fade Left" },
+    { value: "fadeRight", label: "Fade Right" }
   ],
+
+  slide: [
+    { value: "slideUp", label: "Slide Up" },
+    { value: "slideDown", label: "Slide Down" },
+    { value: "slideLeft", label: "Slide Left" },
+    { value: "slideRight", label: "Slide Right" }
+  ],
+
   transform: [
     { value: "pop", label: "Pop" },
     { value: "spin", label: "Spin" }
   ],
-  slide: [
-    { value: "slideLeft", label: "Slide Left" },
-    { value: "slideRight", label: "Slide Right" }
-  ],
+
   blur: [
     { value: "zoomBlur", label: "Zoom Blur" }
   ]
 };
+
 
 
 const catSel = document.getElementById("inFxCategory");
