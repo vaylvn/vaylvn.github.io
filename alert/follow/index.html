@@ -30,7 +30,7 @@
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-radius: 5px;
+      border-radius: 18px;
       opacity: 1;
     }
     #textWrap {
@@ -129,7 +129,7 @@
     .card {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 5px;
+      border-radius: 16px;
       padding: 14px;
     }
     h1 { margin: 6px 0 10px; font-size: 16px; font-weight: 800; opacity: 0.95; }
@@ -138,7 +138,7 @@
     input, select, textarea, button {
       width: 100%;
       box-sizing: border-box;
-      border-radius: 5px;
+      border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.12);
       background: rgba(255,255,255,0.05);
       color: #fff;
@@ -160,7 +160,7 @@
     #previewBox {
       margin-top: 10px;
       height: 240px;
-      border-radius: 5px;
+      border-radius: 16px;
       border: 1px solid rgba(255,255,255,0.1);
       background: #000;
       position: relative;
@@ -229,7 +229,7 @@
             </div>
             <div>
               <label>{user} color</label>
-              <input id="userColor" type="text" value="#81A4CD" />
+              <input id="userColor" type="text" value="#00FFCC" />
             </div>
           </div>
 
@@ -280,13 +280,7 @@
             <button id="copyUrl">Copy LIVE URL</button>
             <button class="secondary" id="openLive">Open LIVE preview</button>
           </div>
-		  
-		  <div class="row">
-			  <label>Load config from URL</label>
-			  <input id="loadUrl" placeholder="Paste LIVE alert URL here" />
-			  <button id="loadBtn">Load</button>
-			</div>
-  
+       
         </div>
 
         <div class="card">
@@ -424,7 +418,7 @@ function applyCfgToDOM(cfg, payload) {
   alertText.style.color = cfg.color || "#FFFFFF";
 
   // Token color
-  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#81A4CD");
+  const userColor = (cfg.tokenColors && cfg.tokenColors.user) ? cfg.tokenColors.user : (cfg.userColor || "#00FFCC");
   // Apply via inline style tagless: set CSS variable or just set style on spans after render.
   alertText.innerHTML = renderTextWithTokens(cfg.text, payload, cfg);
   const userSpans = alertText.querySelectorAll(".token.user");
@@ -605,6 +599,7 @@ function bootEditor() {
     outMs: document.getElementById("outMs"),
     sound: document.getElementById("sound"),
     vaylBase: document.getElementById("vaylBase"),
+    saveBase: document.getElementById("saveBase"),
     copyUrl: document.getElementById("copyUrl"),
     openLive: document.getElementById("openLive"),
     previewFrame: document.getElementById("previewFrame"),
@@ -663,7 +658,10 @@ function bootEditor() {
     els.inFx, els.outFx, els.textFx, els.dur, els.inMs, els.outMs, els.sound
   ].forEach(el => el.addEventListener("input", refreshPreview));
 
-
+  els.saveBase.addEventListener("click", () => {
+    localStorage.setItem("vayl.alert.vaylBase", els.vaylBase.value.trim());
+    refreshPreview();
+  });
 
   els.copyUrl.addEventListener("click", async () => {
     const cfg = buildCfg();
@@ -715,54 +713,6 @@ async function bootLive() {
   showHUD(`mode=LIVE debug=${isDebug ? 1 : 0}\nwaiting...`);
   pollLoop(cfg);
 }
-
-
-
-
-els.loadUrl = document.getElementById("loadUrl");
-els.loadBtn = document.getElementById("loadBtn");
-
-els.loadBtn.onclick = () => {
-  try {
-    const url = new URL(els.loadUrl.value.trim());
-    const data = url.searchParams.get("data");
-
-    if (!data) {
-      alert("No ?data= found in URL");
-      return;
-    }
-
-    const cfg = decodeConfig(data);
-
-    // Hydrate editor inputs (best-effort)
-    if (cfg.template) els.tpl.value = cfg.template;
-    if (cfg.bgUrl) els.bgUrl.value = cfg.bgUrl;
-    if (cfg.text) els.txt.value = cfg.text;
-    if (cfg.font) els.font.value = cfg.font;
-    if (cfg.fontSize) els.fontSize.value = cfg.fontSize;
-    if (cfg.color) els.color.value = cfg.color;
-    if (cfg.tokenColors?.user) els.userColor.value = cfg.tokenColors.user;
-    if (cfg.inFx) els.inFx.value = cfg.inFx;
-    if (cfg.outFx) els.outFx.value = cfg.outFx;
-    if (cfg.textFx) els.textFx.value = cfg.textFx;
-    if (cfg.durationMs) els.dur.value = cfg.durationMs;
-    if (cfg.inMs) els.inMs.value = cfg.inMs;
-    if (cfg.outMs) els.outMs.value = cfg.outMs;
-    if (cfg.sound) els.sound.value = cfg.sound;
-    if (cfg.vaylBase) els.vaylBase.value = cfg.vaylBase;
-
-    refreshPreview();
-
-  } catch (e) {
-    console.error(e);
-    alert("Invalid URL or config");
-  }
-};
-
-
-
-
-
 
 /* ---------- Kick off ---------- */
 if (isLive) bootLive();
