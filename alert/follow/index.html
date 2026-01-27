@@ -332,7 +332,7 @@ const editor = document.getElementById("editor");
 const hud = document.getElementById("hud");
 
 function showHUD(msg) {
-  if (!isDebug) return;
+  return;
   hud.style.display = "block";
   hud.textContent = msg;
 }
