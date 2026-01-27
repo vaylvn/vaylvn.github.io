@@ -90,6 +90,22 @@
       0%,100% { transform: translateY(0) }
       50% { transform: translateY(-4px) }
     }
+	.fx-pulse {
+	  animation: pulse 900ms ease-in-out infinite;
+	}
+	@keyframes pulse {
+	  0%,100% { transform: scale(1); }
+	  50% { transform: scale(1.05); }
+	}
+	.fx-float {
+	  animation: float 2.2s ease-in-out infinite;
+	}
+	@keyframes float {
+	  0%,100% { transform: translateY(0); }
+	  50% { transform: translateY(-6px); }
+	}
+
+
 
     /* ===== Debug HUD ===== */
     #hud {
@@ -205,7 +221,7 @@
           <label>Background image URL (optional)</label>
           <input id="bgUrl" placeholder="https://.../bg.png" />
 
-          <label>Text template (use {user})</label>
+          <label>Text template</label>
           <textarea id="txt">NEW FOLLOWER
 {user}</textarea>
 
@@ -232,7 +248,7 @@
               <input id="color" type="text" value="#FFFFFF" />
             </div>
             <div>
-              <label>{user} color</label>
+              <label>{tag} color</label>
               <input id="userColor" type="text" value="#00FFCC" />
             </div>
           </div>
@@ -258,6 +274,8 @@
                 <option value="none">none</option>
                 <option value="wiggle">wiggle</option>
                 <option value="bounce">bounce</option>
+				<option value="pulse">pulse</option>
+				<option value="float">float</option>
               </select>
             </div>
           </div>
@@ -442,7 +460,7 @@ function applyCfgToDOM(cfg, payload) {
   userSpans.forEach(sp => sp.style.color = userColor);
 
   // Text FX class
-  alertText.classList.remove("fx-none", "fx-wiggle", "fx-bounce");
+  alertText.classList.remove("fx-none", "fx-wiggle", "fx-bounce", "fx-pulse", "fx-float");
   alertText.classList.add("fx-" + (cfg.textFx || "none"));
 
   // Clear any existing anim classes on stage
