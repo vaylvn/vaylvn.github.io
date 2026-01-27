@@ -205,7 +205,8 @@
           <input id="bgUrl" placeholder="https://.../bg.png" />
 
           <label>Text template (use {user})</label>
-          <textarea id="txt">{user} — NEW FOLLOWER</textarea>
+          <textarea id="txt">NEW FOLLOWER
+		  {user}</textarea>
 
           <div class="grid2">
             <div>
@@ -219,7 +220,7 @@
             </div>
             <div>
               <label>Font size</label>
-              <input id="fontSize" type="number" min="10" max="140" value="56" />
+              <input id="fontSize" type="number" min="10" max="140" value="30" />
             </div>
           </div>
 
@@ -403,7 +404,7 @@ function renderTextWithTokens(template, payload, cfg) {
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
 
-  const safeTemplate = escapeHtml(String(template ?? "{user} — NEW FOLLOWER"));
+  const safeTemplate = escapeHtml(String(template ?? "NEW FOLLOWER\n{user}"));
   const safeUser = escapeHtml(user);
 
   // Replace {user} occurrences with span
@@ -419,7 +420,7 @@ function applyCfgToDOM(cfg, payload) {
   stage.style.transform = `scale(${tpl.stageScale || 1})`;
 
   alertText.style.fontFamily = cssFontFamily(cfg.font);
-  alertText.style.fontSize = `${Number(cfg.fontSize || 56)}px`;
+  alertText.style.fontSize = `${Number(cfg.fontSize || 30)}px`;
   alertText.style.color = cfg.color || "#FFFFFF";
 
   // Token color
@@ -623,7 +624,7 @@ function bootEditor() {
       bgUrl: els.bgUrl.value.trim(),
       text: els.txt.value,
       font: els.font.value,
-      fontSize: Number(els.fontSize.value || 56),
+      fontSize: Number(els.fontSize.value || 30),
       color: els.color.value.trim() || "#FFFFFF",
       tokenColors: { user: (els.userColor.value.trim() || "#81A4CD") },
       inFx: els.inFx.value,
