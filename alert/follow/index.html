@@ -58,6 +58,7 @@
     .anim-out-fadeDown { animation: outFadeDown var(--out-ms, 450ms) ease-in both; }
     .anim-in-pop { animation: inPop var(--in-ms, 360ms) cubic-bezier(.2,1.5,.2,1) both; }
     .anim-out-fade { animation: outFade var(--out-ms, 320ms) ease-in both; }
+	.anim-in-spin { animation: inSpin var(--in-ms, 420ms) ease-out both; }
 
     @keyframes inFadeUp {
       from { opacity: 0; transform: translateY(20px) scale(0.98); }
@@ -76,6 +77,82 @@
       from { opacity: 1; }
       to   { opacity: 0; }
     }
+	
+	@keyframes inSpin {
+	  from {
+		opacity: 0;
+		transform: rotate(-6deg) scale(0.95);
+	  }
+	  to {
+		opacity: 1;
+		transform: rotate(0deg) scale(1);
+	  }
+	}
+
+	.anim-out-spin {
+	  animation: outSpin var(--out-ms, 320ms) ease-in both;
+	}
+	@keyframes outSpin {
+	  from {
+		opacity: 1;
+		transform: rotate(0deg) scale(1);
+	  }
+	  to {
+		opacity: 0;
+		transform: rotate(6deg) scale(0.96);
+	  }
+	}
+
+	.anim-in-slideLeft {
+	  animation: inSlideLeft var(--in-ms, 420ms) ease-out both;
+	}
+	@keyframes inSlideLeft {
+	  from { opacity: 0; transform: translateX(-40px); }
+	  to   { opacity: 1; transform: translateX(0); }
+	}
+
+	.anim-out-slideRight {
+	  animation: outSlideRight var(--out-ms, 320ms) ease-in both;
+	}
+	@keyframes outSlideRight {
+	  from { opacity: 1; transform: translateX(0); }
+	  to   { opacity: 0; transform: translateX(40px); }
+	}
+
+
+	.anim-in-zoomBlur {
+	  animation: inZoomBlur var(--in-ms, 420ms) ease-out both;
+	}
+	@keyframes inZoomBlur {
+	  from {
+		opacity: 0;
+		transform: scale(1.12);
+		filter: blur(8px);
+	  }
+	  to {
+		opacity: 1;
+		transform: scale(1);
+		filter: blur(0);
+	  }
+	}
+
+	.anim-out-zoomBlur {
+	  animation: outZoomBlur var(--out-ms, 320ms) ease-in both;
+	}
+	@keyframes outZoomBlur {
+	  from {
+		opacity: 1;
+		transform: scale(1);
+		filter: blur(0);
+	  }
+	  to {
+		opacity: 0;
+		transform: scale(0.92);
+		filter: blur(6px);
+	  }
+	}
+
+
 
     /* Text FX */
     .fx-none {}
@@ -266,15 +343,21 @@
             <div>
               <label>In effect</label>
               <select id="inFx">
-                <option value="fadeUp">fadeUp</option>
-                <option value="pop">pop</option>
+                <option value="fadeUp">Fade Up</option>
+				<option value="spin">Spin</option>
+                <option value="pop">Pop</option>
+				<option value="slideLeft">Slide Left</option>
+				<option value="zoomBlur">Zoom Blur</option>
               </select>
             </div>
             <div>
               <label>Out effect</label>
               <select id="outFx">
-                <option value="fadeDown">fadeDown</option>
-                <option value="fade">fade</option>
+                <option value="fadeDown">Fade Down</option>
+				<option value="spin">Spin</option>
+                <option value="fade">Fade</option>
+				<option value="slideRight">Slide Right</option>
+				<option value="zoomBlur">Zoom Blur</option>
               </select>
             </div>
             <div>
