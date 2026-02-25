@@ -166,7 +166,7 @@ body {
 
 #single-message {
   position: fixed;
-  bottom: 40px;
+  top: 40px;
   left: 40px;
   pointer-events: none;
   z-index: 9999;
@@ -225,7 +225,6 @@ body {
 
 @keyframes vaylFadeUp {
   to {
-    transform: translateY(-50px);
     opacity: 0;
   }
 }

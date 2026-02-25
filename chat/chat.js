@@ -2,7 +2,7 @@
 const params = new URLSearchParams(window.location.search);
 
 const CHANNEL = params.get("channel") || "default_channel";
-const DURATION = parseInt(params.get("duration")) || 4000; // ms message stays
+const DURATION = parseInt(params.get("duration")) || 300; // ms message stays
 const EXIT_SPEED = 300; // faster exit when interrupted
 
 // ===== DOM =====
