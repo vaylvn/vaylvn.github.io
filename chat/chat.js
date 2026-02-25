@@ -1,10 +1,10 @@
 // ===== URL CONFIG =====
 const params = new URLSearchParams(window.location.search);
+const POSITION = (params.get("position") || "top-left").toLowerCase();
 
 const CHANNEL = params.get("channel") || "default_channel";
 const DURATION = parseInt(params.get("duration")) || 300; // ms message stays
 const EXIT_SPEED = 2000; // faster exit when interrupted
-const POSITION = (params.get("position") || "top-left").toLowerCase();
 
 // ===== DOM =====
 let container = document.getElementById("single-message");
@@ -15,6 +15,7 @@ if (!container) {
   document.body.appendChild(container);
 }
 
+// ✅ MUST be here
 applyPosition(container, POSITION);
 container.dataset.position = POSITION;
 
@@ -53,26 +54,30 @@ function showMessage(username, message) {
 }
 
 function applyPosition(el, position) {
-  const styles = {
-    "top-left":    { top: "40px", left: "40px" },
-    "top-center":  { top: "40px", left: "50%", transform: "translateX(-50%)" },
-    "top-right":   { top: "40px", right: "40px" },
+  // Reset everything first (critical fix)
+  Object.assign(el.style, {
+    top: "",
+    bottom: "",
+    left: "",
+    right: "",
+    transform: ""
+  });
 
-    "middle-left":   { top: "50%", left: "40px", transform: "translateY(-50%)" },
-    "center":        { top: "50%", left: "50%", transform: "translate(-50%, -50%)" },
-    "middle-right":  { top: "50%", right: "40px", transform: "translateY(-50%)" },
+  const map = {
+    "top-left":    () => { el.style.top = "40px"; el.style.left = "40px"; },
+    "top-center":  () => { el.style.top = "40px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
+    "top-right":   () => { el.style.top = "40px"; el.style.right = "40px"; },
 
-    "bottom-left":   { bottom: "40px", left: "40px" },
-    "bottom-center": { bottom: "40px", left: "50%", transform: "translateX(-50%)" },
-    "bottom-right":  { bottom: "40px", right: "40px" }
+    "middle-left":   () => { el.style.top = "50%"; el.style.left = "40px"; el.style.transform = "translateY(-50%)"; },
+    "center":        () => { el.style.top = "50%"; el.style.left = "50%"; el.style.transform = "translate(-50%, -50%)"; },
+    "middle-right":  () => { el.style.top = "50%"; el.style.right = "40px"; el.style.transform = "translateY(-50%)"; },
+
+    "bottom-left":   () => { el.style.bottom = "40px"; el.style.left = "40px"; },
+    "bottom-center": () => { el.style.bottom = "40px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
+    "bottom-right":  () => { el.style.bottom = "40px"; el.style.right = "40px"; }
   };
 
-  const config = styles[position] || styles["top-left"];
-
-  Object.assign(el.style, {
-    position: "fixed",
-    ...config
-  });
+  (map[position] || map["top-left"])();
 }
 
 
