@@ -3,7 +3,7 @@ const params = new URLSearchParams(window.location.search);
 const POSITION = (params.get("position") || "top-left").toLowerCase();
 
 const CHANNEL = params.get("channel") || "default_channel";
-const DURATION = parseInt(params.get("duration")) || 300; // ms message stays
+const DURATION = parseInt(params.get("duration")) || 4000; // ms message stays
 const EXIT_SPEED = 2000; // faster exit when interrupted
 
 // ===== DOM =====
@@ -25,11 +25,11 @@ let hideTimeout = null;
 
 // ===== MESSAGE SYSTEM =====
 function showMessage(username, message) {
-  // Force existing message out immediately
   if (currentMessageEl) {
-    currentMessageEl.remove();
-    currentMessageEl = null;
+    forceRemoveCurrent();
   }
+
+  clearTimeout(hideTimeout);
 
   const el = document.createElement("div");
   el.className = "single-message";
@@ -39,17 +39,14 @@ function showMessage(username, message) {
     <span class="message">${escapeHtml(message)}</span>
   `;
 
-  container.innerHTML = "";
   container.appendChild(el);
 
-  // Trigger animation
   requestAnimationFrame(() => {
     el.classList.add("show");
   });
 
   currentMessageEl = el;
 
-  // Schedule removal
   hideTimeout = setTimeout(() => {
     removeMessage(el);
   }, DURATION);
