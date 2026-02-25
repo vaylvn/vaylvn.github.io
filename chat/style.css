@@ -164,17 +164,17 @@ body {
    SINGLE MESSAGE MODE
    ========================= */
 
+
+
 #single-message {
   position: fixed;
-  top: 40px;
-  left: 40px;
   pointer-events: none;
   z-index: 9999;
 }
 
 /* Message box */
 .single-message {
-  background: rgba(20, 20, 20, 0.65);
+  background: rgba(20, 20, 20, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 

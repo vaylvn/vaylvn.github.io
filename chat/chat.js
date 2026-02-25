@@ -4,6 +4,7 @@ const params = new URLSearchParams(window.location.search);
 const CHANNEL = params.get("channel") || "default_channel";
 const DURATION = parseInt(params.get("duration")) || 300; // ms message stays
 const EXIT_SPEED = 300; // faster exit when interrupted
+const POSITION = (params.get("position") || "top-left").toLowerCase();
 
 // ===== DOM =====
 let container = document.getElementById("single-message");
@@ -13,6 +14,9 @@ if (!container) {
   container.id = "single-message";
   document.body.appendChild(container);
 }
+
+applyPosition(container, POSITION);
+container.dataset.position = POSITION;
 
 // ===== STATE =====
 let currentMessageEl = null;
@@ -48,6 +52,30 @@ function showMessage(username, message) {
   }, DURATION);
 }
 
+function applyPosition(el, position) {
+  const styles = {
+    "top-left":    { top: "40px", left: "40px" },
+    "top-center":  { top: "40px", left: "50%", transform: "translateX(-50%)" },
+    "top-right":   { top: "40px", right: "40px" },
+
+    "middle-left":   { top: "50%", left: "40px", transform: "translateY(-50%)" },
+    "center":        { top: "50%", left: "50%", transform: "translate(-50%, -50%)" },
+    "middle-right":  { top: "50%", right: "40px", transform: "translateY(-50%)" },
+
+    "bottom-left":   { bottom: "40px", left: "40px" },
+    "bottom-center": { bottom: "40px", left: "50%", transform: "translateX(-50%)" },
+    "bottom-right":  { bottom: "40px", right: "40px" }
+  };
+
+  const config = styles[position] || styles["top-left"];
+
+  Object.assign(el.style, {
+    position: "fixed",
+    ...config
+  });
+}
+
+
 function removeMessage(el) {
   el.classList.remove("show");
   el.classList.add("hide");
@@ -57,7 +85,7 @@ function removeMessage(el) {
       currentMessageEl = null;
     }
     el.remove();
-  }, 400); // match CSS animation
+  }, 2000); // match CSS animation
 }
 
 function forceRemoveCurrent() {
