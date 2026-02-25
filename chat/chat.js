@@ -3,7 +3,7 @@ const params = new URLSearchParams(window.location.search);
 
 const CHANNEL = params.get("channel") || "default_channel";
 const DURATION = parseInt(params.get("duration")) || 300; // ms message stays
-const EXIT_SPEED = 300; // faster exit when interrupted
+const EXIT_SPEED = 2000; // faster exit when interrupted
 
 // ===== DOM =====
 let container = document.getElementById("single-message");
