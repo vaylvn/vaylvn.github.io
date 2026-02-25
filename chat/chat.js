@@ -27,7 +27,8 @@ let hideTimeout = null;
 function showMessage(username, message) {
   // Force existing message out immediately
   if (currentMessageEl) {
-    forceRemoveCurrent();
+    currentMessageEl.remove();
+    currentMessageEl = null;
   }
 
   const el = document.createElement("div");
@@ -38,6 +39,7 @@ function showMessage(username, message) {
     <span class="message">${escapeHtml(message)}</span>
   `;
 
+  container.innerHTML = "";
   container.appendChild(el);
 
   // Trigger animation
