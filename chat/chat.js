@@ -85,12 +85,13 @@ function removeMessage(el) {
   el.classList.remove("show");
   el.classList.add("hide");
 
-  setTimeout(() => {
+  // Wait for CSS animation to finish
+  el.addEventListener("animationend", () => {
     if (el === currentMessageEl) {
       currentMessageEl = null;
     }
     el.remove();
-  }, 2000); // match CSS animation
+  }, { once: true });
 }
 
 function forceRemoveCurrent() {
@@ -108,7 +109,7 @@ function forceRemoveCurrent() {
       el.remove();
       currentMessageEl = null;
     }
-  }, EXIT_SPEED);
+  }, 200); // fast interrupt
 }
 
 // ===== UTILS =====
