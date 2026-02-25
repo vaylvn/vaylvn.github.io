@@ -212,7 +212,7 @@ body {
 
 /* Exit animation */
 .single-message.hide {
-  animation: vaylFadeUp 400ms ease forwards;
+  animation: vaylFadeUp 2000ms ease forwards;
 }
 
 /* Animations */
