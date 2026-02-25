@@ -34,7 +34,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: #1B1B1B;
 }
 
 /* Single message line */
