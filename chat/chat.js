@@ -1,112 +1,103 @@
-// ===== Basic config =====
-const CHANNEL_NAME = "valonvn"; // hard-coded as requested
+// ===== URL CONFIG =====
+const params = new URLSearchParams(window.location.search);
 
-// DOM references
-const chatContainer = document.getElementById("chat-container");
-const isolateOverlay = document.getElementById("isolate-overlay");
-const isolateContent = document.getElementById("isolate-content");
+const CHANNEL = params.get("channel") || "default_channel";
+const DURATION = parseInt(params.get("duration")) || 4000; // ms message stays
+const EXIT_SPEED = 300; // faster exit when interrupted
 
-// ===== tmi.js client setup (anonymous, read-only) =====
+// ===== DOM =====
+let container = document.getElementById("single-message");
+
+if (!container) {
+  container = document.createElement("div");
+  container.id = "single-message";
+  document.body.appendChild(container);
+}
+
+// ===== STATE =====
+let currentMessageEl = null;
+let hideTimeout = null;
+
+// ===== MESSAGE SYSTEM =====
+function showMessage(username, message) {
+  // Force existing message out immediately
+  if (currentMessageEl) {
+    forceRemoveCurrent();
+  }
+
+  const el = document.createElement("div");
+  el.className = "single-message";
+
+  el.innerHTML = `
+    <span class="username">${escapeHtml(username)}</span>
+    <span class="message">${escapeHtml(message)}</span>
+  `;
+
+  container.appendChild(el);
+
+  // Trigger animation
+  requestAnimationFrame(() => {
+    el.classList.add("show");
+  });
+
+  currentMessageEl = el;
+
+  // Schedule removal
+  hideTimeout = setTimeout(() => {
+    removeMessage(el);
+  }, DURATION);
+}
+
+function removeMessage(el) {
+  el.classList.remove("show");
+  el.classList.add("hide");
+
+  setTimeout(() => {
+    if (el === currentMessageEl) {
+      currentMessageEl = null;
+    }
+    el.remove();
+  }, 400); // match CSS animation
+}
+
+function forceRemoveCurrent() {
+  if (!currentMessageEl) return;
+
+  clearTimeout(hideTimeout);
+
+  const el = currentMessageEl;
+
+  el.classList.remove("show");
+  el.classList.add("hide");
+
+  setTimeout(() => {
+    if (el === currentMessageEl) {
+      el.remove();
+      currentMessageEl = null;
+    }
+  }, EXIT_SPEED);
+}
+
+// ===== UTILS =====
+function escapeHtml(str) {
+  return str
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+// ===== TWITCH CLIENT =====
 const client = new tmi.Client({
-  options: { debug: false },
-  connection: {
-    secure: true,
-    reconnect: true
-  },
-  channels: [CHANNEL_NAME]
+  channels: [CHANNEL]
 });
 
-client.connect().catch(console.error);
+client.connect();
 
-// ===== Message handling =====
+// ===== MESSAGE HOOK =====
 client.on("message", (channel, tags, message, self) => {
   if (self) return;
-  addChatMessage(tags, message);
-});
 
-function addChatMessage(tags, message) {
-  const line = document.createElement("div");
-  line.className = "chat-line";
+  const username = tags["display-name"] || tags.username;
 
-  line.dataset.username = tags["display-name"] || tags.username || "";
-  line.dataset.color = tags.color || "#ffffff";
-  line.dataset.message = message;
-
-  const usernameSpan = document.createElement("span");
-  usernameSpan.className = "chat-username";
-  usernameSpan.textContent = line.dataset.username || tags.username || "unknown";
-  if (tags.color) {
-    usernameSpan.style.color = tags.color;
-  }
-
-  const msgSpan = document.createElement("span");
-  msgSpan.className = "chat-message";
-  msgSpan.textContent = message;
-
-  // ⬇⬇ WRAPPER FOR VERTICAL LAYOUT
-  const inner = document.createElement("div");
-  inner.className = "chat-inner";
-
-  inner.appendChild(usernameSpan);
-  inner.appendChild(msgSpan);
-
-  line.appendChild(inner);
-
-  // Click to isolate
-  line.addEventListener("click", () => showIsolatedMessage(line));
-
-  chatContainer.appendChild(line);
-  autoScroll();
-}
-
-
-
-
-function autoScroll() {
-  const threshold = 80; // px from bottom to still auto-scroll
-  const distanceFromBottom =
-    chatContainer.scrollHeight -
-    chatContainer.scrollTop -
-    chatContainer.clientHeight;
-
-  if (distanceFromBottom < threshold) {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-  }
-}
-
-// ===== Isolation logic =====
-function showIsolatedMessage(line) {
-  // Clear existing content
-  isolateContent.innerHTML = "";
-
-  const user = document.createElement("div");
-  user.className = "chat-username";
-  user.textContent = line.dataset.username || "";
-
-  const msg = document.createElement("div");
-  msg.className = "chat-message";
-  msg.textContent = line.dataset.message || "";
-
-  // Preserve username color if available
-  const color = line.dataset.color;
-  if (color) {
-    user.style.color = color;
-  }
-
-  isolateContent.appendChild(user);
-  isolateContent.appendChild(msg);
-
-  isolateOverlay.classList.remove("hidden");
-}
-
-// Clicking anywhere on overlay closes it
-isolateOverlay.addEventListener("click", () => {
-  isolateOverlay.classList.add("hidden");
-});
-
-// Optional: ESC key to close isolation
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !isolateOverlay.classList.contains("hidden")) {
-    isolateOverlay.classList.add("hidden");
-  }
+  showMessage(username, message);
 });

@@ -157,3 +157,75 @@ body {
   line-height: 1;
   word-break: break-word;
 }
+
+
+
+/* =========================
+   SINGLE MESSAGE MODE
+   ========================= */
+
+#single-message {
+  position: fixed;
+  bottom: 40px;
+  left: 40px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Message box */
+.single-message {
+  background: rgba(20, 20, 20, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  padding: 14px 18px;
+  border-radius: 12px;
+
+  font-size: 24px;
+  line-height: 1.4;
+
+  max-width: 600px;
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+
+  transform: translateX(-60px) translateY(0);
+  opacity: 0;
+}
+
+/* Username */
+.single-message .username {
+  font-weight: 600;
+  margin-right: 8px;
+  opacity: 0.9;
+}
+
+/* Message text */
+.single-message .message {
+  opacity: 0.95;
+  word-break: break-word;
+}
+
+/* Entry animation */
+.single-message.show {
+  animation: vaylSlideIn 280ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Exit animation */
+.single-message.hide {
+  animation: vaylFadeUp 400ms ease forwards;
+}
+
+/* Animations */
+@keyframes vaylSlideIn {
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes vaylFadeUp {
+  to {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+}
