@@ -34,8 +34,10 @@ let hideTimeout = null;
 
 // ===== MESSAGE SYSTEM =====
 function showMessage(username, message) {
+  // Kill existing immediately (prevents stacking)
   if (currentMessageEl) {
-    forceRemoveCurrent();
+    currentMessageEl.remove();
+    currentMessageEl = null;
   }
 
   clearTimeout(hideTimeout);
