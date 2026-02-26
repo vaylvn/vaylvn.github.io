@@ -3,7 +3,7 @@ const params = new URLSearchParams(window.location.search);
 const POSITION = (params.get("position") || "top-left").toLowerCase();
 
 const CHANNEL = params.get("channel") || "default_channel";
-const DURATION = parseInt(params.get("duration")) || 4000; // ms message stays
+const DURATION = parseInt(params.get("duration")) || 1000; // ms message stays
 const EXIT_SPEED = 2000; // faster exit when interrupted
 
 // ===== DOM =====
@@ -82,15 +82,10 @@ function applyPosition(el, position) {
 
 function removeMessage(el) {
   el.classList.remove("show");
-  el.classList.add("hide");
-
-  // Wait for CSS animation to finish
-  el.addEventListener("animationend", () => {
-    if (el === currentMessageEl) {
-      currentMessageEl = null;
-    }
-    el.remove();
-  }, { once: true });
+  
+	requestAnimationFrame(() => {
+		el.classList.add("hide");
+	  });
 }
 
 function forceRemoveCurrent() {
