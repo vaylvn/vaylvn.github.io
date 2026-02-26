@@ -3,8 +3,9 @@ const params = new URLSearchParams(window.location.search);
 const POSITION = (params.get("position") || "top-left").toLowerCase();
 
 const CHANNEL = params.get("channel") || "default_channel";
-const DURATION = parseInt(params.get("duration")) || 1000; // ms message stays
+const DURATION = parseInt(params.get("duration")) || 300; // ms message stays
 const EXIT_SPEED = 2000; // faster exit when interrupted
+const FADE = parseInt(params.get("fade")) || 1000;
 
 // ===== DOM =====
 let container = document.getElementById("single-message");
@@ -14,6 +15,14 @@ if (!container) {
   container.id = "single-message";
   document.body.appendChild(container);
 }
+
+const style = document.createElement("style");
+style.innerHTML = `
+  .single-message.hide {
+    animation: vaylFadeUp ${FADE}ms ease forwards;
+  }
+`;
+document.head.appendChild(style);
 
 // ✅ MUST be here
 applyPosition(container, POSITION);
@@ -81,11 +90,14 @@ function applyPosition(el, position) {
 
 
 function removeMessage(el) {
-  el.classList.remove("show");
-  
-	requestAnimationFrame(() => {
-		el.classList.add("hide");
-	  });
+  el.classList.add("hide");
+
+  setTimeout(() => {
+    if (el === currentMessageEl) {
+      currentMessageEl = null;
+    }
+    el.remove();
+  }, FADE);
 }
 
 function forceRemoveCurrent() {
