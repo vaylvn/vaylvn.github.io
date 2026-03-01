@@ -39,21 +39,6 @@ const DEFAULT_CONFIG = {
 let config = { ...DEFAULT_CONFIG };
 
 // ============================================================
-//  FAKE MESSAGES — must be above preview object
-// ============================================================
-
-const FAKE_MESSAGES = [
-  { user: "StreamerFan99", text: "that play was actually insane omg" },
-  { user: "cyberwave_", text: "LETS GOOO" },
-  { user: "nightowl42", text: "how is your ping so clean rn" },
-  { user: "MxRainbow", text: "PogChamp PogChamp PogChamp" },
-  { user: "quietwatcher", text: "I've been watching for 3 hours and every run gets better" },
-  { user: "VaylMod", text: "GG chat, what a session" },
-  { user: "hyp3rion", text: "can we get a sub goal for next stream?" },
-  { user: "lemonz4ever", text: "clip that clip that someone clip that!!" },
-];
-
-// ============================================================
 //  PREVIEW OBJECT — declared before mode detection to avoid TDZ
 // ============================================================
 
@@ -200,14 +185,9 @@ function initWidgetMode() {
     return;
   }
 
-  if (typeof tmi === "undefined") {
-    console.error("Vayl: tmi.js failed to load — check network/CDN");
-    return;
-  }
-
-  // tmi.js — anonymous read-only connection
+  // tmi.js
   const client = new tmi.Client({ channels: [config.channel] });
-  client.connect().catch(e => console.error("Vayl: tmi connect failed", e));
+  client.connect().catch(console.error);
   client.on("message", (channel, tags, message, self) => {
     if (self) return;
     const username = tags["display-name"] || tags.username;
@@ -593,6 +573,19 @@ function onConfigChange() {
 // ============================================================
 //  PREVIEW SYSTEM — fully self-contained, no shared globals
 // ============================================================
+
+const FAKE_MESSAGES = [
+  { user: "StreamerFan99", text: "that play was actually insane omg" },
+  { user: "cyberwave_", text: "LETS GOOO" },
+  { user: "nightowl42", text: "how is your ping so clean rn" },
+  { user: "MxRainbow", text: "PogChamp PogChamp PogChamp" },
+  { user: "quietwatcher", text: "I've been watching for 3 hours and every run gets better" },
+  { user: "VaylMod", text: "GG chat, what a session" },
+  { user: "hyp3rion", text: "can we get a sub goal for next stream?" },
+  { user: "lemonz4ever", text: "clip that clip that someone clip that!!" },
+];
+
+
 
 // ============================================================
 //  UTILS
