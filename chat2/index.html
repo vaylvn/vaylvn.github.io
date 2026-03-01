@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vayl · Chat Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@300;400;600&family=Outfit:wght@300;400;600;700&family=IBM+Plex+Sans:wght@300;400;600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- CONFIG MODE -->
+  <div id="config-app" class="hidden">
+    <header id="config-header">
+      <div class="logo">vayl <span class="logo-dot">·</span> chat</div>
+      <div class="header-actions">
+        <button id="btn-copy-url" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy Widget URL
+        </button>
+      </div>
+    </header>
+
+    <div id="config-body">
+      <aside id="config-panel">
+
+        <section class="config-section">
+          <h2 class="section-label">Import Config</h2>
+          <div class="import-row">
+            <input type="text" id="import-url" placeholder="Paste a widget URL…" spellcheck="false">
+            <button id="btn-import" class="btn-ghost">Load</button>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Channel</h2>
+          <input type="text" id="cfg-channel" class="cfg-input" placeholder="your_channel_name" spellcheck="false">
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Behaviour</h2>
+          <div class="cfg-row">
+            <label>Max messages</label>
+            <div class="slider-row">
+              <input type="range" id="cfg-max-messages" min="1" max="10" step="1" value="1">
+              <span class="slider-val" id="cfg-max-messages-val">1</span>
+            </div>
+          </div>
+          <p class="cfg-hint">1 = replace on new message · 2–10 = stack up to limit</p>
+          <div class="cfg-row mt-8">
+            <label>Visible duration <span class="unit">ms</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-duration" min="500" max="15000" step="250" value="4000">
+              <span class="slider-val" id="cfg-duration-val">4000</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Exit duration <span class="unit">ms</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-fade" min="100" max="3000" step="100" value="800">
+              <span class="slider-val" id="cfg-fade-val">800</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Position</h2>
+          <div class="position-grid" id="position-grid">
+            <div class="pos-cell" data-pos="top-left"></div>
+            <div class="pos-cell" data-pos="top-center"></div>
+            <div class="pos-cell" data-pos="top-right"></div>
+            <div class="pos-cell" data-pos="middle-left"></div>
+            <div class="pos-cell" data-pos="center"></div>
+            <div class="pos-cell" data-pos="middle-right"></div>
+            <div class="pos-cell" data-pos="bottom-left"></div>
+            <div class="pos-cell" data-pos="bottom-center"></div>
+            <div class="pos-cell active" data-pos="bottom-right"></div>
+          </div>
+          <p class="cfg-hint" id="position-label">bottom-right</p>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Effects</h2>
+          <div class="effect-label-row">Entry</div>
+          <div class="effect-grid" id="in-effect-grid">
+            <div class="effect-chip active" data-effect="fade">Fade</div>
+            <div class="effect-chip" data-effect="slide-left">← Slide</div>
+            <div class="effect-chip" data-effect="slide-right">Slide →</div>
+            <div class="effect-chip" data-effect="slide-up">↑ Slide</div>
+            <div class="effect-chip" data-effect="slide-down">↓ Slide</div>
+            <div class="effect-chip" data-effect="pop">Pop</div>
+            <div class="effect-chip" data-effect="blur">Blur</div>
+            <div class="effect-chip" data-effect="flip">Flip</div>
+          </div>
+          <div class="effect-label-row" style="margin-top:12px">Exit</div>
+          <div class="effect-grid" id="out-effect-grid">
+            <div class="effect-chip active" data-effect="fade-out">Fade</div>
+            <div class="effect-chip" data-effect="slide-left-out">→ Slide</div>
+            <div class="effect-chip" data-effect="slide-right-out">← Slide</div>
+            <div class="effect-chip" data-effect="slide-up-out">↑ Slide</div>
+            <div class="effect-chip" data-effect="slide-down-out">↓ Slide</div>
+            <div class="effect-chip" data-effect="shrink">Shrink</div>
+            <div class="effect-chip" data-effect="blur-out">Blur</div>
+            <div class="effect-chip" data-effect="flip-out">Flip</div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Bubble</h2>
+          <div class="cfg-row">
+            <label>Background</label>
+            <div class="color-with-opacity">
+              <input type="color" id="cfg-bubble-bg" class="cfg-color" value="#141414">
+              <div class="slider-row">
+                <input type="range" id="cfg-bubble-opacity" min="0" max="100" step="1" value="85">
+                <span class="slider-val" id="cfg-bubble-opacity-val">85%</span>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Backdrop blur</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-blur-toggle" data-on="true"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-blur-label">On</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Border</label>
+            <div class="color-with-opacity">
+              <input type="color" id="cfg-border-color" class="cfg-color" value="#ffffff">
+              <div class="slider-row">
+                <input type="range" id="cfg-border-opacity" min="0" max="100" step="1" value="8">
+                <span class="slider-val" id="cfg-border-opacity-val">8%</span>
+              </div>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Corner radius <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-radius" min="0" max="32" step="1" value="12">
+              <span class="slider-val" id="cfg-radius-val">12</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Drop shadow</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-shadow-toggle" data-on="true"><span class="toggle-knob"></span></button>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Gap between <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-gap" min="0" max="20" step="1" value="6">
+              <span class="slider-val" id="cfg-gap-val">6</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Typography</h2>
+          <div class="cfg-row">
+            <label>Font</label>
+            <select id="cfg-font" class="cfg-select">
+              <option value="Outfit">Outfit</option>
+              <option value="Syne">Syne</option>
+              <option value="Space Grotesk">Space Grotesk</option>
+              <option value="IBM Plex Sans">IBM Plex Sans</option>
+              <option value="Figtree">Figtree</option>
+              <option value="JetBrains Mono">JetBrains Mono</option>
+            </select>
+          </div>
+          <div class="cfg-row">
+            <label>Message size <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-msg-size" min="12" max="48" step="1" value="22">
+              <span class="slider-val" id="cfg-msg-size-val">22</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Message colour</label>
+            <input type="color" id="cfg-msg-color" class="cfg-color" value="#f0f0f0">
+          </div>
+          <div class="cfg-row">
+            <label>Username size <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-user-size" min="10" max="40" step="1" value="13">
+              <span class="slider-val" id="cfg-user-size-val">13</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Username colour</label>
+            <input type="color" id="cfg-user-color" class="cfg-color" value="#00e5ff">
+          </div>
+          <div class="cfg-row">
+            <label>Use Twitch colour</label>
+            <div class="toggle-row">
+              <button class="toggle" id="cfg-twitch-color-toggle" data-on="false"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-twitch-color-label">Off</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Max width <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-max-width" min="200" max="900" step="10" value="520">
+              <span class="slider-val" id="cfg-max-width-val">520</span>
+            </div>
+          </div>
+        </section>
+
+        <div style="height: 60px;"></div>
+      </aside>
+
+      <main id="preview-pane">
+        <div id="preview-label">Live Preview <span>· fake messages cycle automatically</span></div>
+        <div id="preview-screen">
+          <div id="preview-message-container"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- WIDGET MODE -->
+  <div id="widget-app" class="hidden">
+    <div id="widget-container"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="tmi.min.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
