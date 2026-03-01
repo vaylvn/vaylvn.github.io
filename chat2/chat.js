@@ -39,6 +39,115 @@ const DEFAULT_CONFIG = {
 let config = { ...DEFAULT_CONFIG };
 
 // ============================================================
+//  PREVIEW OBJECT — declared before mode detection to avoid TDZ
+// ============================================================
+
+const preview = {
+  container: null,
+  messages: [],
+  loopTimer: null,
+  fakeIndex: 0,
+
+  init() {
+    const screen = document.getElementById("preview-screen");
+    this.container = document.createElement("div");
+    this.container.style.cssText = "position:absolute; display:flex; pointer-events:none;";
+    screen.appendChild(this.container);
+    this.updateLayout();
+    this.scheduleNext();
+  },
+
+  updateLayout() {
+    const cfg = config;
+    const el = this.container;
+    const isBottom = cfg.position.startsWith("bottom");
+    const pad = 30;
+
+    Object.assign(el.style, {
+      top: "", bottom: "", left: "", right: "",
+      transform: "",
+      flexDirection: isBottom ? "column-reverse" : "column",
+      gap: cfg.gap + "px",
+      maxWidth: cfg.maxWidth + "px",
+      width: "max-content",
+    });
+
+    const map = {
+      "top-left":      () => { el.style.top = pad+"px"; el.style.left = pad+"px"; },
+      "top-center":    () => { el.style.top = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
+      "top-right":     () => { el.style.top = pad+"px"; el.style.right = pad+"px"; },
+      "middle-left":   () => { el.style.top = "50%"; el.style.left = pad+"px"; el.style.transform = "translateY(-50%)"; },
+      "center":        () => { el.style.top = "50%"; el.style.left = "50%"; el.style.transform = "translate(-50%,-50%)"; },
+      "middle-right":  () => { el.style.top = "50%"; el.style.right = pad+"px"; el.style.transform = "translateY(-50%)"; },
+      "bottom-left":   () => { el.style.bottom = pad+"px"; el.style.left = pad+"px"; },
+      "bottom-center": () => { el.style.bottom = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
+      "bottom-right":  () => { el.style.bottom = pad+"px"; el.style.right = pad+"px"; },
+    };
+    (map[cfg.position] || map["bottom-right"])();
+
+    this.messages.forEach(b => this.restyleBubble(b, cfg));
+  },
+
+  restyleBubble(el, cfg) {
+    const bgRgb = hexToRgb(cfg.bubbleBg);
+    const borderRgb = hexToRgb(cfg.borderColor);
+    const opacity = cfg.bubbleOpacity / 100;
+    const borderOpacity = cfg.borderOpacity / 100;
+    el.style.background = `rgba(${bgRgb.r},${bgRgb.g},${bgRgb.b},${opacity})`;
+    el.style.border = `1px solid rgba(${borderRgb.r},${borderRgb.g},${borderRgb.b},${borderOpacity})`;
+    el.style.borderRadius = cfg.radius + "px";
+    el.style.fontFamily = `'${cfg.font}', sans-serif`;
+    el.style.boxShadow = cfg.shadow ? "0 8px 30px rgba(0,0,0,0.35)" : "none";
+    el.style.setProperty("--out-dur", cfg.fade + "ms");
+    const uEl = el.querySelector(".msg-username");
+    const tEl = el.querySelector(".msg-text");
+    if (uEl) { uEl.style.fontSize = cfg.userSize + "px"; uEl.style.color = cfg.userColor; }
+    if (tEl) { tEl.style.fontSize = cfg.msgSize + "px"; tEl.style.color = cfg.msgColor; }
+  },
+
+  scheduleNext() {
+    clearTimeout(this.loopTimer);
+    this.loopTimer = setTimeout(() => {
+      const msg = FAKE_MESSAGES[this.fakeIndex % FAKE_MESSAGES.length];
+      this.fakeIndex++;
+      this.push(msg.user, msg.text);
+      this.scheduleNext();
+    }, 2200);
+  },
+
+  push(username, text) {
+    const cfg = config;
+    while (this.messages.length >= cfg.maxMessages) {
+      this.forceRemove(this.messages.shift());
+    }
+    const bubble = createBubble(username, text, null, cfg);
+    this.container.appendChild(bubble);
+    this.messages.push(bubble);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bubble.classList.add("in-" + cfg.inEffect);
+      });
+    });
+    bubble._exitTimer = setTimeout(() => {
+      this.remove(bubble);
+    }, cfg.duration);
+  },
+
+  remove(el) {
+    if (!el.parentNode) return;
+    this.messages = this.messages.filter(b => b !== el);
+    el.classList.add("out-" + config.outEffect);
+    setTimeout(() => { el.remove(); }, config.fade);
+  },
+
+  forceRemove(el) {
+    if (!el.parentNode) return;
+    clearTimeout(el._exitTimer);
+    el.remove();
+  },
+};
+
+// ============================================================
 //  MODE DETECTION
 // ============================================================
 
@@ -476,119 +585,7 @@ const FAKE_MESSAGES = [
   { user: "lemonz4ever", text: "clip that clip that someone clip that!!" },
 ];
 
-const preview = {
-  container: null,
-  messages: [],   // live bubble elements
-  loopTimer: null,
-  fakeIndex: 0,
 
-  init() {
-    const screen = document.getElementById("preview-screen");
-    this.container = document.createElement("div");
-    this.container.style.cssText = "position:absolute; display:flex; pointer-events:none;";
-    screen.appendChild(this.container);
-    this.updateLayout();
-    this.scheduleNext();
-  },
-
-  updateLayout() {
-    const cfg = config;
-    const el = this.container;
-    const isBottom = cfg.position.startsWith("bottom");
-    const pad = 30;
-
-    Object.assign(el.style, {
-      top: "", bottom: "", left: "", right: "",
-      transform: "",
-      flexDirection: isBottom ? "column-reverse" : "column",
-      gap: cfg.gap + "px",
-      maxWidth: cfg.maxWidth + "px",
-      width: "max-content",
-    });
-
-    const map = {
-      "top-left":      () => { el.style.top = pad+"px"; el.style.left = pad+"px"; },
-      "top-center":    () => { el.style.top = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
-      "top-right":     () => { el.style.top = pad+"px"; el.style.right = pad+"px"; },
-      "middle-left":   () => { el.style.top = "50%"; el.style.left = pad+"px"; el.style.transform = "translateY(-50%)"; },
-      "center":        () => { el.style.top = "50%"; el.style.left = "50%"; el.style.transform = "translate(-50%,-50%)"; },
-      "middle-right":  () => { el.style.top = "50%"; el.style.right = pad+"px"; el.style.transform = "translateY(-50%)"; },
-      "bottom-left":   () => { el.style.bottom = pad+"px"; el.style.left = pad+"px"; },
-      "bottom-center": () => { el.style.bottom = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
-      "bottom-right":  () => { el.style.bottom = pad+"px"; el.style.right = pad+"px"; },
-    };
-    (map[cfg.position] || map["bottom-right"])();
-
-    // Re-style existing bubbles with new config
-    this.messages.forEach(b => this.restyleBubble(b, cfg));
-  },
-
-  restyleBubble(el, cfg) {
-    const bgRgb = hexToRgb(cfg.bubbleBg);
-    const borderRgb = hexToRgb(cfg.borderColor);
-    const opacity = cfg.bubbleOpacity / 100;
-    const borderOpacity = cfg.borderOpacity / 100;
-    el.style.background = `rgba(${bgRgb.r},${bgRgb.g},${bgRgb.b},${opacity})`;
-    el.style.border = `1px solid rgba(${borderRgb.r},${borderRgb.g},${borderRgb.b},${borderOpacity})`;
-    el.style.borderRadius = cfg.radius + "px";
-    el.style.fontFamily = `'${cfg.font}', sans-serif`;
-    el.style.boxShadow = cfg.shadow ? "0 8px 30px rgba(0,0,0,0.35)" : "none";
-    el.style.setProperty("--out-dur", cfg.fade + "ms");
-    const uEl = el.querySelector(".msg-username");
-    const tEl = el.querySelector(".msg-text");
-    if (uEl) { uEl.style.fontSize = cfg.userSize + "px"; uEl.style.color = cfg.userColor; }
-    if (tEl) { tEl.style.fontSize = cfg.msgSize + "px"; tEl.style.color = cfg.msgColor; }
-  },
-
-  scheduleNext() {
-    clearTimeout(this.loopTimer);
-    this.loopTimer = setTimeout(() => {
-      const msg = FAKE_MESSAGES[this.fakeIndex % FAKE_MESSAGES.length];
-      this.fakeIndex++;
-      this.push(msg.user, msg.text);
-      this.scheduleNext();
-    }, 2200);
-  },
-
-  push(username, text) {
-    const cfg = config;
-
-    // Evict oldest if at capacity
-    while (this.messages.length >= cfg.maxMessages) {
-      const oldest = this.messages.shift();
-      this.forceRemove(oldest, cfg);
-    }
-
-    const bubble = createBubble(username, text, null, cfg);
-    this.container.appendChild(bubble);
-    this.messages.push(bubble);
-
-    // Trigger entry animation next frame
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        bubble.classList.add("in-" + cfg.inEffect);
-      });
-    });
-
-    // Schedule exit
-    bubble._exitTimer = setTimeout(() => {
-      this.remove(bubble);
-    }, cfg.duration);
-  },
-
-  remove(el) {
-    if (!el.parentNode) return;
-    this.messages = this.messages.filter(b => b !== el);
-    el.classList.add("out-" + config.outEffect);
-    setTimeout(() => { el.remove(); }, config.fade);
-  },
-
-  forceRemove(el, cfg) {
-    if (!el.parentNode) return;
-    clearTimeout(el._exitTimer);
-    el.remove();
-  },
-};
 
 // ============================================================
 //  UTILS
