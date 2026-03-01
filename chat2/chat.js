@@ -63,8 +63,13 @@ function initWidgetMode() {
     console.error("Vayl: failed to parse config", e);
   }
 
-  const container = document.getElementById("widget-container");
-  startMessageSystem(container, config, false);
+  // Create a stack div inside the fixed full-screen widget-container
+  // (we can't position widget-container itself or it loses its fixed full-screen sizing)
+  const widgetRoot = document.getElementById("widget-container");
+  const stack = document.createElement("div");
+  stack.style.cssText = "position:absolute; display:flex; pointer-events:none;";
+  widgetRoot.appendChild(stack);
+  startMessageSystem(stack, config, false);
 
   if (!config.channel) {
     console.warn("Vayl: no channel set");
@@ -112,9 +117,7 @@ function applyStackPosition(el, cfg) {
   Object.assign(el.style, {
     top: "", bottom: "", left: "", right: "",
     transform: "",
-    display: "flex",
-    flexDirection: "column",
-    position: "absolute",
+    flexDirection: cfg.position.startsWith("bottom") ? "column-reverse" : "column",
     gap: cfg.gap + "px",
     maxWidth: cfg.maxWidth + "px",
     width: "max-content",
@@ -154,9 +157,11 @@ function pushMessage(username, text, twitchColor) {
   msgContainer.appendChild(bubble);
   msgQueue.push(bubble);
 
-  // Animate in
+  // Animate in — double rAF ensures initial opacity:0 state is painted first
   requestAnimationFrame(() => {
-    bubble.classList.add("in-" + cfg.inEffect);
+    requestAnimationFrame(() => {
+      bubble.classList.add("in-" + cfg.inEffect);
+    });
   });
 
   // Schedule removal
