@@ -295,7 +295,7 @@ function applyFilters(username, text) {
       if (regex.test(text)) {
         if (cfg.blockedWordMode === "block") return null;
         // censor: replace each character with █
-        text = text.replace(regex, match => "█".repeat(match.length));
+        text = text.replace(regex, match => "*".repeat(match.length));
       }
     }
   }
