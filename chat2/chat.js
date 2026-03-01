@@ -242,7 +242,7 @@ function initConfigMode() {
 
   syncUIFromConfig();
   bindAllControls();
-  startPreview();
+  preview.init();
 }
 
 // ---- Sync all UI inputs from config object ----
@@ -451,13 +451,13 @@ function importFromURL() {
   }
 }
 
-// ---- Config changed: rebuild preview ----
+// ---- Config changed: update preview layout, keep message loop running ----
 function onConfigChange() {
-  rebuildPreviewContainer();
+  preview.updateLayout();
 }
 
 // ============================================================
-//  PREVIEW SYSTEM
+//  PREVIEW SYSTEM — fully self-contained, no shared globals
 // ============================================================
 
 const FAKE_MESSAGES = [
@@ -471,103 +471,119 @@ const FAKE_MESSAGES = [
   { user: "lemonz4ever", text: "clip that clip that someone clip that!!" },
 ];
 
-let previewContainer = null;
-let previewInterval = null;
-let fakeIndex = 0;
-let previewMessages = [];
-let previewTimers = [];
+const preview = {
+  container: null,
+  messages: [],   // live bubble elements
+  loopTimer: null,
+  fakeIndex: 0,
 
-function startPreview() {
-  rebuildPreviewContainer();
-  scheduleNextFakeMessage();
-}
+  init() {
+    const screen = document.getElementById("preview-screen");
+    this.container = document.createElement("div");
+    this.container.style.cssText = "position:absolute; display:flex; pointer-events:none;";
+    screen.appendChild(this.container);
+    this.updateLayout();
+    this.scheduleNext();
+  },
 
-function rebuildPreviewContainer() {
-  const screen = document.getElementById("preview-screen");
+  updateLayout() {
+    const cfg = config;
+    const el = this.container;
+    const isBottom = cfg.position.startsWith("bottom");
+    const pad = 30;
 
-  // Remove old container
-  if (previewContainer) {
-    previewContainer.remove();
-  }
-  previewMessages = [];
-  previewTimers.forEach(clearTimeout);
-  previewTimers = [];
+    Object.assign(el.style, {
+      top: "", bottom: "", left: "", right: "",
+      transform: "",
+      flexDirection: isBottom ? "column-reverse" : "column",
+      gap: cfg.gap + "px",
+      maxWidth: cfg.maxWidth + "px",
+      width: "max-content",
+    });
 
-  previewContainer = document.createElement("div");
-  previewContainer.style.cssText = "position:absolute; display:flex; pointer-events:none;";
-  screen.appendChild(previewContainer);
+    const map = {
+      "top-left":      () => { el.style.top = pad+"px"; el.style.left = pad+"px"; },
+      "top-center":    () => { el.style.top = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
+      "top-right":     () => { el.style.top = pad+"px"; el.style.right = pad+"px"; },
+      "middle-left":   () => { el.style.top = "50%"; el.style.left = pad+"px"; el.style.transform = "translateY(-50%)"; },
+      "center":        () => { el.style.top = "50%"; el.style.left = "50%"; el.style.transform = "translate(-50%,-50%)"; },
+      "middle-right":  () => { el.style.top = "50%"; el.style.right = pad+"px"; el.style.transform = "translateY(-50%)"; },
+      "bottom-left":   () => { el.style.bottom = pad+"px"; el.style.left = pad+"px"; },
+      "bottom-center": () => { el.style.bottom = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
+      "bottom-right":  () => { el.style.bottom = pad+"px"; el.style.right = pad+"px"; },
+    };
+    (map[cfg.position] || map["bottom-right"])();
 
-  currentCfg = config;
-  msgContainer = previewContainer;
-  msgQueue = previewMessages;
-  isAnchorBottom = config.position.startsWith("bottom");
+    // Re-style existing bubbles with new config
+    this.messages.forEach(b => this.restyleBubble(b, cfg));
+  },
 
-  applyPreviewPosition(previewContainer, config, screen);
-}
+  restyleBubble(el, cfg) {
+    const bgRgb = hexToRgb(cfg.bubbleBg);
+    const borderRgb = hexToRgb(cfg.borderColor);
+    const opacity = cfg.bubbleOpacity / 100;
+    const borderOpacity = cfg.borderOpacity / 100;
+    el.style.background = `rgba(${bgRgb.r},${bgRgb.g},${bgRgb.b},${opacity})`;
+    el.style.border = `1px solid rgba(${borderRgb.r},${borderRgb.g},${borderRgb.b},${borderOpacity})`;
+    el.style.borderRadius = cfg.radius + "px";
+    el.style.fontFamily = `'${cfg.font}', sans-serif`;
+    el.style.boxShadow = cfg.shadow ? "0 8px 30px rgba(0,0,0,0.35)" : "none";
+    el.style.setProperty("--out-dur", cfg.fade + "ms");
+    const uEl = el.querySelector(".msg-username");
+    const tEl = el.querySelector(".msg-text");
+    if (uEl) { uEl.style.fontSize = cfg.userSize + "px"; uEl.style.color = cfg.userColor; }
+    if (tEl) { tEl.style.fontSize = cfg.msgSize + "px"; tEl.style.color = cfg.msgColor; }
+  },
 
-function applyPreviewPosition(el, cfg, screen) {
-  const pad = 30;
-  const pos = cfg.position;
-  isAnchorBottom = pos.startsWith("bottom");
+  scheduleNext() {
+    clearTimeout(this.loopTimer);
+    this.loopTimer = setTimeout(() => {
+      const msg = FAKE_MESSAGES[this.fakeIndex % FAKE_MESSAGES.length];
+      this.fakeIndex++;
+      this.push(msg.user, msg.text);
+      this.scheduleNext();
+    }, 2200);
+  },
 
-  Object.assign(el.style, {
-    top: "", bottom: "", left: "", right: "",
-    transform: "",
-    flexDirection: isAnchorBottom ? "column-reverse" : "column",
-    gap: cfg.gap + "px",
-    maxWidth: cfg.maxWidth + "px",
-    width: "max-content",
-  });
+  push(username, text) {
+    const cfg = config;
 
-  const map = {
-    "top-left":      () => { el.style.top = pad+"px"; el.style.left = pad+"px"; },
-    "top-center":    () => { el.style.top = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
-    "top-right":     () => { el.style.top = pad+"px"; el.style.right = pad+"px"; },
-    "middle-left":   () => { el.style.top = "50%"; el.style.left = pad+"px"; el.style.transform = "translateY(-50%)"; },
-    "center":        () => { el.style.top = "50%"; el.style.left = "50%"; el.style.transform = "translate(-50%,-50%)"; },
-    "middle-right":  () => { el.style.top = "50%"; el.style.right = pad+"px"; el.style.transform = "translateY(-50%)"; },
-    "bottom-left":   () => { el.style.bottom = pad+"px"; el.style.left = pad+"px"; },
-    "bottom-center": () => { el.style.bottom = pad+"px"; el.style.left = "50%"; el.style.transform = "translateX(-50%)"; },
-    "bottom-right":  () => { el.style.bottom = pad+"px"; el.style.right = pad+"px"; },
-  };
-  (map[pos] || map["bottom-right"])();
-}
+    // Evict oldest if at capacity
+    while (this.messages.length >= cfg.maxMessages) {
+      const oldest = this.messages.shift();
+      this.forceRemove(oldest, cfg);
+    }
 
-function scheduleNextFakeMessage() {
-  clearTimeout(previewInterval);
-  previewInterval = setTimeout(() => {
-    const msg = FAKE_MESSAGES[fakeIndex % FAKE_MESSAGES.length];
-    fakeIndex++;
-    pushPreviewMessage(msg.user, msg.text);
-    scheduleNextFakeMessage();
-  }, 2200);
-}
+    const bubble = createBubble(username, text, null, cfg);
+    this.container.appendChild(bubble);
+    this.messages.push(bubble);
 
-function pushPreviewMessage(username, text) {
-  const cfg = config;
-  const max = cfg.maxMessages;
+    // Trigger entry animation next frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bubble.classList.add("in-" + cfg.inEffect);
+      });
+    });
 
-  // Remove oldest if at capacity
-  while (previewMessages.length >= max) {
-    const oldest = previewMessages.shift();
-    forceRemoveBubble(oldest, cfg);
-  }
+    // Schedule exit
+    bubble._exitTimer = setTimeout(() => {
+      this.remove(bubble);
+    }, cfg.duration);
+  },
 
-  const bubble = createBubble(username, text, null, cfg);
-  previewContainer.appendChild(bubble);
-  previewMessages.push(bubble);
+  remove(el) {
+    if (!el.parentNode) return;
+    this.messages = this.messages.filter(b => b !== el);
+    el.classList.add("out-" + config.outEffect);
+    setTimeout(() => { el.remove(); }, config.fade);
+  },
 
-  requestAnimationFrame(() => {
-    bubble.classList.add("in-" + cfg.inEffect);
-  });
-
-  const tid = setTimeout(() => {
-    removeBubble(bubble, cfg);
-    previewMessages = previewMessages.filter(b => b !== bubble);
-  }, cfg.duration);
-  previewTimers.push(tid);
-  bubble._timer = tid;
-}
+  forceRemove(el, cfg) {
+    if (!el.parentNode) return;
+    clearTimeout(el._exitTimer);
+    el.remove();
+  },
+};
 
 // ============================================================
 //  UTILS
