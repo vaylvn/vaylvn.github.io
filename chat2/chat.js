@@ -38,6 +38,13 @@ const DEFAULT_CONFIG = {
 
 let config = { ...DEFAULT_CONFIG };
 
+// Widget globals — must be declared before mode detection
+let msgContainer = null;
+let msgQueue = [];
+let msgTimers = [];
+let currentCfg = null;
+let isAnchorBottom = false;
+
 // ============================================================
 //  FAKE MESSAGES — must be above preview object
 // ============================================================
@@ -217,14 +224,8 @@ function initWidgetMode() {
 }
 
 // ============================================================
-//  MESSAGE SYSTEM (shared by widget + preview)
+//  MESSAGE SYSTEM (shared by widget)
 // ============================================================
-
-let msgContainer = null;
-let msgQueue = [];
-let msgTimers = [];
-let currentCfg = null;
-let isAnchorBottom = false;
 
 function startMessageSystem(container, cfg, isPreview) {
   currentCfg = cfg;
