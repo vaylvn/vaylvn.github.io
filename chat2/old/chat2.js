@@ -31,13 +31,9 @@ const DEFAULT_CONFIG = {
   msgSize: 22,
   msgColor: "#f0f0f0",
   userSize: 13,
-  userColor: "#d4d4d4",
+  userColor: "#00e5ff",
   useTwitchColor: false,
   maxWidth: 520,
-  // Moderation
-  ignoredUsers: "",
-  blockedWords: "",
-  blockedWordMode: "censor",
 };
 
 let config = { ...DEFAULT_CONFIG };
@@ -146,7 +142,7 @@ const preview = {
     while (this.messages.length >= cfg.maxMessages) {
       this.forceRemove(this.messages.shift());
     }
-    const bubble = createBubble(username, text, null, null, cfg);
+    const bubble = createBubble(username, text, null, cfg);
     this.container.appendChild(bubble);
     this.messages.push(bubble);
     requestAnimationFrame(() => {
@@ -223,8 +219,7 @@ function initWidgetMode() {
     if (self) return;
     const username = tags["display-name"] || tags.username;
     const color = tags.color || null;
-    const emotes = tags.emotes || null;
-    pushMessage(username, message, color, emotes);
+    pushMessage(username, message, color);
   });
 }
 
@@ -278,42 +273,8 @@ function applyStackPosition(el, cfg) {
   (map[pos] || map["bottom-right"])();
 }
 
-function applyFilters(username, text) {
+function pushMessage(username, text, twitchColor) {
   const cfg = currentCfg;
-
-  // Ignored users
-  if (cfg.ignoredUsers) {
-    const ignored = cfg.ignoredUsers.split(",").map(u => u.trim().toLowerCase()).filter(Boolean);
-    if (ignored.includes(username.toLowerCase())) return null;
-  }
-
-  // Blocked words
-  if (cfg.blockedWords) {
-    const words = cfg.blockedWords.split(",").map(w => w.trim().toLowerCase()).filter(Boolean);
-    for (const word of words) {
-      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, "gi");
-      if (regex.test(text)) {
-        if (cfg.blockedWordMode === "block") return null;
-        // censor: replace each character with █
-        text = text.replace(regex, match => "█".repeat(match.length));
-      }
-    }
-  }
-
-  return text;
-}
-
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function pushMessage(username, text, twitchColor, emotes) {
-  const cfg = currentCfg;
-
-  const filtered = applyFilters(username, text);
-  if (filtered === null) return; // blocked entirely
-  text = filtered;
-
   const max = cfg.maxMessages;
 
   // If at capacity, remove oldest
@@ -322,7 +283,7 @@ function pushMessage(username, text, twitchColor, emotes) {
     forceRemoveBubble(oldest, cfg);
   }
 
-  const bubble = createBubble(username, text, twitchColor, emotes, cfg);
+  const bubble = createBubble(username, text, twitchColor, cfg);
   msgContainer.appendChild(bubble);
   msgQueue.push(bubble);
 
@@ -341,51 +302,11 @@ function pushMessage(username, text, twitchColor, emotes) {
   bubble._timer = tid;
 }
 
-// Parse tmi emotes tag into sorted array of {id, start, end}
-function parseEmotes(emoteTag, text) {
-  if (!emoteTag) return [];
-  const ranges = [];
-  for (const [id, positions] of Object.entries(emoteTag)) {
-    for (const pos of positions) {
-      const [start, end] = pos.split("-").map(Number);
-      ranges.push({ id, start, end });
-    }
-  }
-  return ranges.sort((a, b) => a.start - b.start);
-}
-
-// Build innerHTML with emotes replaced by <img> tags
-function renderMessageWithEmotes(text, emoteTag, msgColor, fontSize) {
-  const ranges = parseEmotes(emoteTag, text);
-  if (ranges.length === 0) {
-    return `<span style="color:${escapeHtml(msgColor)};font-size:${fontSize}px;word-break:break-word">${escapeHtml(text)}</span>`;
-  }
-
-  // Convert text to array of UTF-16 code units for correct slicing
-  let html = "";
-  let cursor = 0;
-  const emoteSize = Math.round(fontSize * 1.4);
-
-  for (const { id, start, end } of ranges) {
-    if (start > cursor) {
-      const segment = text.slice(cursor, start);
-      html += `<span style="color:${escapeHtml(msgColor)};font-size:${fontSize}px">${escapeHtml(segment)}</span>`;
-    }
-    const url = `https://static-cdn.jtvnw.net/emoticons/v2/${id}/animated/dark/2.0`;
-    const fallback = `https://static-cdn.jtvnw.net/emoticons/v2/${id}/static/dark/2.0`;
-    html += `<img src="${url}" onerror="this.src='${fallback}'" alt="${escapeHtml(text.slice(start, end + 1))}" style="height:${emoteSize}px;width:auto;vertical-align:middle;margin:0 2px">`;
-    cursor = end + 1;
-  }
-  if (cursor < text.length) {
-    html += `<span style="color:${escapeHtml(msgColor)};font-size:${fontSize}px">${escapeHtml(text.slice(cursor))}</span>`;
-  }
-  return html;
-}
-
-function createBubble(username, text, twitchColor, emotes, cfg) {
+function createBubble(username, text, twitchColor, cfg) {
   const el = document.createElement("div");
   el.className = "msg-bubble";
 
+  // Styles from config
   const bgRgb = hexToRgb(cfg.bubbleBg);
   const borderRgb = hexToRgb(cfg.borderColor);
   const opacity = cfg.bubbleOpacity / 100;
@@ -405,7 +326,6 @@ function createBubble(username, text, twitchColor, emotes, cfg) {
   `;
 
   const usernameColor = (cfg.useTwitchColor && twitchColor) ? twitchColor : cfg.userColor;
-  const msgHtml = renderMessageWithEmotes(text, emotes, cfg.msgColor, cfg.msgSize);
 
   el.innerHTML = `
     <span class="msg-username" style="
@@ -413,15 +333,12 @@ function createBubble(username, text, twitchColor, emotes, cfg) {
       color: ${escapeHtml(usernameColor)};
       font-weight: 600;
       margin-bottom: 3px;
-      display: block;
     ">${escapeHtml(username)}</span>
     <span class="msg-text" style="
       font-size: ${cfg.msgSize}px;
+      color: ${escapeHtml(cfg.msgColor)};
       font-weight: 400;
-      display: block;
-      word-break: break-word;
-      line-height: 1.5;
-    ">${msgHtml}</span>
+    ">${escapeHtml(text)}</span>
   `;
 
   return el;
@@ -500,13 +417,6 @@ function syncUIFromConfig() {
   setColor("cfg-user-color", c.userColor);
   setToggle("cfg-twitch-color-toggle", "cfg-twitch-color-label", c.useTwitchColor);
   setRange("cfg-max-width", c.maxWidth, "cfg-max-width-val", v => v);
-
-  // Moderation
-  setVal("cfg-ignored-users", c.ignoredUsers || "");
-  setVal("cfg-blocked-words", c.blockedWords || "");
-  document.querySelectorAll("#blocked-word-mode .seg-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.val === (c.blockedWordMode || "censor"));
-  });
 }
 
 function setVal(id, val) {
@@ -613,18 +523,6 @@ function bindAllControls() {
   document.getElementById("btn-import").addEventListener("click", importFromURL);
   document.getElementById("import-url").addEventListener("keydown", e => {
     if (e.key === "Enter") importFromURL();
-  });
-
-  // Moderation
-  bindText("cfg-ignored-users", "ignoredUsers");
-  bindText("cfg-blocked-words", "blockedWords");
-  document.querySelectorAll("#blocked-word-mode .seg-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("#blocked-word-mode .seg-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      config.blockedWordMode = btn.dataset.val;
-      onConfigChange();
-    });
   });
 }
 

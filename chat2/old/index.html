@@ -209,29 +209,6 @@
           </div>
         </section>
 
-        <section class="config-section">
-          <h2 class="section-label">Moderation</h2>
-          <div class="cfg-row">
-            <label>Ignored users</label>
-          </div>
-          <input type="text" id="cfg-ignored-users" class="cfg-input" placeholder="nightbot, streamlabs, fossabot" spellcheck="false">
-          <p class="cfg-hint" style="margin-top:4px">Comma-separated · case-insensitive · messages dropped silently</p>
-
-          <div class="cfg-row mt-8">
-            <label>Blocked words</label>
-          </div>
-          <input type="text" id="cfg-blocked-words" class="cfg-input" placeholder="word1, word2, phrase" spellcheck="false">
-          <p class="cfg-hint" style="margin-top:4px">Comma-separated · whole words only · case-insensitive</p>
-
-          <div class="cfg-row mt-8">
-            <label>When word matched</label>
-            <div class="seg-control" id="blocked-word-mode">
-              <button class="seg-btn active" data-val="censor">Censor ████</button>
-              <button class="seg-btn" data-val="block">Block message</button>
-            </div>
-          </div>
-        </section>
-
         <div style="height: 60px;"></div>
       </aside>
 
@@ -251,7 +228,7 @@
 
   <div id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/build/tmi.min.js"></script>
+  <script src="tmi.min.js"></script>
   <script src="chat.js"></script>
 </body>
 </html>

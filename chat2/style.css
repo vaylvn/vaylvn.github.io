@@ -10,9 +10,9 @@
   --text: #e8e8e8;
   --text-dim: #888;
   --text-dimmer: #555;
-  --accent: #00e5ff;
-  --accent-dim: rgba(0, 229, 255, 0.12);
-  --accent-glow: rgba(0, 229, 255, 0.25);
+  --accent: #d4d4d4;
+  --accent-dim: rgba(212, 212, 212, 0.1);
+  --accent-glow: rgba(212, 212, 212, 0.15);
   --danger: #ff4d6d;
   --mono: 'DM Mono', monospace;
   --sans: 'Outfit', sans-serif;
@@ -549,3 +549,27 @@ input[type="range"]::-moz-range-thumb {
   from { opacity: 1; transform: perspective(400px) rotateX(0); }
   to { opacity: 0; transform: perspective(400px) rotateX(60deg); }
 }
+
+/* Segmented control */
+.seg-control {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.seg-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.seg-btn:last-child { border-right: none; }
+.seg-btn:hover { background: var(--surface2); color: var(--text); }
+.seg-btn.active { background: var(--accent-dim); color: var(--accent); }
