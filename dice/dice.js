@@ -451,35 +451,46 @@ class DiceEngine {
     faces.forEach((face, fi) => {
       const v3 = face.map(i => new THREE.Vector3(...verts[i]));
 
-      // Face normal
-      const edge1 = v3[1].clone().sub(v3[0]);
-      const edge2 = v3[2].clone().sub(v3[0]);
-      const fn    = edge1.cross(edge2).normalize();
+      // Face normal via Newell's method for robustness
+      const fn = new THREE.Vector3();
+      for (let i = 0; i < v3.length; i++) {
+        const curr = v3[i], next = v3[(i+1) % v3.length];
+        fn.x += (curr.y - next.y) * (curr.z + next.z);
+        fn.y += (curr.z - next.z) * (curr.x + next.x);
+        fn.z += (curr.x - next.x) * (curr.y + next.y);
+      }
+      fn.normalize();
       faceNormals.push(fn.clone());
 
-      // Local 2D axes on the face plane
-      const uAxis = v3[1].clone().sub(v3[0]).normalize();
-      const vAxis = fn.clone().cross(uAxis).normalize();
+      // Build a stable, consistently-oriented UV basis.
+      // Pick a "world up" reference that isn't parallel to fn.
+      const worldRef = (Math.abs(fn.y) < 0.9)
+        ? new THREE.Vector3(0, 1, 0)
+        : new THREE.Vector3(0, 0, 1);
+      // uAxis: perpendicular to fn in the fn×worldRef plane, always points "rightward"
+      const uAxis = new THREE.Vector3().crossVectors(worldRef, fn).normalize();
+      // vAxis: perpendicular to both, always points "upward" on the face
+      const vAxis = new THREE.Vector3().crossVectors(fn, uAxis).normalize();
 
-      // Project all verts onto face plane → 2D
-      const centroid = v3.reduce((a,b) => a.clone().add(b), new THREE.Vector3()).divideScalar(v3.length);
+      // Project all verts onto face plane → 2D (centroid is local origin)
+      const centroid = new THREE.Vector3();
+      v3.forEach(p => centroid.add(p));
+      centroid.divideScalar(v3.length);
       const pts2d = v3.map(p => {
         const d = p.clone().sub(centroid);
         return [ d.dot(uAxis), d.dot(vAxis) ];
       });
 
-      // Normalise symmetrically from centroid (which is at origin in local space).
-      // Use the maximum absolute extent in either axis as the half-span,
-      // so the shape is always centred at (0.5, 0.5) in UV space.
+      // Normalise symmetrically so the shape is always centred at UV (0.5, 0.5)
       let halfSpan = 0;
       pts2d.forEach(([u,v]) => {
         halfSpan = Math.max(halfSpan, Math.abs(u), Math.abs(v));
       });
       halfSpan = halfSpan || 1;
-      const margin = 0.08; // breathing room around the face edges
+      const margin = 0.10;
       const scale  = (1 - margin * 2) / (halfSpan * 2);
       const norm2d = pts2d.map(([u,v]) => [
-        u * scale + 0.5,  // centred at 0.5
+        u * scale + 0.5,
         v * scale + 0.5,
       ]);
 
@@ -643,10 +654,13 @@ class DiceEngine {
       default: geo = this._buildD6(atlas);  break;
     }
 
-    const mat = new THREE.MeshStandardMaterial({
+    // MeshLambertMaterial lights more evenly across flat-shaded polyhedral faces.
+    // The emissive term ensures no face ever goes fully black regardless of light angle.
+    const baseCol = new THREE.Color(dieColor);
+    const mat = new THREE.MeshLambertMaterial({
       map: atlas.texture,
-      roughness: 0.28,
-      metalness: 0.06,
+      emissive: baseCol,
+      emissiveIntensity: 0.18,
     });
 
     const mesh = new THREE.Mesh(geo, mat);
