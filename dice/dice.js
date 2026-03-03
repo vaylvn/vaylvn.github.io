@@ -193,468 +193,255 @@ class DiceEngine {
   //  point at its cell in the atlas.
   // ============================================================
 
-  /**
-   * Build a square atlas canvas containing `count` face textures
-   * arranged in a sqrt(count) × sqrt(count) grid.
-   * Returns { texture, cols, rows, cellSize }
-   */
-  _buildAtlas(sides, dieColor, dotColor, faceStyle) {
-    const count = sides;
-    const cols  = Math.ceil(Math.sqrt(count));
-    const rows  = Math.ceil(count / cols);
-    const cell  = 256;
-    const W = cols * cell;
-    const H = rows * cell;
+  // ============================================================
+  //  FACE TEXTURE — one canvas per face, no atlas needed.
+  //  MeshBasicMaterial array: one entry per face, fully unlit.
+  // ============================================================
 
-    const atlasCvs = document.createElement("canvas");
-    atlasCvs.width  = W;
-    atlasCvs.height = H;
-    const ctx = atlasCvs.getContext("2d");
+  _makeFaceTex(sides, faceNum, dieColor, dotColor, faceStyle) {
+    const S   = 256;
+    const cvs = document.createElement("canvas");
+    cvs.width = cvs.height = S;
+    const ctx = cvs.getContext("2d");
 
-    for (let fi = 0; fi < count; fi++) {
-      const col = fi % cols;
-      const row = Math.floor(fi / cols);
-      const ox  = col * cell;
-      const oy  = row * cell;
-      this._drawFaceIntoCtx(ctx, ox, oy, cell, sides, fi + 1, dieColor, dotColor, faceStyle);
-    }
-
-    return { texture: new THREE.CanvasTexture(atlasCvs), cols, rows, cell, W, H };
-  }
-
-  _drawFaceIntoCtx(ctx, ox, oy, size, sides, faceNum, dieColor, dotColor, faceStyle) {
-    // Full background fill (entire atlas cell) — prevents bleed from adjacent cells
+    // Full background
     ctx.fillStyle = dieColor;
-    ctx.fillRect(ox, oy, size, size);
+    ctx.fillRect(0, 0, S, S);
 
-    // Face plate — fills most of the cell so the number is always visible
-    // Use a large radius so it looks like a proper die face even on triangular dice
-    const pad = Math.round(size * 0.06);
-    const r   = Math.round(size * 0.15);
-    ctx.fillStyle = this._adjustColor(dieColor, 20);
-    this._roundRect(ctx, ox + pad, oy + pad, size - pad*2, size - pad*2, r);
+    // Slightly lighter face plate with rounded corners
+    const pad = Math.round(S * 0.06);
+    const r   = Math.round(S * 0.14);
+    ctx.fillStyle = this._adjustColor(dieColor, 22);
+    this._roundRect(ctx, pad, pad, S - pad*2, S - pad*2, r);
     ctx.fill();
 
-    // Edge highlight
-    ctx.strokeStyle = "rgba(255,255,255,0.22)";
-    ctx.lineWidth   = 2.5;
-    this._roundRect(ctx, ox + pad + 1, oy + pad + 1, size - pad*2 - 2, size - pad*2 - 2, r - 1);
+    // Crisp edge highlight
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth   = 3;
+    this._roundRect(ctx, pad+1, pad+1, S-pad*2-2, S-pad*2-2, r);
     ctx.stroke();
 
-    const useStyle = (sides !== 6 && faceStyle === "dots") ? "numbers" : faceStyle;
+    // Bottom shadow edge for depth illusion
+    ctx.strokeStyle = "rgba(0,0,0,0.20)";
+    ctx.lineWidth   = 3;
+    this._roundRect(ctx, pad+2, pad+2, S-pad*2-4, S-pad*2-4, r-1);
+    ctx.stroke();
 
-    if (useStyle === "numbers") {
-      const fontSize = sides > 9 ? Math.round(size * 0.36) : Math.round(size * 0.42);
+    const useNumbers = (sides !== 6) || (faceStyle !== "dots");
+
+    if (useNumbers) {
+      const fontSize = sides > 9 ? Math.round(S * 0.38) : Math.round(S * 0.44);
       ctx.font         = `bold ${fontSize}px "Outfit", Arial, sans-serif`;
       ctx.textAlign    = "center";
       ctx.textBaseline = "middle";
-      ctx.shadowColor  = "rgba(0,0,0,0.65)";
-      ctx.shadowBlur   = 8;
+      ctx.shadowColor  = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur   = 10;
       ctx.fillStyle    = dotColor;
-      const cx = ox + size / 2;
-      const cy = oy + size / 2 + 2;
-      ctx.fillText(String(faceNum), cx, cy);
+      ctx.fillText(String(faceNum), S/2, S/2 + 3);
       if (faceNum === 6 || faceNum === 9) {
         const tw = ctx.measureText(String(faceNum)).width;
         ctx.shadowBlur  = 0;
         ctx.strokeStyle = dotColor;
-        ctx.lineWidth   = Math.max(2, size * 0.01);
+        ctx.lineWidth   = 3;
         ctx.beginPath();
-        ctx.moveTo(cx - tw * 0.5, cy + fontSize * 0.48);
-        ctx.lineTo(cx + tw * 0.5, cy + fontSize * 0.48);
+        ctx.moveTo(S/2 - tw*0.48, S/2 + fontSize*0.50);
+        ctx.lineTo(S/2 + tw*0.48, S/2 + fontSize*0.50);
         ctx.stroke();
       }
       ctx.shadowBlur = 0;
     } else {
-      // Dots (d6 only)
-      this._drawD6DotsInCtx(ctx, ox, oy, size, faceNum, dotColor);
+      this._drawD6Dots(ctx, faceNum, dotColor, S);
     }
+
+    return new THREE.CanvasTexture(cvs);
   }
 
-  _adjustColor(hex, amount) {
-    let r = parseInt(hex.slice(1,3), 16);
-    let g = parseInt(hex.slice(3,5), 16);
-    let b = parseInt(hex.slice(5,7), 16);
-    return `rgb(${Math.min(255,r+amount)},${Math.min(255,g+amount)},${Math.min(255,b+amount)})`;
-  }
-
-  _roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.lineTo(x+w-r, y);
-    ctx.arcTo(x+w, y, x+w, y+r, r);
-    ctx.lineTo(x+w, y+h-r);
-    ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
-    ctx.lineTo(x+r, y+h);
-    ctx.arcTo(x, y+h, x, y+h-r, r);
-    ctx.lineTo(x, y+r);
-    ctx.arcTo(x, y, x+r, y, r);
-    ctx.closePath();
-  }
-
-  _drawD6DotsInCtx(ctx, ox, oy, size, n, color) {
-    const dotR = size * 0.085;
-    const pad  = size * 0.24;
-    const mid  = size / 2;
-    const s    = size;
+  _drawD6Dots(ctx, n, color, S) {
+    const dotR = S * 0.085;
+    const pad  = S * 0.24;
+    const mid  = S / 2;
     const positions = {
-      1: [[mid, mid]],
-      2: [[pad, pad], [s-pad, s-pad]],
-      3: [[pad, pad], [mid, mid], [s-pad, s-pad]],
-      4: [[pad, pad], [s-pad, pad], [pad, s-pad], [s-pad, s-pad]],
-      5: [[pad, pad], [s-pad, pad], [mid, mid], [pad, s-pad], [s-pad, s-pad]],
-      6: [[pad, pad], [s-pad, pad], [pad, mid], [s-pad, mid], [pad, s-pad], [s-pad, s-pad]],
+      1: [[mid,mid]],
+      2: [[pad,pad],[S-pad,S-pad]],
+      3: [[pad,pad],[mid,mid],[S-pad,S-pad]],
+      4: [[pad,pad],[S-pad,pad],[pad,S-pad],[S-pad,S-pad]],
+      5: [[pad,pad],[S-pad,pad],[mid,mid],[pad,S-pad],[S-pad,S-pad]],
+      6: [[pad,pad],[S-pad,pad],[pad,mid],[S-pad,mid],[pad,S-pad],[S-pad,S-pad]],
     };
-    (positions[n] || []).forEach(([x, y]) => {
+    (positions[n]||[]).forEach(([x,y]) => {
       ctx.beginPath();
-      ctx.arc(ox + x, oy + y, dotR, 0, Math.PI * 2);
-      ctx.shadowColor = "rgba(0,0,0,0.5)";
-      ctx.shadowBlur  = 4;
+      ctx.arc(x, y, dotR, 0, Math.PI*2);
+      ctx.shadowColor = "rgba(0,0,0,0.45)";
+      ctx.shadowBlur  = 5;
       ctx.fillStyle   = color;
       ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.shadowBlur  = 0;
     });
   }
 
-  // ============================================================
-  //  GEOMETRY BUILDERS
-  //  Each returns a BufferGeometry whose UV attribute maps each
-  //  face triangle to [0,1]×[0,1]. We then remap those UVs to
-  //  the atlas cell for that face index.
-  // ============================================================
-
-  /**
-   * Remap UVs of a geometry so face `fi` (0-indexed) maps to its
-   * atlas cell. `faceTriCount` = number of triangles per face.
-   * The geometry must have flat-shaded groups (one group per face)
-   * OR we use the faceTriCount approach for uniform-face solids.
-   */
-  _remapUVsToAtlas(geo, sides, cols, rows, faceTriCount) {
-    const uvAttr = geo.attributes.uv;
-    const uvArr  = uvAttr.array;
-    const triTotal = uvArr.length / 2; // total UV pairs
-
-    const cellW = 1 / cols;
-    const cellH = 1 / rows;
-
-    // Each face has faceTriCount triangles × 3 verts = faceTriCount*3 UV pairs
-    const vertsPerFace = faceTriCount * 3;
-
-    for (let fi = 0; fi < sides; fi++) {
-      const col = fi % cols;
-      // Atlas origin is top-left but WebGL UVs are bottom-left — flip row
-      const row = rows - 1 - Math.floor(fi / cols);
-      const u0  = col * cellW;
-      const v0  = row * cellH;
-
-      const base = fi * vertsPerFace;
-      for (let vi = base; vi < base + vertsPerFace && vi * 2 + 1 < uvArr.length; vi++) {
-        // Original UV is already in [0,1] for the face; scale to cell
-        const origU = uvArr[vi * 2];
-        const origV = uvArr[vi * 2 + 1];
-        uvArr[vi * 2]     = u0 + origU * cellW;
-        uvArr[vi * 2 + 1] = v0 + origV * cellH;
-      }
-    }
-    uvAttr.needsUpdate = true;
+  _adjustColor(hex, amount) {
+    let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    return `rgb(${Math.min(255,r+amount)},${Math.min(255,g+amount)},${Math.min(255,b+amount)})`;
   }
 
-  // ---- Per-die-type geometry + atlas UV remap ----
-
-  _buildD4(atlas) {
-    // Tetrahedron: 4 triangular faces, 1 tri each
-    // Three.js TetrahedronGeometry has 4 faces × 1 tri = 12 verts
-    // But its UV layout is NOT per-face — we must build manually.
-    const geo = this._buildManualFacedGeo_Tetra();
-    this._remapManualGeoUVs(geo, 4, atlas.cols, atlas.rows);
-    return geo;
-  }
-
-  _buildD6(atlas) {
-    // Use manual geo so UV mapping is guaranteed correct per face
-    const h = 0.8;
-    const verts = [
-      [-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],
-      [-h,-h, h],[h,-h, h],[h,h, h],[-h,h, h],
-    ];
-    // Faces in order 1–6, consistent outward winding
-    const faces = [
-      [0,1,2,3], // front  -z → face 1
-      [5,4,7,6], // back   +z → face 2
-      [3,2,6,7], // top    +y → face 3
-      [4,5,1,0], // bottom -y → face 4
-      [1,5,6,2], // right  +x → face 5
-      [4,0,3,7], // left   -x → face 6
-    ];
-    const geo = this._buildManualGeo(verts, faces);
-    this._remapManualGeoUVs(geo, 6, atlas.cols, atlas.rows);
-    return geo;
-  }
-
-  _buildD8(atlas) {
-    // OctahedronGeometry: 8 triangular faces, 1 tri each
-    const geo = this._buildManualFacedGeo_Octa();
-    this._remapManualGeoUVs(geo, 8, atlas.cols, atlas.rows);
-    return geo;
-  }
-
-  _buildD10(atlas) {
-    const geo = this._buildManualFacedGeo_D10();
-    this._remapManualGeoUVs(geo, 10, atlas.cols, atlas.rows);
-    return geo;
-  }
-
-  _buildD12(atlas) {
-    const geo = this._buildManualFacedGeo_Dodec();
-    this._remapManualGeoUVs(geo, 12, atlas.cols, atlas.rows);
-    return geo;
-  }
-
-  _buildD20(atlas) {
-    const geo = this._buildManualFacedGeo_Icosa();
-    this._remapManualGeoUVs(geo, 20, atlas.cols, atlas.rows);
-    return geo;
+  _roundRect(ctx,x,y,w,h,r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+    ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+    ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+    ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+    ctx.closePath();
   }
 
   // ============================================================
-  //  MANUAL FACE GEOMETRY BUILDER
-  //  For each die we define exact face vertex lists.
-  //  Each face is triangulated (fan from vertex 0).
-  //  UV for every vertex is set to a canonical "face centre" UV
-  //  [0,1]x[0,1] using a simple planar projection — then
-  //  _remapManualGeoUVs maps each face's UVs to its atlas cell.
+  //  GEOMETRY — manual per-face BufferGeometry with correct UVs
   // ============================================================
 
   /**
-   * Given verts and faces, build a BufferGeometry where:
-   * - each face is a triangle fan
-   * - each face's UV spans [0,1]×[0,1] (via simple 2D projection)
-   * - geometry has ONE group per face (materialIndex = faceIndex)
-   * Also returns faceNormals[] for result-reading.
+   * Build geometry where every face:
+   *  - is triangle-fanned
+   *  - has UVs [0,1]×[0,1] centred on the face shape
+   *  - belongs to a geometry group (one per face)
+   * Returns geo with geo.userData.faceNormals set.
+   * Call with a materials ARRAY (one MeshBasicMaterial per face).
    */
   _buildManualGeo(verts, faces) {
-    const pos = [], nrm = [], uvs = [], groups = [];
-    const faceNormals = [];
-    let cursor = 0;
+    const pos=[], nrm=[], uvs=[], groups=[], faceNormals=[];
+    let cursor=0;
 
     faces.forEach((face, fi) => {
       const v3 = face.map(i => new THREE.Vector3(...verts[i]));
 
-      // Face normal via Newell's method for robustness
+      // Newell normal
       const fn = new THREE.Vector3();
-      for (let i = 0; i < v3.length; i++) {
-        const curr = v3[i], next = v3[(i+1) % v3.length];
-        fn.x += (curr.y - next.y) * (curr.z + next.z);
-        fn.y += (curr.z - next.z) * (curr.x + next.x);
-        fn.z += (curr.x - next.x) * (curr.y + next.y);
+      for (let i=0; i<v3.length; i++) {
+        const c=v3[i], n=v3[(i+1)%v3.length];
+        fn.x += (c.y-n.y)*(c.z+n.z);
+        fn.y += (c.z-n.z)*(c.x+n.x);
+        fn.z += (c.x-n.x)*(c.y+n.y);
       }
       fn.normalize();
       faceNormals.push(fn.clone());
 
-      // Build a stable, consistently-oriented UV basis.
-      // Pick a "world up" reference that isn't parallel to fn.
-      const worldRef = (Math.abs(fn.y) < 0.9)
-        ? new THREE.Vector3(0, 1, 0)
-        : new THREE.Vector3(0, 0, 1);
-      // uAxis: perpendicular to fn in the fn×worldRef plane, always points "rightward"
+      // Stable UV axes — world-aligned so orientation is consistent
+      const worldRef = (Math.abs(fn.y) < 0.85)
+        ? new THREE.Vector3(0,1,0)
+        : new THREE.Vector3(1,0,0);
       const uAxis = new THREE.Vector3().crossVectors(worldRef, fn).normalize();
-      // vAxis: perpendicular to both, always points "upward" on the face
       const vAxis = new THREE.Vector3().crossVectors(fn, uAxis).normalize();
 
-      // Project all verts onto face plane → 2D (centroid is local origin)
+      // Project vertices onto face plane, centred at centroid
       const centroid = new THREE.Vector3();
       v3.forEach(p => centroid.add(p));
       centroid.divideScalar(v3.length);
       const pts2d = v3.map(p => {
-        const d = p.clone().sub(centroid);
-        return [ d.dot(uAxis), d.dot(vAxis) ];
+        const d=p.clone().sub(centroid);
+        return [d.dot(uAxis), d.dot(vAxis)];
       });
 
-      // Normalise symmetrically so the shape is always centred at UV (0.5, 0.5)
-      let halfSpan = 0;
-      pts2d.forEach(([u,v]) => {
-        halfSpan = Math.max(halfSpan, Math.abs(u), Math.abs(v));
-      });
-      halfSpan = halfSpan || 1;
-      const margin = 0.10;
-      const scale  = (1 - margin * 2) / (halfSpan * 2);
-      const norm2d = pts2d.map(([u,v]) => [
-        u * scale + 0.5,
-        v * scale + 0.5,
-      ]);
+      // Symmetric normalisation → [0.08, 0.92] within cell
+      let hs=0;
+      pts2d.forEach(([u,v]) => { hs=Math.max(hs,Math.abs(u),Math.abs(v)); });
+      hs = hs||1;
+      const margin=0.08, sc=(1-margin*2)/(hs*2);
+      const norm2d = pts2d.map(([u,v]) => [u*sc+0.5, v*sc+0.5]);
 
-      // Triangle fan
-      const start = cursor;
-      for (let t = 1; t < face.length - 1; t++) {
-        [0, t, t+1].forEach(vi => {
+      // Triangle fan — each face gets its own sequential verts
+      const start=cursor;
+      for (let t=1; t<face.length-1; t++) {
+        [0,t,t+1].forEach(vi => {
           pos.push(...verts[face[vi]]);
           nrm.push(fn.x, fn.y, fn.z);
           uvs.push(norm2d[vi][0], norm2d[vi][1]);
           cursor++;
         });
       }
-      groups.push({ start, count: cursor - start, mi: fi });
+      groups.push({start, count:cursor-start, mi:fi});
     });
 
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
-    geo.setAttribute("normal",   new THREE.BufferAttribute(new Float32Array(nrm), 3));
-    geo.setAttribute("uv",       new THREE.BufferAttribute(new Float32Array(uvs), 2));
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos),3));
+    geo.setAttribute("normal",   new THREE.BufferAttribute(new Float32Array(nrm),3));
+    geo.setAttribute("uv",       new THREE.BufferAttribute(new Float32Array(uvs),2));
     groups.forEach(g => geo.addGroup(g.start, g.count, g.mi));
     geo.userData.faceNormals = faceNormals;
     return geo;
   }
 
-  /**
-   * Remap the UVs of a manual geometry so each face maps to its atlas cell.
-   * Groups tell us which verts belong to which face.
-   */
-  _remapManualGeoUVs(geo, sides, cols, rows) {
-    const uvArr   = geo.attributes.uv.array;
-    const groups  = geo.groups;
-    const cellW   = 1 / cols;
-    const cellH   = 1 / rows;
+  // ---- Die vertex/face definitions ----
 
-    groups.forEach((g, fi) => {
-      const col = fi % cols;
-      const row = rows - 1 - Math.floor(fi / cols); // flip Y for WebGL
-      const u0  = col * cellW;
-      const v0  = row * cellH;
-
-      const end = g.start + g.count;
-      for (let vi = g.start; vi < end; vi++) {
-        const origU = uvArr[vi * 2];
-        const origV = uvArr[vi * 2 + 1];
-        uvArr[vi * 2]     = u0 + origU * cellW;
-        uvArr[vi * 2 + 1] = v0 + origV * cellH;
+  _dieVF(sides) {
+    switch(sides) {
+      case 4: {
+        const r=1.3;
+        return {
+          verts:[[0,r,0],[-r*.9428,-r*.3333,r*.3333],[r*.9428,-r*.3333,r*.3333],[0,-r*.3333,-r*.6667]],
+          faces:[[0,1,2],[0,2,3],[0,3,1],[1,3,2]]
+        };
       }
-    });
-    geo.attributes.uv.needsUpdate = true;
-  }
-
-  // ---- Specific die geometries ----
-
-  _buildManualFacedGeo_Tetra() {
-    const r = 1.3;
-    const verts = [
-      [0, r, 0],
-      [-r*0.9428, -r*0.3333,  r*0.3333],
-      [ r*0.9428, -r*0.3333,  r*0.3333],
-      [0,         -r*0.3333, -r*0.6667],
-    ];
-    const faces = [[0,1,2],[0,2,3],[0,3,1],[1,3,2]];
-    return this._buildManualGeo(verts, faces);
-  }
-
-  _buildManualFacedGeo_Octa() {
-    const r = 1.15;
-    const verts = [
-      [ 0, r, 0], [ r, 0, 0], [ 0, 0, r],
-      [-r, 0, 0], [ 0, 0,-r], [ 0,-r, 0],
-    ];
-    // 8 triangular faces — outward normals
-    const faces = [
-      [0,1,2],[0,4,1],[0,3,4],[0,2,3],
-      [5,2,1],[5,1,4],[5,4,3],[5,3,2],
-    ];
-    return this._buildManualGeo(verts, faces);
-  }
-
-  _buildManualFacedGeo_D10() {
-    // Pentagonal trapezohedron
-    const verts = [[0, 1.2, 0], [0, -1.2, 0]];
-    for (let i = 0; i < 5; i++) {
-      const a = (i/5) * Math.PI * 2;
-      verts.push([Math.cos(a)*1.0, 0.3, Math.sin(a)*1.0]);
+      case 6: {
+        const h=0.82;
+        return {
+          verts:[[-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],[-h,-h,h],[h,-h,h],[h,h,h],[-h,h,h]],
+          faces:[[3,2,1,0],[4,5,6,7],[7,6,2,3],[0,1,5,4],[1,2,6,5],[4,7,3,0]]
+        };
+      }
+      case 8: {
+        const r=1.15;
+        return {
+          verts:[[0,r,0],[r,0,0],[0,0,r],[-r,0,0],[0,0,-r],[0,-r,0]],
+          faces:[[0,1,2],[0,4,1],[0,3,4],[0,2,3],[5,2,1],[5,1,4],[5,4,3],[5,3,2]]
+        };
+      }
+      case 10: {
+        const verts=[[0,1.2,0],[0,-1.2,0]];
+        for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;verts.push([Math.cos(a),0.3,Math.sin(a)]);}
+        for(let i=0;i<5;i++){const a=((i+.5)/5)*Math.PI*2;verts.push([Math.cos(a),-.3,Math.sin(a)]);}
+        const faces=[];
+        for(let i=0;i<5;i++){const u0=2+i,u1=2+(i+1)%5,l0=7+i,l1=7+(i+1)%5;
+          faces.push([0,u0,l0,u1]); faces.push([1,l1,u1,l0]);}
+        return {verts,faces};
+      }
+      case 12: {
+        const phi=(1+Math.sqrt(5))/2, a=0.75, b=0.75/phi, c=0.75*phi;
+        const verts=[[a,a,a],[a,a,-a],[a,-a,a],[a,-a,-a],[-a,a,a],[-a,a,-a],[-a,-a,a],[-a,-a,-a],
+          [0,b,c],[0,b,-c],[0,-b,c],[0,-b,-c],[b,c,0],[b,-c,0],[-b,c,0],[-b,-c,0],[c,0,b],[c,0,-b],[-c,0,b],[-c,0,-b]];
+        const faces=[[0,16,2,10,8],[0,8,4,14,12],[0,12,1,17,16],[2,16,17,3,13],[4,8,10,6,18],
+          [1,12,14,5,9],[3,17,1,9,11],[3,11,7,15,13],[5,14,4,18,19],[6,10,2,13,15],[7,11,9,5,19],[6,15,7,19,18]];
+        return {verts,faces};
+      }
+      case 20: {
+        const phi=(1+Math.sqrt(5))/2;
+        const verts=[[-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],[0,-1,phi],[0,1,phi],
+          [0,-1,-phi],[0,1,-phi],[phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1]];
+        const faces=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],
+          [11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+          [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+        return {verts,faces};
+      }
+      default: return this._dieVF(6);
     }
-    for (let i = 0; i < 5; i++) {
-      const a = ((i+0.5)/5) * Math.PI * 2;
-      verts.push([Math.cos(a)*1.0, -0.3, Math.sin(a)*1.0]);
-    }
-    const faces = [];
-    for (let i = 0; i < 5; i++) {
-      const u0=2+i, u1=2+(i+1)%5, l0=7+i, l1=7+(i+1)%5;
-      faces.push([0, u0, l0, u1]);  // upper kite — consistent winding
-      faces.push([1, l1, u1, l0]);  // lower kite
-    }
-    return this._buildManualGeo(verts, faces);
   }
-
-  _buildManualFacedGeo_Dodec() {
-    const phi = (1+Math.sqrt(5))/2;
-    const a=0.75, b=0.75/phi, c=0.75*phi;
-    const verts = [
-      [ a, a, a],[ a, a,-a],[ a,-a, a],[ a,-a,-a],
-      [-a, a, a],[-a, a,-a],[-a,-a, a],[-a,-a,-a],
-      [0, b, c],[0, b,-c],[0,-b, c],[0,-b,-c],
-      [b, c, 0],[b,-c, 0],[-b, c, 0],[-b,-c, 0],
-      [c, 0, b],[c, 0,-b],[-c, 0, b],[-c, 0,-b],
-    ];
-    // 12 hand-specified pentagonal faces (correct winding, outward normals)
-    const faces = [
-      [0,16,2,10,8],   // face 1
-      [0,8,4,14,12],   // face 2
-      [0,12,1,17,16],  // face 3
-      [2,16,17,3,13],  // face 4
-      [4,8,10,6,18],   // face 5
-      [1,12,14,5,9],   // face 6
-      [3,17,1,9,11],   // face 7
-      [3,11,7,15,13],  // face 8
-      [5,14,4,18,19],  // face 9
-      [6,10,2,13,15],  // face 10
-      [7,11,9,5,19],   // face 11
-      [6,15,7,19,18],  // face 12
-    ];
-    return this._buildManualGeo(verts, faces);
-  }
-
-  _buildManualFacedGeo_Icosa() {
-    const phi = (1+Math.sqrt(5))/2;
-    const verts = [
-      [-1, phi, 0],[1, phi, 0],[-1,-phi, 0],[1,-phi, 0],
-      [0,-1, phi],[0, 1, phi],[0,-1,-phi],[0, 1,-phi],
-      [phi, 0,-1],[phi, 0, 1],[-phi, 0,-1],[-phi, 0, 1],
-    ];
-    const faces = [
-      [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
-      [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
-      [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
-      [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1],
-    ];
-    return this._buildManualGeo(verts, faces);
-  }
-
   // ---- Build a die mesh ----
 
   _buildDieMesh(dieCfg) {
     const { type, dieColor, dotColor, faceStyle } = dieCfg;
     const sides = parseInt(type);
 
-    const atlas = this._buildAtlas(sides, dieColor, dotColor, faceStyle);
+    const { verts, faces } = this._dieVF(sides);
+    const geo = this._buildManualGeo(verts, faces);
 
-    let geo;
-    switch (sides) {
-      case 4:  geo = this._buildD4(atlas);  break;
-      case 6:  geo = this._buildD6(atlas);  break;
-      case 8:  geo = this._buildD8(atlas);  break;
-      case 10: geo = this._buildD10(atlas); break;
-      case 12: geo = this._buildD12(atlas); break;
-      case 20: geo = this._buildD20(atlas); break;
-      default: geo = this._buildD6(atlas);  break;
-    }
+    // One MeshBasicMaterial per face — fully unlit, no dark faces ever.
+    // geo.groups[fi].materialIndex === fi, so Three.js picks materials[fi] per face.
+    const materials = faces.map((_, fi) =>
+      new THREE.MeshBasicMaterial({
+        map: this._makeFaceTex(sides, fi + 1, dieColor, dotColor, faceStyle),
+      })
+    );
 
-    // MeshBasicMaterial: fully unlit — the atlas texture IS the colour.
-    // No lighting calculation means no dark faces, no specular artifacts.
-    // Shadows are cast by the geometry regardless of material type.
-    const mat = new THREE.MeshBasicMaterial({
-      map: atlas.texture,
-    });
-
-    const mesh = new THREE.Mesh(geo, mat);
+    const mesh = new THREE.Mesh(geo, materials);
     mesh.castShadow    = true;
     mesh.receiveShadow = true;
-
-    // Store face normals for result reading
     mesh.userData.faceNormals = geo.userData.faceNormals || [];
     mesh.userData.sides       = sides;
 
