@@ -187,50 +187,9 @@ class DiceEngine {
     this.renderer.dispose();
   }
 
-  // ---- Dice creation ----
-
-  _makeD4Geometry(size) {
-    const s = size * 1.5;
-    const geo = new THREE.BufferGeometry();
-    const verts = new Float32Array([
-       0,  s,  0,
-      -s, -s/2,  s,
-       s, -s/2,  s,
-       0, -s/2, -s * 1.1,
-    ]);
-    const idx = [0,1,2, 0,2,3, 0,3,1, 1,3,2];
-    geo.setAttribute("position", new THREE.BufferAttribute(verts, 3));
-    geo.setIndex(idx);
-    geo.computeVertexNormals();
-    return geo;
-  }
-
-  _makeDodecahedronLike(sides) {
-    // Use built-in geometries for standard dice
-    switch (sides) {
-      case 4:  return new THREE.TetrahedronGeometry(1.1);
-      case 6:  return new THREE.BoxGeometry(1.6, 1.6, 1.6, 1, 1, 1);
-      case 8:  return new THREE.OctahedronGeometry(1.2);
-      case 10: return new THREE.ConeGeometry(1.0, 1.8, 10);
-      case 12: return new THREE.DodecahedronGeometry(1.1);
-      case 20: return new THREE.IcosahedronGeometry(1.2);
-      default: return new THREE.BoxGeometry(1.6, 1.6, 1.6);
-    }
-  }
-
-  _makeCannonShape(sides) {
-    switch (sides) {
-      case 4:
-      case 8:
-      case 12:
-      case 20: return new CANNON.Sphere(1.1);
-      case 10: return new CANNON.Sphere(1.0);
-      case 6:
-      default: return new CANNON.Box(new CANNON.Vec3(0.8, 0.8, 0.8));
-    }
-  }
-
-  // ---- Face textures ----
+  // ============================================================
+  //  TEXTURE HELPERS
+  // ============================================================
 
   _makeFaceTexture(sides, faceNum, dieColor, dotColor, faceStyle) {
     const size = 256;
@@ -238,49 +197,62 @@ class DiceEngine {
     cvs.width = size; cvs.height = size;
     const ctx = cvs.getContext("2d");
 
-    // Background
+    // Background fill — full square so UV seams don't show gaps
     ctx.fillStyle = dieColor;
-    const r = 28;
-    this._roundRect(ctx, 0, 0, size, size, r);
+    ctx.fillRect(0, 0, size, size);
+
+    // Inner rounded rect for the "face plate" look
+    const pad = 10, r = 22;
+    ctx.fillStyle = this._adjustColor(dieColor, 15);
+    this._roundRect(ctx, pad, pad, size - pad*2, size - pad*2, r);
     ctx.fill();
 
     // Subtle edge highlight
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.lineWidth = 6;
-    this._roundRect(ctx, 3, 3, size - 6, size - 6, r - 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.lineWidth = 3;
+    this._roundRect(ctx, pad+2, pad+2, size - pad*2 - 4, size - pad*2 - 4, r-1);
     ctx.stroke();
 
-    if (faceStyle === "numbers") {
-      ctx.fillStyle = dotColor;
-      const fontSize = sides > 12 ? 72 : 88;
-      ctx.font = `bold ${fontSize}px 'Outfit', sans-serif`;
+    const useStyle = (sides !== 6 && faceStyle === "dots") ? "numbers" : faceStyle;
+
+    if (useStyle === "numbers") {
+      const fontSize = sides > 9 ? 80 : 92;
+      ctx.font = `bold ${fontSize}px 'Outfit', Arial, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      // Shadow for depth
-      ctx.shadowColor = "rgba(0,0,0,0.5)";
-      ctx.shadowBlur = 8;
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = dotColor;
       ctx.fillText(String(faceNum), size / 2, size / 2 + 4);
+      // Underline 6 and 9 to disambiguate
+      if (faceNum === 6 || faceNum === 9) {
+        const tw = ctx.measureText(String(faceNum)).width;
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = dotColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(size/2 - tw/2, size/2 + fontSize/2 - 2);
+        ctx.lineTo(size/2 + tw/2, size/2 + fontSize/2 - 2);
+        ctx.stroke();
+      }
       ctx.shadowBlur = 0;
     } else {
-      // Dots — only meaningful for d6
-      if (sides === 6) {
-        this._drawD6Dots(ctx, faceNum, dotColor, size);
-      } else {
-        // fallback to numbers for non-d6 dots
-        ctx.fillStyle = dotColor;
-        const fontSize = 88;
-        ctx.font = `bold ${fontSize}px 'Outfit', sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 8;
-        ctx.fillText(String(faceNum), size / 2, size / 2 + 4);
-        ctx.shadowBlur = 0;
-      }
+      // Dots — d6 only
+      this._drawD6Dots(ctx, faceNum, dotColor, size);
     }
 
-    const tex = new THREE.CanvasTexture(cvs);
-    return tex;
+    return new THREE.CanvasTexture(cvs);
+  }
+
+  _adjustColor(hex, amount) {
+    // Lighten a hex color by `amount` (0-255)
+    let r = parseInt(hex.slice(1,3),16);
+    let g = parseInt(hex.slice(3,5),16);
+    let b = parseInt(hex.slice(5,7),16);
+    r = Math.min(255, r + amount);
+    g = Math.min(255, g + amount);
+    b = Math.min(255, b + amount);
+    return `rgb(${r},${g},${b})`;
   }
 
   _roundRect(ctx, x, y, w, h, r) {
@@ -298,10 +270,10 @@ class DiceEngine {
   }
 
   _drawD6Dots(ctx, n, color, size) {
-    const s = size;
-    const dotR = s * 0.085;
-    const pad = s * 0.22;
-    const mid = s / 2;
+    const dotR = size * 0.085;
+    const pad  = size * 0.24;
+    const mid  = size / 2;
+    const s    = size;
     const positions = {
       1: [[mid, mid]],
       2: [[pad, pad], [s-pad, s-pad]],
@@ -310,52 +282,317 @@ class DiceEngine {
       5: [[pad, pad], [s-pad, pad], [mid, mid], [pad, s-pad], [s-pad, s-pad]],
       6: [[pad, pad], [s-pad, pad], [pad, mid], [s-pad, mid], [pad, s-pad], [s-pad, s-pad]],
     };
-    const dots = positions[n] || [];
-    dots.forEach(([x, y]) => {
+    (positions[n] || []).forEach(([x, y]) => {
       ctx.beginPath();
       ctx.arc(x, y, dotR, 0, Math.PI * 2);
+      ctx.shadowColor = "rgba(0,0,0,0.5)";
+      ctx.shadowBlur = 5;
       ctx.fillStyle = color;
-      ctx.shadowColor = "rgba(0,0,0,0.4)";
-      ctx.shadowBlur = 4;
       ctx.fill();
       ctx.shadowBlur = 0;
     });
   }
 
-  // ---- Build a single die mesh ----
+  // ============================================================
+  //  GEOMETRY — proper per-face UV-mapped BufferGeometry
+  //  Each face gets its own quad of UV space so we can assign
+  //  individual material groups, one material per face.
+  // ============================================================
+
+  /**
+   * Build a BufferGeometry from a list of face-vertex indices.
+   * Each face becomes a triangle fan (or pair of tris for quads).
+   * UV for each face is mapped to a unit square so per-face
+   * materials display correctly.
+   * Returns { geometry, faceNormals }
+   */
+  _buildFacedGeometry(verts, faces) {
+    // verts: array of [x,y,z]
+    // faces: array of arrays of vertex indices (each face is a polygon)
+
+    const positions = [];
+    const normals   = [];
+    const uvs       = [];
+    const groups    = []; // { start, count, materialIndex }
+    const faceNormals = [];
+
+    let idx = 0;
+    faces.forEach((face, fi) => {
+      // Compute face normal from first 3 vertices
+      const a = new THREE.Vector3(...verts[face[0]]);
+      const b = new THREE.Vector3(...verts[face[1]]);
+      const c = new THREE.Vector3(...verts[face[2]]);
+      const n = new THREE.Vector3().crossVectors(
+        new THREE.Vector3().subVectors(b, a),
+        new THREE.Vector3().subVectors(c, a)
+      ).normalize();
+      faceNormals.push(n.clone());
+
+      // Compute centroid for UV mapping
+      const centroid = new THREE.Vector3();
+      face.forEach(vi => centroid.add(new THREE.Vector3(...verts[vi])));
+      centroid.divideScalar(face.length);
+
+      // Build a local 2D basis on the face plane so UVs form a sensible square
+      const uAxis = new THREE.Vector3().subVectors(new THREE.Vector3(...verts[face[0]]), centroid).normalize();
+      const vAxis = new THREE.Vector3().crossVectors(n, uAxis).normalize();
+
+      // Project each vertex onto face plane → 2D coords
+      const pts2d = face.map(vi => {
+        const p = new THREE.Vector3(...verts[vi]).sub(centroid);
+        return [p.dot(uAxis), p.dot(vAxis)];
+      });
+
+      // Normalise 2D coords to [0,1]
+      let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+      pts2d.forEach(([u,v]) => { minU=Math.min(minU,u); maxU=Math.max(maxU,u); minV=Math.min(minV,v); maxV=Math.max(maxV,v); });
+      const rangeU = maxU - minU || 1;
+      const rangeV = maxV - minV || 1;
+      const range  = Math.max(rangeU, rangeV);
+      const normPts = pts2d.map(([u,v]) => [
+        (u - minU) / range * 0.9 + 0.05,
+        (v - minV) / range * 0.9 + 0.05,
+      ]);
+
+      // Triangle fan from vertex 0
+      const startIdx = idx;
+      for (let t = 1; t < face.length - 1; t++) {
+        // Triangle: 0, t, t+1
+        [[0,0], [t,t], [t+1,t+1]].forEach(([fi_]) => {
+          // we just use the vertex indices directly
+        });
+        const triVerts = [0, t, t+1];
+        triVerts.forEach(vi => {
+          const [x,y,z] = verts[face[vi]];
+          positions.push(x, y, z);
+          normals.push(n.x, n.y, n.z);
+          uvs.push(normPts[vi][0], normPts[vi][1]);
+          idx++;
+        });
+      }
+      groups.push({ start: startIdx, count: idx - startIdx, materialIndex: fi });
+    });
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(positions), 3));
+    geo.setAttribute("normal",   new THREE.BufferAttribute(new Float32Array(normals),   3));
+    geo.setAttribute("uv",       new THREE.BufferAttribute(new Float32Array(uvs),       2));
+    groups.forEach(g => geo.addGroup(g.start, g.count, g.materialIndex));
+
+    return { geometry: geo, faceNormals };
+  }
+
+  // ---- Vertex/face definitions for each die type ----
+
+  _getDieData(sides) {
+    switch (sides) {
+      case 4:  return this._d4Data();
+      case 6:  return this._d6Data();
+      case 8:  return this._d8Data();
+      case 10: return this._d10Data();
+      case 12: return this._d12Data();
+      case 20: return this._d20Data();
+      default: return this._d6Data();
+    }
+  }
+
+  _d4Data() {
+    const r = 1.3;
+    const verts = [
+      [ 0,        r,        0       ],
+      [-r*0.943,  -r*0.333,  r*0.333],
+      [ r*0.943,  -r*0.333,  r*0.333],
+      [ 0,        -r*0.333, -r*0.667],
+    ];
+    const faces = [[0,1,2],[0,2,3],[0,3,1],[1,3,2]];
+    return { verts, faces };
+  }
+
+  _d6Data() {
+    const h = 0.8;
+    const verts = [
+      [-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h], // 0-3 front
+      [-h,-h, h],[h,-h, h],[h,h, h],[-h,h, h], // 4-7 back
+    ];
+    const faces = [
+      [0,3,2,1], // front  (-z) → 1
+      [4,5,6,7], // back   (+z) → 6
+      [3,7,6,2], // top    (+y) → 2
+      [0,1,5,4], // bottom (-y) → 5
+      [1,2,6,5], // right  (+x) → 3
+      [0,4,7,3], // left   (-x) → 4
+    ];
+    return { verts, faces };
+  }
+
+  _d8Data() {
+    const r = 1.15;
+    const verts = [
+      [ 0, r, 0],[r, 0, 0],[ 0, 0, r],
+      [-r, 0, 0],[ 0, 0,-r],[ 0,-r, 0],
+    ];
+    const faces = [
+      [0,2,1],[0,1,4],[0,4,3],[0,3,2],
+      [5,1,2],[5,4,1],[5,3,4],[5,2,3],
+    ];
+    return { verts, faces };
+  }
+
+  _d10Data() {
+    // Pentagonal trapezohedron — 10 kite-shaped faces
+    const verts = [];
+    const n = 5;
+    const top = [0, 1.1, 0];
+    const bot = [0, -1.1, 0];
+    verts.push(top); // 0
+    verts.push(bot); // 1
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      verts.push([Math.cos(a)*1.0, 0.25, Math.sin(a)*1.0]); // upper ring 2..6
+    }
+    for (let i = 0; i < n; i++) {
+      const a = ((i + 0.5) / n) * Math.PI * 2;
+      verts.push([Math.cos(a)*1.0, -0.25, Math.sin(a)*1.0]); // lower ring 7..11
+    }
+    const faces = [];
+    for (let i = 0; i < n; i++) {
+      const u0 = 2 + i, u1 = 2 + (i+1)%n;
+      const l0 = 7 + i, l1 = 7 + (i+1)%n;
+      faces.push([0, u1, l0, u0]); // upper kite
+      faces.push([1, l0, u1, l1]); // lower kite (reversed winding for correct normal)
+    }
+    return { verts, faces };
+  }
+
+  _d12Data() {
+    // Regular dodecahedron — 12 pentagonal faces
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const s = 0.75;
+    const a = s, b = s/phi, c = s*phi;
+    const rawVerts = [
+      [ a, a, a],[ a, a,-a],[ a,-a, a],[ a,-a,-a],
+      [-a, a, a],[-a, a,-a],[-a,-a, a],[-a,-a,-a],
+      [0, b, c],[0, b,-c],[0,-b, c],[0,-b,-c],
+      [b, c, 0],[b,-c, 0],[-b, c, 0],[-b,-c, 0],
+      [c, 0, b],[c, 0,-b],[-c, 0, b],[-c, 0,-b],
+    ];
+    const faces = [
+      [0,8,4,14,12],[0,12,1,9,16],[0,16,2,10,8],
+      [2,16,17,3,13],[3,17,1,12,14],[1,17,16,0,12],
+      [5,14,4,8,18],[5,18,6,15,19],[5,19,7,11,9],
+      [6,10,2,13,15],[7,15,13,3,11],[9,11,3,13,2], // last face closes up
+    ];
+    // Recompute proper 12 faces for dodecahedron
+    return { verts: rawVerts, faces: this._dodecFaces(rawVerts) };
+  }
+
+  _dodecFaces(verts) {
+    // Build correct pentagonal faces using angular proximity
+    const n = verts.length; // 20
+    const used = new Set();
+    const faces = [];
+    const v3 = verts.map(v => new THREE.Vector3(...v));
+    const center = new THREE.Vector3();
+
+    // Pre-defined face normals for a regular dodecahedron
+    const phi = (1+Math.sqrt(5))/2;
+    const faceNormDefs = [
+      [0,1,phi],[0,-1,phi],[0,1,-phi],[0,-1,-phi],
+      [1,phi,0],[-1,phi,0],[1,-phi,0],[-1,-phi,0],
+      [phi,0,1],[phi,0,-1],[-phi,0,1],[-phi,0,-1],
+    ].map(n => new THREE.Vector3(...n).normalize());
+
+    return faceNormDefs.map(fn => {
+      // Find 5 vertices closest to this face normal direction
+      const scores = v3.map((v,i) => ({ i, d: v.clone().normalize().dot(fn) }));
+      scores.sort((a,b)=>b.d-a.d);
+      const top5 = scores.slice(0,5).map(s=>s.i);
+      // Sort them angularly around the face normal
+      const centroid = new THREE.Vector3();
+      top5.forEach(i => centroid.add(v3[i]));
+      centroid.divideScalar(5);
+      const uAxis = v3[top5[0]].clone().sub(centroid).normalize();
+      const vAxis = fn.clone().cross(uAxis).normalize();
+      top5.sort((a,b)=>{
+        const pa = Math.atan2(v3[a].clone().sub(centroid).dot(vAxis), v3[a].clone().sub(centroid).dot(uAxis));
+        const pb = Math.atan2(v3[b].clone().sub(centroid).dot(vAxis), v3[b].clone().sub(centroid).dot(uAxis));
+        return pa - pb;
+      });
+      return top5;
+    });
+  }
+
+  _d20Data() {
+    // Regular icosahedron — 20 triangular faces
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const s = 1.0;
+    const verts = [
+      [-s, phi*s, 0],[s, phi*s, 0],[-s,-phi*s, 0],[s,-phi*s, 0],
+      [0,-s, phi*s],[0, s, phi*s],[0,-s,-phi*s],[0, s,-phi*s],
+      [phi*s, 0,-s],[phi*s, 0, s],[-phi*s, 0,-s],[-phi*s, 0, s],
+    ];
+    const faces = [
+      [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
+      [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
+      [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+      [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1],
+    ];
+    return { verts, faces };
+  }
+
+  // ---- ConvexPolyhedron physics from vertex/face data ----
+
+  _makeConvexPolyhedron(verts, faces) {
+    const cannonVerts = verts.map(v => new CANNON.Vec3(...v));
+    const cannonFaces = faces.map(f => [...f]);
+    try {
+      return new CANNON.ConvexPolyhedron(cannonVerts, cannonFaces);
+    } catch(e) {
+      // Fallback to sphere if ConvexPolyhedron fails (e.g. bad winding)
+      console.warn("ConvexPolyhedron failed, falling back to sphere", e);
+      return new CANNON.Sphere(1.1);
+    }
+  }
+
+  // ---- Build a single die mesh with per-face materials ----
 
   _buildDieMesh(dieCfg) {
     const { type, dieColor, dotColor, faceStyle } = dieCfg;
     const sides = parseInt(type);
 
-    if (sides === 6) {
-      // BoxGeometry — 6 distinct face textures
-      const materials = [];
-      // Box face order: +x, -x, +y, -y, +z, -z → map to 1-6
-      const faceMap = [4, 3, 1, 6, 2, 5];
-      for (let i = 0; i < 6; i++) {
-        const tex = this._makeFaceTexture(6, faceMap[i], dieColor, dotColor, faceStyle);
-        materials.push(new THREE.MeshStandardMaterial({
-          map: tex, roughness: 0.25, metalness: 0.08,
-        }));
-      }
-      const geo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
-      const mesh = new THREE.Mesh(geo, materials);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      return mesh;
-    } else {
-      // Single material with a number label for non-cubic dice
-      const geo = this._makeDodecahedronLike(sides);
-      const baseTex = this._makeFaceTexture(sides, 1, dieColor, dotColor, "numbers");
-      const mat = new THREE.MeshStandardMaterial({
-        map: baseTex, roughness: 0.3, metalness: 0.1, color: new THREE.Color(dieColor),
+    const { verts, faces } = this._getDieData(sides);
+    const { geometry, faceNormals } = this._buildFacedGeometry(verts, faces);
+
+    // One material per face, each with its own number/dot texture
+    const materials = faces.map((_, fi) => {
+      const faceNum = fi + 1; // faces are 1-indexed
+      const tex = this._makeFaceTexture(sides, faceNum, dieColor, dotColor, faceStyle);
+      return new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.28,
+        metalness: 0.06,
       });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      return mesh;
+    });
+
+    const mesh = new THREE.Mesh(geometry, materials);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    // Store face normals for result reading
+    mesh.userData.faceNormals = faceNormals;
+    mesh.userData.sides = sides;
+
+    return mesh;
+  }
+
+  // ---- Build cannon shape from same vertex data ----
+
+  _makeCannonShape(sides) {
+    const { verts, faces } = this._getDieData(sides);
+    if (sides === 6) {
+      return new CANNON.Box(new CANNON.Vec3(0.8, 0.8, 0.8));
     }
+    return this._makeConvexPolyhedron(verts, faces);
   }
 
   // ---- Spawn dice ----
@@ -434,40 +671,27 @@ class DiceEngine {
   }
 
   _readResults() {
+    const up = new THREE.Vector3(0, 1, 0);
     return this.diceObjects.map((d, idx) => {
       const sides = parseInt(d.type);
-      // Simple: pick a random valid result (true physics face-reading is complex for non-cubic)
-      // For d6, we attempt to read the top face from the quaternion
-      let value;
-      if (sides === 6) {
-        value = this._readD6Face(d.mesh.quaternion);
+      const faceNormals = d.mesh.userData.faceNormals || [];
+      let value = 1;
+      if (faceNormals.length > 0) {
+        const meshQuat = new THREE.Quaternion(
+          d.mesh.quaternion.x, d.mesh.quaternion.y,
+          d.mesh.quaternion.z, d.mesh.quaternion.w
+        );
+        let bestDot = -Infinity;
+        faceNormals.forEach((n, fi) => {
+          const rotated = n.clone().applyQuaternion(meshQuat);
+          const dot = rotated.dot(up);
+          if (dot > bestDot) { bestDot = dot; value = fi + 1; }
+        });
       } else {
         value = Math.floor(Math.random() * sides) + 1;
       }
       return { die: idx + 1, type: sides, value };
     });
-  }
-
-  _readD6Face(quat) {
-    // Map face normals to values based on which face points up (+Y)
-    const up = new THREE.Vector3(0, 1, 0);
-    // Face normals for BoxGeometry face order: +x=4, -x=3, +y=1, -y=6, +z=2, -z=5
-    const faces = [
-      { norm: new THREE.Vector3(1, 0, 0), val: 4 },
-      { norm: new THREE.Vector3(-1, 0, 0), val: 3 },
-      { norm: new THREE.Vector3(0, 1, 0), val: 1 },
-      { norm: new THREE.Vector3(0, -1, 0), val: 6 },
-      { norm: new THREE.Vector3(0, 0, 1), val: 2 },
-      { norm: new THREE.Vector3(0, 0, -1), val: 5 },
-    ];
-    let best = faces[0], bestDot = -Infinity;
-    const meshQuat = new THREE.Quaternion(quat.x, quat.y, quat.z, quat.w);
-    faces.forEach(f => {
-      const rotated = f.norm.clone().applyQuaternion(meshQuat);
-      const dot = rotated.dot(up);
-      if (dot > bestDot) { bestDot = dot; best = f; }
-    });
-    return best.val;
   }
 
   updateConfig(cfg) {
