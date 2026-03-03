@@ -90,35 +90,24 @@ class DiceEngine {
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     }
 
-    // Lights — strong ambient so flat-shaded faces never go black,
-    // plus three directional/point lights for depth and colour interest.
-    const ambIntensity = Math.max(0.72, (this.cfg.ambientLight || 40) / 100);
-    const amb = new THREE.AmbientLight(0xffffff, ambIntensity);
+    // Single directional light — used only for shadow casting onto the table.
+    // The dice themselves use MeshBasicMaterial so lighting doesn't affect their faces.
+    const shadowLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    shadowLight.position.set(5, 14, 8);
+    shadowLight.castShadow = this.cfg.shadowQuality !== "off";
+    shadowLight.shadow.mapSize.width  = this.cfg.shadowQuality === "high" ? 2048 : 1024;
+    shadowLight.shadow.mapSize.height = shadowLight.shadow.mapSize.width;
+    shadowLight.shadow.camera.near   = 0.5;
+    shadowLight.shadow.camera.far    = 50;
+    shadowLight.shadow.camera.left   = -14;
+    shadowLight.shadow.camera.right  = 14;
+    shadowLight.shadow.camera.top    = 14;
+    shadowLight.shadow.camera.bottom = -14;
+    this.scene.add(shadowLight);
+    // Ambient so the table/floor isn't completely black
+    const amb = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(amb);
-    this._ambLight = amb; // keep ref for updateConfig
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.55);
-    dirLight.position.set(6, 14, 8);
-    dirLight.castShadow = this.cfg.shadowQuality !== "off";
-    dirLight.shadow.mapSize.width = this.cfg.shadowQuality === "high" ? 2048 : 1024;
-    dirLight.shadow.mapSize.height = dirLight.shadow.mapSize.width;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 50;
-    dirLight.shadow.camera.left = -12;
-    dirLight.shadow.camera.right = 12;
-    dirLight.shadow.camera.top = 12;
-    dirLight.shadow.camera.bottom = -12;
-    this.scene.add(dirLight);
-
-    // Fill from below-left so bottom faces aren't pitch black
-    const fillLight = new THREE.DirectionalLight(0x8899cc, 0.35);
-    fillLight.position.set(-8, -4, -6);
-    this.scene.add(fillLight);
-
-    // Warm rim from behind
-    const rimLight = new THREE.DirectionalLight(0xffddaa, 0.22);
-    rimLight.position.set(0, 4, -12);
-    this.scene.add(rimLight);
+    this._ambLight = amb;
 
     // Table / floor
     if (this.cfg.showTable !== false) {
@@ -654,13 +643,11 @@ class DiceEngine {
       default: geo = this._buildD6(atlas);  break;
     }
 
-    // MeshLambertMaterial lights more evenly across flat-shaded polyhedral faces.
-    // The emissive term ensures no face ever goes fully black regardless of light angle.
-    const baseCol = new THREE.Color(dieColor);
-    const mat = new THREE.MeshLambertMaterial({
+    // MeshBasicMaterial: fully unlit — the atlas texture IS the colour.
+    // No lighting calculation means no dark faces, no specular artifacts.
+    // Shadows are cast by the geometry regardless of material type.
+    const mat = new THREE.MeshBasicMaterial({
       map: atlas.texture,
-      emissive: baseCol,
-      emissiveIntensity: 0.18,
     });
 
     const mesh = new THREE.Mesh(geo, mat);
@@ -824,8 +811,9 @@ class DiceEngine {
     this.cfg = cfg;
     this.scene.background = new THREE.Color(cfg.sceneBg || "#0d0d0d");
     this.scene.fog.color  = new THREE.Color(cfg.sceneBg || "#0d0d0d");
+    // Ambient only affects the table mesh, not the dice (MeshBasicMaterial)
     if (this._ambLight) {
-      this._ambLight.intensity = Math.max(0.72, (cfg.ambientLight || 40) / 100);
+      this._ambLight.intensity = (cfg.ambientLight || 40) / 100;
     }
   }
 }
@@ -965,8 +953,7 @@ function initConfigMode() {
   // Store engine reference so config changes can update it
   window._previewEngine = engine;
 
-  // Initial roll after short delay
-  setTimeout(() => triggerRoll(engine, config), 800);
+  // No auto-roll in config mode — user clicks "Roll Now" or the canvas
 }
 
 // ============================================================
