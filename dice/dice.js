@@ -127,10 +127,21 @@ class DiceEngine {
     this.world = new CANNON.World();
     this.world.gravity.set(0, -30, 0);
     this.world.broadphase = new CANNON.NaiveBroadphase();
-    this.world.solver.iterations = 20;
+    this.world.broadphase.useBoundingBoxes = true;
+    this.world.solver.iterations = 30;
+    this.world.solver.tolerance  = 0.001;
+    // Shared contact material so dice bounce off each other
+    this._diceMat  = new CANNON.Material('die');
+    this._floorMat = new CANNON.Material('floor');
+    const dieFloor = new CANNON.ContactMaterial(this._diceMat, this._floorMat,
+      { friction: 0.5, restitution: 0.3 });
+    const dieDie   = new CANNON.ContactMaterial(this._diceMat, this._diceMat,
+      { friction: 0.2, restitution: 0.25 });
+    this.world.addContactMaterial(dieFloor);
+    this.world.addContactMaterial(dieDie);
 
     // Physics floor
-    const floorBody = new CANNON.Body({ mass: 0 });
+    const floorBody = new CANNON.Body({ mass: 0, material: this._floorMat });
     floorBody.addShape(new CANNON.Plane());
     floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     this.world.addBody(floorBody);
@@ -320,10 +331,15 @@ class DiceEngine {
       v3.forEach(p => centroid.add(p));
       centroid.divideScalar(v3.length);
 
-      // UV basis: use the edge from centroid→v[0] as U axis so it's always
-      // consistent with vertex order (not dependent on world orientation).
-      const uAxis = v3[0].clone().sub(centroid).normalize();
-      const vAxis = new THREE.Vector3().crossVectors(fn, uAxis).normalize();
+      // UV basis: project world-Y onto the face plane to get a consistent
+      // "up" direction for the texture. Fall back to world-Z if face is ~horizontal.
+      // vAxis = "up on the texture", uAxis = "right on the texture"
+      const worldY = new THREE.Vector3(0,1,0);
+      const worldZ = new THREE.Vector3(0,0,1);
+      const ref    = (Math.abs(fn.dot(worldY)) < 0.95) ? worldY : worldZ;
+      // Project ref onto face plane: ref - (ref·fn)*fn
+      const vAxis  = ref.clone().addScaledVector(fn, -ref.dot(fn)).normalize();
+      const uAxis  = new THREE.Vector3().crossVectors(vAxis, fn).normalize();
 
       // Project verts onto face plane
       const pts2d = v3.map(p => {
@@ -584,7 +600,7 @@ class DiceEngine {
         (Math.random() - 0.5) * 30,
       );
 
-      body.material = new CANNON.Material({ restitution: 0.35, friction: 0.6 });
+      body.material = this._diceMat;
 
       this.world.addBody(body);
       this.diceObjects.push({ mesh, body, ...dieCfg });
