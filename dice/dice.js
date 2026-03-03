@@ -294,17 +294,9 @@ class DiceEngine {
   }
 
   // ============================================================
-  //  GEOMETRY — manual per-face BufferGeometry with correct UVs
+  //  GEOMETRY
   // ============================================================
 
-  /**
-   * Build geometry where every face:
-   *  - is triangle-fanned
-   *  - has UVs [0,1]×[0,1] centred on the face shape
-   *  - belongs to a geometry group (one per face)
-   * Returns geo with geo.userData.faceNormals set.
-   * Call with a materials ARRAY (one MeshBasicMaterial per face).
-   */
   _buildManualGeo(verts, faces) {
     const pos=[], nrm=[], uvs=[], groups=[], faceNormals=[];
     let cursor=0;
@@ -312,42 +304,42 @@ class DiceEngine {
     faces.forEach((face, fi) => {
       const v3 = face.map(i => new THREE.Vector3(...verts[i]));
 
-      // Newell normal
+      // Newell normal — robust for any polygon
       const fn = new THREE.Vector3();
       for (let i=0; i<v3.length; i++) {
-        const c=v3[i], n=v3[(i+1)%v3.length];
-        fn.x += (c.y-n.y)*(c.z+n.z);
-        fn.y += (c.z-n.z)*(c.x+n.x);
-        fn.z += (c.x-n.x)*(c.y+n.y);
+        const c=v3[i], nx=v3[(i+1)%v3.length];
+        fn.x += (c.y-nx.y)*(c.z+nx.z);
+        fn.y += (c.z-nx.z)*(c.x+nx.x);
+        fn.z += (c.x-nx.x)*(c.y+nx.y);
       }
       fn.normalize();
       faceNormals.push(fn.clone());
 
-      // Stable UV axes — world-aligned so orientation is consistent
-      const worldRef = (Math.abs(fn.y) < 0.85)
-        ? new THREE.Vector3(0,1,0)
-        : new THREE.Vector3(1,0,0);
-      const uAxis = new THREE.Vector3().crossVectors(worldRef, fn).normalize();
-      const vAxis = new THREE.Vector3().crossVectors(fn, uAxis).normalize();
-
-      // Project vertices onto face plane, centred at centroid
+      // Face centroid
       const centroid = new THREE.Vector3();
       v3.forEach(p => centroid.add(p));
       centroid.divideScalar(v3.length);
+
+      // UV basis: use the edge from centroid→v[0] as U axis so it's always
+      // consistent with vertex order (not dependent on world orientation).
+      const uAxis = v3[0].clone().sub(centroid).normalize();
+      const vAxis = new THREE.Vector3().crossVectors(fn, uAxis).normalize();
+
+      // Project verts onto face plane
       const pts2d = v3.map(p => {
-        const d=p.clone().sub(centroid);
+        const d = p.clone().sub(centroid);
         return [d.dot(uAxis), d.dot(vAxis)];
       });
 
-      // Symmetric normalisation → [0.08, 0.92] within cell
-      let hs=0;
-      pts2d.forEach(([u,v]) => { hs=Math.max(hs,Math.abs(u),Math.abs(v)); });
-      hs = hs||1;
-      const margin=0.08, sc=(1-margin*2)/(hs*2);
+      // Symmetric normalisation — centred at (0.5, 0.5)
+      let hs = 0;
+      pts2d.forEach(([u,v]) => { hs = Math.max(hs, Math.abs(u), Math.abs(v)); });
+      hs = hs || 1;
+      const sc = 0.82 / (hs * 2); // leave ~9% margin each side
       const norm2d = pts2d.map(([u,v]) => [u*sc+0.5, v*sc+0.5]);
 
-      // Triangle fan — each face gets its own sequential verts
-      const start=cursor;
+      // Triangle fan
+      const start = cursor;
       for (let t=1; t<face.length-1; t++) {
         [0,t,t+1].forEach(vi => {
           pos.push(...verts[face[vi]]);
@@ -360,82 +352,164 @@ class DiceEngine {
     });
 
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos),3));
-    geo.setAttribute("normal",   new THREE.BufferAttribute(new Float32Array(nrm),3));
-    geo.setAttribute("uv",       new THREE.BufferAttribute(new Float32Array(uvs),2));
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos),3));
+    geo.setAttribute('normal',   new THREE.BufferAttribute(new Float32Array(nrm),3));
+    geo.setAttribute('uv',       new THREE.BufferAttribute(new Float32Array(uvs),2));
     groups.forEach(g => geo.addGroup(g.start, g.count, g.mi));
     geo.userData.faceNormals = faceNormals;
     return geo;
   }
 
   // ---- Die vertex/face definitions ----
+  // Face 0 = canonical "top" face (used for result reading on D4 = bottom)
+  // Faces are ordered 1..N to match printed numbers.
+  // All windings outward (right-hand rule from outside).
 
   _dieVF(sides) {
     switch(sides) {
       case 4: {
+        // Tetrahedron. No flat top — read the BOTTOM face (most downward normal).
+        // Faces ordered so face index+1 is the number printed on that face.
         const r=1.3;
         return {
-          verts:[[0,r,0],[-r*.9428,-r*.3333,r*.3333],[r*.9428,-r*.3333,r*.3333],[0,-r*.3333,-r*.6667]],
-          faces:[[0,1,2],[0,2,3],[0,3,1],[1,3,2]]
+          verts:[
+            [0, r, 0],                            // 0 apex
+            [-r*.9428, -r*.3333,  r*.3333],        // 1
+            [ r*.9428, -r*.3333,  r*.3333],        // 2
+            [0,        -r*.3333, -r*.6667],        // 3
+          ],
+          faces:[
+            [0,2,1],   // face 0 → value 1
+            [0,1,3],   // face 1 → value 2
+            [0,3,2],   // face 2 → value 3
+            [1,2,3],   // face 3 → value 4  ← this is the base, most often on bottom
+          ],
+          readMode: 'bottom', // read most-downward face
         };
       }
       case 6: {
         const h=0.82;
         return {
           verts:[[-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],[-h,-h,h],[h,-h,h],[h,h,h],[-h,h,h]],
-          faces:[[3,2,1,0],[4,5,6,7],[7,6,2,3],[0,1,5,4],[1,2,6,5],[4,7,3,0]]
+          faces:[
+            [3,2,1,0],   // -z face → 1
+            [4,5,6,7],   // +z face → 2
+            [7,6,2,3],   // +y face → 3
+            [0,1,5,4],   // -y face → 4
+            [1,2,6,5],   // +x face → 5
+            [4,7,3,0],   // -x face → 6
+          ],
+          readMode: 'top',
         };
       }
       case 8: {
+        // Octahedron — two square pyramids. Faces numbered 1-8.
         const r=1.15;
         return {
           verts:[[0,r,0],[r,0,0],[0,0,r],[-r,0,0],[0,0,-r],[0,-r,0]],
-          faces:[[0,1,2],[0,4,1],[0,3,4],[0,2,3],[5,2,1],[5,1,4],[5,4,3],[5,3,2]]
+          faces:[
+            [0,1,2],[0,2,3],[0,3,4],[0,4,1],  // upper 4 faces → 1-4
+            [5,2,1],[5,3,2],[5,4,3],[5,1,4],  // lower 4 faces → 5-8
+          ],
+          readMode: 'top',
         };
       }
       case 10: {
-        const verts=[[0,1.2,0],[0,-1.2,0]];
-        for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;verts.push([Math.cos(a),0.3,Math.sin(a)]);}
-        for(let i=0;i<5;i++){const a=((i+.5)/5)*Math.PI*2;verts.push([Math.cos(a),-.3,Math.sin(a)]);}
-        const faces=[];
-        for(let i=0;i<5;i++){const u0=2+i,u1=2+(i+1)%5,l0=7+i,l1=7+(i+1)%5;
-          faces.push([0,u0,l0,u1]); faces.push([1,l1,u1,l0]);}
-        return {verts,faces};
+        // Pentagonal prism — 5 rectangular sides + 2 pentagons = 7 faces.
+        // We use 10 trapezoidal faces (actual D10 shape) for correct count.
+        // Simpler: use a standard 10-sided die shape — pentagonal trapezohedron
+        // but with LARGER flat-ish faces so numbers are readable.
+        // Approach: 10 faces, each is a kite. Number them 0-9 (face 0 = "10").
+        const verts = [];
+        // top/bottom poles
+        verts.push([0, 1.1, 0]);   // 0 = top pole
+        verts.push([0, -1.1, 0]);  // 1 = bottom pole
+        // upper ring of 5, offset so faces are wide and readable
+        for (let i=0;i<5;i++) {
+          const a = (i/5)*Math.PI*2;
+          verts.push([Math.cos(a)*1.05, 0.22, Math.sin(a)*1.05]);
+        }
+        // lower ring of 5, rotated half-step
+        for (let i=0;i<5;i++) {
+          const a = ((i+0.5)/5)*Math.PI*2;
+          verts.push([Math.cos(a)*1.05, -0.22, Math.sin(a)*1.05]);
+        }
+        // Build 10 kite faces: 5 upper, 5 lower
+        const faces = [];
+        for (let i=0;i<5;i++) {
+          const u0=2+i, u1=2+(i+1)%5, l0=7+i, l1=7+(i+1)%5;
+          faces.push([0, u0, l0, u1]);  // upper kite
+          faces.push([1, l1, u1, l0]);  // lower kite
+        }
+        return { verts, faces, readMode:'top' };
       }
       case 12: {
         const phi=(1+Math.sqrt(5))/2, a=0.75, b=0.75/phi, c=0.75*phi;
-        const verts=[[a,a,a],[a,a,-a],[a,-a,a],[a,-a,-a],[-a,a,a],[-a,a,-a],[-a,-a,a],[-a,-a,-a],
-          [0,b,c],[0,b,-c],[0,-b,c],[0,-b,-c],[b,c,0],[b,-c,0],[-b,c,0],[-b,-c,0],[c,0,b],[c,0,-b],[-c,0,b],[-c,0,-b]];
-        const faces=[[0,16,2,10,8],[0,8,4,14,12],[0,12,1,17,16],[2,16,17,3,13],[4,8,10,6,18],
-          [1,12,14,5,9],[3,17,1,9,11],[3,11,7,15,13],[5,14,4,18,19],[6,10,2,13,15],[7,11,9,5,19],[6,15,7,19,18]];
-        return {verts,faces};
+        return {
+          verts:[
+            [a,a,a],[a,a,-a],[a,-a,a],[a,-a,-a],[-a,a,a],[-a,a,-a],[-a,-a,a],[-a,-a,-a],
+            [0,b,c],[0,b,-c],[0,-b,c],[0,-b,-c],[b,c,0],[b,-c,0],[-b,c,0],[-b,-c,0],
+            [c,0,b],[c,0,-b],[-c,0,b],[-c,0,-b]
+          ],
+          faces:[
+            [0,16,2,10,8],[0,8,4,14,12],[0,12,1,17,16],
+            [2,16,17,3,13],[4,8,10,6,18],[1,12,14,5,9],
+            [3,17,1,9,11],[3,11,7,15,13],[5,14,4,18,19],
+            [6,10,2,13,15],[7,11,9,5,19],[6,15,7,19,18],
+          ],
+          readMode:'top',
+        };
       }
       case 20: {
         const phi=(1+Math.sqrt(5))/2;
-        const verts=[[-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],[0,-1,phi],[0,1,phi],
-          [0,-1,-phi],[0,1,-phi],[phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1]];
-        const faces=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],
-          [11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
-          [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
-        return {verts,faces};
+        return {
+          verts:[
+            [-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],
+            [0,-1,phi],[0,1,phi],[0,-1,-phi],[0,1,-phi],
+            [phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1],
+          ],
+          faces:[
+            [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
+            [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
+            [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+            [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1],
+          ],
+          readMode:'top',
+        };
       }
       default: return this._dieVF(6);
     }
   }
+
+  // ---- Build cannon shape ----
+
+  _makeCannonShape(sides) {
+    if (sides === 6) return new CANNON.Box(new CANNON.Vec3(0.82, 0.82, 0.82));
+    const { verts, faces } = this._dieVF(sides);
+    const cv = verts.map(v => new CANNON.Vec3(...v));
+    const cf = faces.map(f => [...f]);
+    try { return new CANNON.ConvexPolyhedron(cv, cf); }
+    catch(e) { console.warn('ConvexPolyhedron failed', e); return new CANNON.Sphere(1.1); }
+  }
+
   // ---- Build a die mesh ----
 
   _buildDieMesh(dieCfg) {
     const { type, dieColor, dotColor, faceStyle } = dieCfg;
     const sides = parseInt(type);
 
-    const { verts, faces } = this._dieVF(sides);
+    const dieData = this._dieVF(sides);
+    const { verts, faces } = dieData;
+    const readMode = dieData.readMode || 'top';
     const geo = this._buildManualGeo(verts, faces);
 
-    // One MeshBasicMaterial per face — fully unlit, no dark faces ever.
-    // geo.groups[fi].materialIndex === fi, so Three.js picks materials[fi] per face.
+    // D10: face index 0 = "10", faces 1-9 = values 1-9
+    const faceLabel = (fi) => (sides === 10) ? (fi === 0 ? 10 : fi) : fi + 1;
+
+    // One MeshBasicMaterial per face — fully unlit, always correct colour
     const materials = faces.map((_, fi) =>
       new THREE.MeshBasicMaterial({
-        map: this._makeFaceTex(sides, fi + 1, dieColor, dotColor, faceStyle),
+        map: this._makeFaceTex(sides, faceLabel(fi), dieColor, dotColor, faceStyle),
       })
     );
 
@@ -444,55 +518,10 @@ class DiceEngine {
     mesh.receiveShadow = true;
     mesh.userData.faceNormals = geo.userData.faceNormals || [];
     mesh.userData.sides       = sides;
+    mesh.userData.readMode    = readMode;
+    mesh.userData.faceLabel   = faceLabel;
 
     return mesh;
-  }
-
-  // ---- Build cannon shape ----
-
-  _makeCannonShape(sides) {
-    // Build ConvexPolyhedron from the same vertex/face data used for visuals
-    let verts, faces;
-    switch (sides) {
-      case 4: {
-        const r=1.3;
-        verts=[[0,r,0],[-r*0.9428,-r*0.3333,r*0.3333],[r*0.9428,-r*0.3333,r*0.3333],[0,-r*0.3333,-r*0.6667]];
-        faces=[[0,1,2],[0,2,3],[0,3,1],[1,3,2]]; break;
-      }
-      case 6:
-        return new CANNON.Box(new CANNON.Vec3(0.8, 0.8, 0.8));
-      case 8: {
-        const r=1.15;
-        verts=[[0,r,0],[r,0,0],[0,0,r],[-r,0,0],[0,0,-r],[0,-r,0]];
-        faces=[[0,1,2],[0,4,1],[0,3,4],[0,2,3],[5,2,1],[5,1,4],[5,4,3],[5,3,2]]; break;
-      }
-      case 10: {
-        verts=[[0,1.2,0],[0,-1.2,0]];
-        for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;verts.push([Math.cos(a),0.3,Math.sin(a)]);}
-        for(let i=0;i<5;i++){const a=((i+0.5)/5)*Math.PI*2;verts.push([Math.cos(a),-0.3,Math.sin(a)]);}
-        faces=[];
-        for(let i=0;i<5;i++){const u0=2+i,u1=2+(i+1)%5,l0=7+i,l1=7+(i+1)%5;faces.push([0,u0,l0,u1]);faces.push([1,l1,u1,l0]);}
-        break;
-      }
-      case 12: {
-        const phi=(1+Math.sqrt(5))/2,a=0.75,b=0.75/phi,c=0.75*phi;
-        verts=[[a,a,a],[a,a,-a],[a,-a,a],[a,-a,-a],[-a,a,a],[-a,a,-a],[-a,-a,a],[-a,-a,-a],[0,b,c],[0,b,-c],[0,-b,c],[0,-b,-c],[b,c,0],[b,-c,0],[-b,c,0],[-b,-c,0],[c,0,b],[c,0,-b],[-c,0,b],[-c,0,-b]];
-        faces=[[0,16,2,10,8],[0,8,4,14,12],[0,12,1,17,16],[2,16,17,3,13],[4,8,10,6,18],[1,12,14,5,9],[3,17,1,9,11],[3,11,7,15,13],[5,14,4,18,19],[6,10,2,13,15],[7,11,9,5,19],[6,15,7,19,18]];
-        break;
-      }
-      case 20: {
-        const phi=(1+Math.sqrt(5))/2;
-        verts=[[-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],[0,-1,phi],[0,1,phi],[0,-1,-phi],[0,1,-phi],[phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1]];
-        faces=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
-        break;
-      }
-      default:
-        return new CANNON.Box(new CANNON.Vec3(0.8, 0.8, 0.8));
-    }
-    const cv = verts.map(v => new CANNON.Vec3(...v));
-    const cf = faces.map(f => [...f]);
-    try { return new CANNON.ConvexPolyhedron(cv, cf); }
-    catch(e) { return new CANNON.Sphere(1.1); }
   }
 
   // ---- Spawn dice ----
@@ -571,26 +600,27 @@ class DiceEngine {
   }
 
   _readResults() {
-    const up = new THREE.Vector3(0, 1, 0);
     return this.diceObjects.map((d, idx) => {
-      const sides = parseInt(d.type);
+      const sides      = parseInt(d.type);
       const faceNormals = d.mesh.userData.faceNormals || [];
+      const readMode   = d.mesh.userData.readMode || 'top';
+      const faceLabel  = d.mesh.userData.faceLabel || (fi => fi + 1);
       let value = 1;
       if (faceNormals.length > 0) {
-        const meshQuat = new THREE.Quaternion(
-          d.mesh.quaternion.x, d.mesh.quaternion.y,
-          d.mesh.quaternion.z, d.mesh.quaternion.w
-        );
-        let bestDot = -Infinity;
+        const q   = d.mesh.quaternion;
+        const ref = readMode === 'bottom'
+          ? new THREE.Vector3(0,-1,0)
+          : new THREE.Vector3(0, 1,0);
+        let bestDot = -Infinity, bestFi = 0;
         faceNormals.forEach((n, fi) => {
-          const rotated = n.clone().applyQuaternion(meshQuat);
-          const dot = rotated.dot(up);
-          if (dot > bestDot) { bestDot = dot; value = fi + 1; }
+          const dot = n.clone().applyQuaternion(q).dot(ref);
+          if (dot > bestDot) { bestDot = dot; bestFi = fi; }
         });
+        value = faceLabel(bestFi);
       } else {
         value = Math.floor(Math.random() * sides) + 1;
       }
-      return { die: idx + 1, type: sides, value };
+      return { die: idx+1, type: sides, value };
     });
   }
 
