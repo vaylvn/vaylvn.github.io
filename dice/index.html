@@ -1,22 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Dice Widget</title>
-<style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: transparent;
-    }
-    canvas {
-        display: block;
-    }
-</style>
+  <meta charset="UTF-8">
+  <title>Vayl · Dice Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600;700&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@300;400;600&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dice-style.css">
 </head>
 <body>
-<canvas id="diceCanvas"></canvas>
-<script src="./dice.js"></script>
+
+  <!-- CONFIG MODE -->
+  <div id="config-app" class="hidden">
+    <header id="config-header">
+      <div class="logo">vayl <span class="logo-dot">·</span> dice</div>
+      <div class="header-actions">
+        <button id="btn-copy-url" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy Widget URL
+        </button>
+      </div>
+    </header>
+
+    <div id="config-body">
+      <aside id="config-panel">
+
+        <section class="config-section">
+          <h2 class="section-label">Import Config</h2>
+          <div class="import-row">
+            <input type="text" id="import-url" placeholder="Paste a widget URL…" spellcheck="false">
+            <button id="btn-import" class="btn-ghost">Load</button>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Behaviour</h2>
+          <div class="cfg-row">
+            <label>Widget name</label>
+            <input type="text" id="cfg-widget-name" class="cfg-input-inline" placeholder="dice" spellcheck="false">
+          </div>
+          <p class="cfg-hint">Used by Flask to route poll/result calls</p>
+          <div class="cfg-row mt-8">
+            <label>Auto-roll on load</label>
+            <div class="toggle-row">
+              <button class="toggle" id="cfg-autoroll-toggle" data-on="false"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-autoroll-label">Off</span>
+            </div>
+          </div>
+          <div class="cfg-row" id="autoroll-delay-row">
+            <label>Delay after load <span class="unit">s</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-autoroll-delay" min="0" max="30" step="0.5" value="2">
+              <span class="slider-val" id="cfg-autoroll-delay-val">2</span>
+            </div>
+          </div>
+          <div class="cfg-row mt-8">
+            <label>Click scene to roll</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-clickroll-toggle" data-on="true"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-clickroll-label">On</span>
+            </div>
+          </div>
+          <div class="cfg-row mt-8">
+            <label>Poll Flask server</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-poll-toggle" data-on="true"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-poll-label">On</span>
+            </div>
+          </div>
+          <div class="cfg-row mt-8">
+            <label>Show result overlay</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-overlay-toggle" data-on="true"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-overlay-label">On</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Overlay duration <span class="unit">ms</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-overlay-duration" min="500" max="10000" step="250" value="3000">
+              <span class="slider-val" id="cfg-overlay-duration-val">3000</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Dice Set</h2>
+          <div id="dice-list"></div>
+          <button id="btn-add-die" class="btn-add-die">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Die
+          </button>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Scene</h2>
+          <div class="cfg-row">
+            <label>Background</label>
+            <input type="color" id="cfg-scene-bg" class="cfg-color" value="#0d0d0d">
+          </div>
+          <div class="cfg-row">
+            <label>Table colour</label>
+            <input type="color" id="cfg-table-color" class="cfg-color" value="#1a1a2e">
+          </div>
+          <div class="cfg-row">
+            <label>Show table</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-table-toggle" data-on="true"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-table-label">On</span>
+            </div>
+          </div>
+          <div class="cfg-row mt-8">
+            <label>Ambient light</label>
+            <div class="slider-row">
+              <input type="range" id="cfg-ambient" min="0" max="100" step="5" value="40">
+              <span class="slider-val" id="cfg-ambient-val">40%</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Shadow quality</label>
+            <div class="seg-control" id="shadow-quality-seg">
+              <button class="seg-btn" data-val="off">Off</button>
+              <button class="seg-btn active" data-val="medium">Med</button>
+              <button class="seg-btn" data-val="high">High</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Result Overlay Style</h2>
+          <div class="cfg-row">
+            <label>Font</label>
+            <select id="cfg-result-font" class="cfg-select">
+              <option value="Outfit">Outfit</option>
+              <option value="Syne">Syne</option>
+              <option value="Space Grotesk">Space Grotesk</option>
+              <option value="IBM Plex Sans">IBM Plex Sans</option>
+              <option value="Figtree">Figtree</option>
+              <option value="JetBrains Mono">JetBrains Mono</option>
+            </select>
+          </div>
+          <div class="cfg-row">
+            <label>Text colour</label>
+            <input type="color" id="cfg-result-color" class="cfg-color" value="#ffffff">
+          </div>
+          <div class="cfg-row">
+            <label>Text size <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-result-size" min="20" max="120" step="2" value="64">
+              <span class="slider-val" id="cfg-result-size-val">64</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Position</label>
+            <div class="seg-control" id="result-pos-seg">
+              <button class="seg-btn" data-val="top">Top</button>
+              <button class="seg-btn active" data-val="center">Center</button>
+              <button class="seg-btn" data-val="bottom">Bottom</button>
+            </div>
+          </div>
+        </section>
+
+        <div style="height: 60px;"></div>
+      </aside>
+
+      <main id="preview-pane">
+        <div id="preview-label">
+          Live Preview
+          <span>· click the scene to roll</span>
+          <button id="btn-preview-roll" class="btn-ghost-sm">Roll Now</button>
+        </div>
+        <div id="preview-screen">
+          <canvas id="preview-canvas"></canvas>
+          <div id="preview-result-overlay" class="result-overlay hidden"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- WIDGET MODE -->
+  <div id="widget-app" class="hidden">
+    <canvas id="widget-canvas"></canvas>
+    <div id="widget-result-overlay" class="result-overlay hidden"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Three.js r128 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Cannon.js physics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+  <script src="dice.js"></script>
 </body>
 </html>
