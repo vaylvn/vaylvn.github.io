@@ -90,22 +90,35 @@ class DiceEngine {
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     }
 
-    // Single directional light — used only for shadow casting onto the table.
-    // The dice themselves use MeshBasicMaterial so lighting doesn't affect their faces.
-    const shadowLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    shadowLight.position.set(5, 14, 8);
-    shadowLight.castShadow = this.cfg.shadowQuality !== "off";
-    shadowLight.shadow.mapSize.width  = this.cfg.shadowQuality === "high" ? 2048 : 1024;
-    shadowLight.shadow.mapSize.height = shadowLight.shadow.mapSize.width;
-    shadowLight.shadow.camera.near   = 0.5;
-    shadowLight.shadow.camera.far    = 50;
-    shadowLight.shadow.camera.left   = -14;
-    shadowLight.shadow.camera.right  = 14;
-    shadowLight.shadow.camera.top    = 14;
-    shadowLight.shadow.camera.bottom = -14;
-    this.scene.add(shadowLight);
-    // Ambient so the table/floor isn't completely black
-    const amb = new THREE.AmbientLight(0xffffff, 0.6);
+    // ── 3-point lighting for matte dice with subtle gloss ──
+
+    // Key light — warm, from upper-front-left, casts shadows
+    const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.1);
+    keyLight.position.set(-6, 16, 10);
+    keyLight.castShadow = this.cfg.shadowQuality !== "off";
+    keyLight.shadow.mapSize.width  = this.cfg.shadowQuality === "high" ? 2048 : 1024;
+    keyLight.shadow.mapSize.height = keyLight.shadow.mapSize.width;
+    keyLight.shadow.camera.near   = 0.5;
+    keyLight.shadow.camera.far    = 60;
+    keyLight.shadow.camera.left   = -14;
+    keyLight.shadow.camera.right  = 14;
+    keyLight.shadow.camera.top    = 14;
+    keyLight.shadow.camera.bottom = -14;
+    keyLight.shadow.bias          = -0.0005;
+    this.scene.add(keyLight);
+
+    // Fill light — cool, from right, no shadow, softens dark faces
+    const fillLight = new THREE.DirectionalLight(0xd0e8ff, 0.45);
+    fillLight.position.set(10, 6, -4);
+    this.scene.add(fillLight);
+
+    // Rim light — from behind/below, gives edge glow on the die
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.25);
+    rimLight.position.set(0, -8, -12);
+    this.scene.add(rimLight);
+
+    // Ambient — low, so faces never fully black
+    const amb = new THREE.AmbientLight(0xffffff, 0.38);
     this.scene.add(amb);
     this._ambLight = amb;
 
@@ -197,79 +210,87 @@ class DiceEngine {
   }
 
   // ============================================================
-  //  TEXTURE ATLAS
-  //  All face textures for one die are packed into a single canvas
-  //  arranged in a grid. Built-in Three.js geometries already have
-  //  correct per-face UVs in [0,1]. We remap each face's UVs to
-  //  point at its cell in the atlas.
+  //  D6 FACE TEXTURE
+  //  High-res 512px canvas per face. Bakes in subtle gradient shading
+  //  so MeshStandardMaterial can add the gloss on top.
   // ============================================================
 
-  // ============================================================
-  //  FACE TEXTURE — one canvas per face, no atlas needed.
-  //  MeshBasicMaterial array: one entry per face, fully unlit.
-  // ============================================================
-
-  _makeFaceTex(sides, faceNum, dieColor, dotColor, faceStyle) {
-    const S   = 256;
-    const cvs = document.createElement("canvas");
+  _makeFaceTex(faceNum, dieColor, dotColor, faceStyle) {
+    const S   = 512;
+    const cvs = document.createElement('canvas');
     cvs.width = cvs.height = S;
-    const ctx = cvs.getContext("2d");
+    const ctx = cvs.getContext('2d');
 
-    // Full background
+    // ── Base: solid colour fill ──
     ctx.fillStyle = dieColor;
     ctx.fillRect(0, 0, S, S);
 
-    // Slightly lighter face plate with rounded corners
-    const pad = Math.round(S * 0.06);
-    const r   = Math.round(S * 0.14);
-    ctx.fillStyle = this._adjustColor(dieColor, 22);
-    this._roundRect(ctx, pad, pad, S - pad*2, S - pad*2, r);
-    ctx.fill();
+    // ── Subtle radial vignette baked in — gives the face a slightly
+    //    darker edge so the MeshStandardMaterial gloss reads better ──
+    const vign = ctx.createRadialGradient(S/2,S/2, S*0.2, S/2,S/2, S*0.72);
+    vign.addColorStop(0,   'rgba(255,255,255,0.04)');
+    vign.addColorStop(1,   'rgba(0,0,0,0.18)');
+    ctx.fillStyle = vign;
+    ctx.fillRect(0, 0, S, S);
 
-    // Crisp edge highlight
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
-    ctx.lineWidth   = 3;
-    this._roundRect(ctx, pad+1, pad+1, S-pad*2-2, S-pad*2-2, r);
+    // ── Face border — tight inset rounded rect ──
+    const pad = Math.round(S * 0.055);
+    const r   = Math.round(S * 0.13);
+
+    // Outer dark shadow line
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth   = 5;
+    this._roundRect(ctx, pad, pad, S-pad*2, S-pad*2, r);
     ctx.stroke();
 
-    // Bottom shadow edge for depth illusion
-    ctx.strokeStyle = "rgba(0,0,0,0.20)";
-    ctx.lineWidth   = 3;
-    this._roundRect(ctx, pad+2, pad+2, S-pad*2-4, S-pad*2-4, r-1);
+    // Inner highlight line
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth   = 2.5;
+    this._roundRect(ctx, pad+3, pad+3, S-pad*2-6, S-pad*2-6, r-2);
     ctx.stroke();
 
-    const useNumbers = (sides !== 6) || (faceStyle !== "dots");
-
-    if (useNumbers) {
-      const fontSize = sides > 9 ? Math.round(S * 0.38) : Math.round(S * 0.44);
-      ctx.font         = `bold ${fontSize}px "Outfit", Arial, sans-serif`;
-      ctx.textAlign    = "center";
-      ctx.textBaseline = "middle";
-      ctx.shadowColor  = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur   = 10;
-      ctx.fillStyle    = dotColor;
-      ctx.fillText(String(faceNum), S/2, S/2 + 3);
-      if (faceNum === 6 || faceNum === 9) {
-        const tw = ctx.measureText(String(faceNum)).width;
-        ctx.shadowBlur  = 0;
-        ctx.strokeStyle = dotColor;
-        ctx.lineWidth   = 3;
-        ctx.beginPath();
-        ctx.moveTo(S/2 - tw*0.48, S/2 + fontSize*0.50);
-        ctx.lineTo(S/2 + tw*0.48, S/2 + fontSize*0.50);
-        ctx.stroke();
-      }
-      ctx.shadowBlur = 0;
-    } else {
+    // ── Content ──
+    if (faceStyle === 'dots') {
       this._drawD6Dots(ctx, faceNum, dotColor, S);
+    } else {
+      this._drawD6Number(ctx, faceNum, dotColor, S);
     }
 
-    return new THREE.CanvasTexture(cvs);
+    const tex = new THREE.CanvasTexture(cvs);
+    tex.anisotropy = 4;
+    return tex;
+  }
+
+  _drawD6Number(ctx, n, color, S) {
+    const fontSize = Math.round(S * 0.52);
+    ctx.font         = `900 ${fontSize}px "Outfit", "Arial Black", sans-serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    // Subtle drop shadow
+    ctx.shadowColor  = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur   = 14;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = color;
+    ctx.fillText(String(n), S/2, S/2 + 4);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur  = 0;
+    ctx.shadowOffsetY = 0;
+    // Underline 6 and 9
+    if (n === 6 || n === 9) {
+      const tw = ctx.measureText(String(n)).width;
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = Math.round(S * 0.016);
+      ctx.lineCap     = 'round';
+      ctx.beginPath();
+      ctx.moveTo(S/2 - tw*0.44, S/2 + fontSize*0.52);
+      ctx.lineTo(S/2 + tw*0.44, S/2 + fontSize*0.52);
+      ctx.stroke();
+    }
   }
 
   _drawD6Dots(ctx, n, color, S) {
-    const dotR = S * 0.085;
-    const pad  = S * 0.24;
+    const dotR = S * 0.088;
+    const pad  = S * 0.255;
     const mid  = S / 2;
     const positions = {
       1: [[mid,mid]],
@@ -280,13 +301,21 @@ class DiceEngine {
       6: [[pad,pad],[S-pad,pad],[pad,mid],[S-pad,mid],[pad,S-pad],[S-pad,S-pad]],
     };
     (positions[n]||[]).forEach(([x,y]) => {
+      // Dot shadow
+      ctx.beginPath();
+      ctx.arc(x, y+dotR*0.18, dotR, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.fill();
+      // Dot body
       ctx.beginPath();
       ctx.arc(x, y, dotR, 0, Math.PI*2);
-      ctx.shadowColor = "rgba(0,0,0,0.45)";
-      ctx.shadowBlur  = 5;
-      ctx.fillStyle   = color;
+      ctx.fillStyle = color;
       ctx.fill();
-      ctx.shadowBlur  = 0;
+      // Dot highlight
+      ctx.beginPath();
+      ctx.arc(x - dotR*0.28, y - dotR*0.28, dotR*0.38, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.30)';
+      ctx.fill();
     });
   }
 
@@ -305,241 +334,65 @@ class DiceEngine {
   }
 
   // ============================================================
-  //  GEOMETRY
+  //  D6 GEOMETRY
+  //  BoxGeometry with slightly rounded look via a small bevel scale.
+  //  Face order matches pip convention: 1 opp 6, 2 opp 5, 3 opp 4.
+  //  BoxGeometry face order: +x, -x, +y, -y, +z, -z
+  //  We map: face index → pip value
   // ============================================================
 
-  _buildManualGeo(verts, faces) {
-    const pos=[], nrm=[], uvs=[], groups=[], faceNormals=[];
-    let cursor=0;
-
-    faces.forEach((face, fi) => {
-      const v3 = face.map(i => new THREE.Vector3(...verts[i]));
-
-      // Newell normal — robust for any polygon
-      const fn = new THREE.Vector3();
-      for (let i=0; i<v3.length; i++) {
-        const c=v3[i], nx=v3[(i+1)%v3.length];
-        fn.x += (c.y-nx.y)*(c.z+nx.z);
-        fn.y += (c.z-nx.z)*(c.x+nx.x);
-        fn.z += (c.x-nx.x)*(c.y+nx.y);
-      }
-      fn.normalize();
-      faceNormals.push(fn.clone());
-
-      // Face centroid
-      const centroid = new THREE.Vector3();
-      v3.forEach(p => centroid.add(p));
-      centroid.divideScalar(v3.length);
-
-      // UV basis: project world-Y onto the face plane to get a consistent
-      // "up" direction for the texture. Fall back to world-Z if face is ~horizontal.
-      // vAxis = "up on the texture", uAxis = "right on the texture"
-      const worldY = new THREE.Vector3(0,1,0);
-      const worldZ = new THREE.Vector3(0,0,1);
-      const ref    = (Math.abs(fn.dot(worldY)) < 0.95) ? worldY : worldZ;
-      // Project ref onto face plane: ref - (ref·fn)*fn
-      const vAxis  = ref.clone().addScaledVector(fn, -ref.dot(fn)).normalize();
-      const uAxis  = new THREE.Vector3().crossVectors(vAxis, fn).normalize();
-
-      // Project verts onto face plane
-      const pts2d = v3.map(p => {
-        const d = p.clone().sub(centroid);
-        return [d.dot(uAxis), d.dot(vAxis)];
-      });
-
-      // Symmetric normalisation — centred at (0.5, 0.5)
-      let hs = 0;
-      pts2d.forEach(([u,v]) => { hs = Math.max(hs, Math.abs(u), Math.abs(v)); });
-      hs = hs || 1;
-      const sc = 0.82 / (hs * 2); // leave ~9% margin each side
-      const norm2d = pts2d.map(([u,v]) => [u*sc+0.5, v*sc+0.5]);
-
-      // Triangle fan
-      const start = cursor;
-      for (let t=1; t<face.length-1; t++) {
-        [0,t,t+1].forEach(vi => {
-          pos.push(...verts[face[vi]]);
-          nrm.push(fn.x, fn.y, fn.z);
-          uvs.push(norm2d[vi][0], norm2d[vi][1]);
-          cursor++;
-        });
-      }
-      groups.push({start, count:cursor-start, mi:fi});
-    });
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos),3));
-    geo.setAttribute('normal',   new THREE.BufferAttribute(new Float32Array(nrm),3));
-    geo.setAttribute('uv',       new THREE.BufferAttribute(new Float32Array(uvs),2));
-    groups.forEach(g => geo.addGroup(g.start, g.count, g.mi));
-    geo.userData.faceNormals = faceNormals;
-    return geo;
+  // BoxGeometry face order in Three.js r128:
+  //   group 0 = +x, 1 = -x, 2 = +y, 3 = -y, 4 = +z, 5 = -z
+  // Standard die convention (opposite faces sum to 7):
+  //   +y=1, -y=6, +z=2, -z=5, +x=3, -x=4
+  static get D6_FACE_VALUES() {
+    return [3, 4, 1, 6, 2, 5]; // [+x, -x, +y, -y, +z, -z]
   }
 
-  // ---- Die vertex/face definitions ----
-  // Face 0 = canonical "top" face (used for result reading on D4 = bottom)
-  // Faces are ordered 1..N to match printed numbers.
-  // All windings outward (right-hand rule from outside).
+  _buildD6Mesh(dieColor, dotColor, faceStyle) {
+    const size = 1.64;
+    const geo  = new THREE.BoxGeometry(size, size, size);
 
-  _dieVF(sides) {
-    switch(sides) {
-      case 4: {
-        // Tetrahedron. No flat top — read the BOTTOM face (most downward normal).
-        // Faces ordered so face index+1 is the number printed on that face.
-        const r=1.3;
-        return {
-          verts:[
-            [0, r, 0],                            // 0 apex
-            [-r*.9428, -r*.3333,  r*.3333],        // 1
-            [ r*.9428, -r*.3333,  r*.3333],        // 2
-            [0,        -r*.3333, -r*.6667],        // 3
-          ],
-          faces:[
-            [0,2,1],   // face 0 → value 1
-            [0,1,3],   // face 1 → value 2
-            [0,3,2],   // face 2 → value 3
-            [1,2,3],   // face 3 → value 4  ← this is the base, most often on bottom
-          ],
-          readMode: 'bottom', // read most-downward face
-        };
-      }
-      case 6: {
-        const h=0.82;
-        return {
-          verts:[[-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],[-h,-h,h],[h,-h,h],[h,h,h],[-h,h,h]],
-          faces:[
-            [3,2,1,0],   // -z face → 1
-            [4,5,6,7],   // +z face → 2
-            [7,6,2,3],   // +y face → 3
-            [0,1,5,4],   // -y face → 4
-            [1,2,6,5],   // +x face → 5
-            [4,7,3,0],   // -x face → 6
-          ],
-          readMode: 'top',
-        };
-      }
-      case 8: {
-        // Octahedron — two square pyramids. Faces numbered 1-8.
-        const r=1.15;
-        return {
-          verts:[[0,r,0],[r,0,0],[0,0,r],[-r,0,0],[0,0,-r],[0,-r,0]],
-          faces:[
-            [0,1,2],[0,2,3],[0,3,4],[0,4,1],  // upper 4 faces → 1-4
-            [5,2,1],[5,3,2],[5,4,3],[5,1,4],  // lower 4 faces → 5-8
-          ],
-          readMode: 'top',
-        };
-      }
-      case 10: {
-        // Pentagonal prism — 5 rectangular sides + 2 pentagons = 7 faces.
-        // We use 10 trapezoidal faces (actual D10 shape) for correct count.
-        // Simpler: use a standard 10-sided die shape — pentagonal trapezohedron
-        // but with LARGER flat-ish faces so numbers are readable.
-        // Approach: 10 faces, each is a kite. Number them 0-9 (face 0 = "10").
-        const verts = [];
-        // top/bottom poles
-        verts.push([0, 1.1, 0]);   // 0 = top pole
-        verts.push([0, -1.1, 0]);  // 1 = bottom pole
-        // upper ring of 5, offset so faces are wide and readable
-        for (let i=0;i<5;i++) {
-          const a = (i/5)*Math.PI*2;
-          verts.push([Math.cos(a)*1.05, 0.22, Math.sin(a)*1.05]);
-        }
-        // lower ring of 5, rotated half-step
-        for (let i=0;i<5;i++) {
-          const a = ((i+0.5)/5)*Math.PI*2;
-          verts.push([Math.cos(a)*1.05, -0.22, Math.sin(a)*1.05]);
-        }
-        // Build 10 kite faces: 5 upper, 5 lower
-        const faces = [];
-        for (let i=0;i<5;i++) {
-          const u0=2+i, u1=2+(i+1)%5, l0=7+i, l1=7+(i+1)%5;
-          faces.push([0, u0, l0, u1]);  // upper kite
-          faces.push([1, l1, u1, l0]);  // lower kite
-        }
-        return { verts, faces, readMode:'top' };
-      }
-      case 12: {
-        const phi=(1+Math.sqrt(5))/2, a=0.75, b=0.75/phi, c=0.75*phi;
-        return {
-          verts:[
-            [a,a,a],[a,a,-a],[a,-a,a],[a,-a,-a],[-a,a,a],[-a,a,-a],[-a,-a,a],[-a,-a,-a],
-            [0,b,c],[0,b,-c],[0,-b,c],[0,-b,-c],[b,c,0],[b,-c,0],[-b,c,0],[-b,-c,0],
-            [c,0,b],[c,0,-b],[-c,0,b],[-c,0,-b]
-          ],
-          faces:[
-            [0,16,2,10,8],[0,8,4,14,12],[0,12,1,17,16],
-            [2,16,17,3,13],[4,8,10,6,18],[1,12,14,5,9],
-            [3,17,1,9,11],[3,11,7,15,13],[5,14,4,18,19],
-            [6,10,2,13,15],[7,11,9,5,19],[6,15,7,19,18],
-          ],
-          readMode:'top',
-        };
-      }
-      case 20: {
-        const phi=(1+Math.sqrt(5))/2;
-        return {
-          verts:[
-            [-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],
-            [0,-1,phi],[0,1,phi],[0,-1,-phi],[0,1,-phi],
-            [phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1],
-          ],
-          faces:[
-            [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
-            [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
-            [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
-            [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1],
-          ],
-          readMode:'top',
-        };
-      }
-      default: return this._dieVF(6);
-    }
-  }
-
-  // ---- Build cannon shape ----
-
-  _makeCannonShape(sides) {
-    if (sides === 6) return new CANNON.Box(new CANNON.Vec3(0.82, 0.82, 0.82));
-    const { verts, faces } = this._dieVF(sides);
-    const cv = verts.map(v => new CANNON.Vec3(...v));
-    const cf = faces.map(f => [...f]);
-    try { return new CANNON.ConvexPolyhedron(cv, cf); }
-    catch(e) { console.warn('ConvexPolyhedron failed', e); return new CANNON.Sphere(1.1); }
-  }
-
-  // ---- Build a die mesh ----
-
-  _buildDieMesh(dieCfg) {
-    const { type, dieColor, dotColor, faceStyle } = dieCfg;
-    const sides = parseInt(type);
-
-    const dieData = this._dieVF(sides);
-    const { verts, faces } = dieData;
-    const readMode = dieData.readMode || 'top';
-    const geo = this._buildManualGeo(verts, faces);
-
-    // D10: face index 0 = "10", faces 1-9 = values 1-9
-    const faceLabel = (fi) => (sides === 10) ? (fi === 0 ? 10 : fi) : fi + 1;
-
-    // One MeshBasicMaterial per face — fully unlit, always correct colour
-    const materials = faces.map((_, fi) =>
-      new THREE.MeshBasicMaterial({
-        map: this._makeFaceTex(sides, faceLabel(fi), dieColor, dotColor, faceStyle),
+    // BoxGeometry already has correct per-face UV groups (6 groups × 2 tris each)
+    // and UVs are [0,1]×[0,1] per face — perfect for our per-face material array.
+    const faceValues = DiceEngine.D6_FACE_VALUES;
+    const materials  = faceValues.map(faceNum =>
+      new THREE.MeshStandardMaterial({
+        map:       this._makeFaceTex(faceNum, dieColor, dotColor, faceStyle),
+        roughness: 0.72,   // matte base
+        metalness: 0.04,   // just enough for subtle specular
+        envMapIntensity: 0.6,
       })
     );
+
+    // Store face normals matching BoxGeometry group order
+    const faceNormals = [
+      new THREE.Vector3( 1, 0, 0),  // +x → value 3
+      new THREE.Vector3(-1, 0, 0),  // -x → value 4
+      new THREE.Vector3( 0, 1, 0),  // +y → value 1
+      new THREE.Vector3( 0,-1, 0),  // -y → value 6
+      new THREE.Vector3( 0, 0, 1),  // +z → value 2
+      new THREE.Vector3( 0, 0,-1),  // -z → value 5
+    ];
 
     const mesh = new THREE.Mesh(geo, materials);
     mesh.castShadow    = true;
     mesh.receiveShadow = true;
-    mesh.userData.faceNormals = geo.userData.faceNormals || [];
-    mesh.userData.sides       = sides;
-    mesh.userData.readMode    = readMode;
-    mesh.userData.faceLabel   = faceLabel;
-
+    mesh.userData.faceNormals = faceNormals;
+    mesh.userData.faceValues  = faceValues;
+    mesh.userData.sides       = 6;
     return mesh;
   }
 
+  _makeCannonShape() {
+    // Use CANNON.Box — exact match to BoxGeometry, perfect collisions
+    return new CANNON.Box(new CANNON.Vec3(0.82, 0.82, 0.82));
+  }
+
+  _buildDieMesh(dieCfg) {
+    const { dieColor, dotColor, faceStyle } = dieCfg;
+    return this._buildD6Mesh(dieColor, dotColor, faceStyle);
+  }
   // ---- Spawn dice ----
 
   _clearDice() {
@@ -568,7 +421,7 @@ class DiceEngine {
       const mesh = this._buildDieMesh(dieCfg);
       this.scene.add(mesh);
 
-      const shape = this._makeCannonShape(parseInt(dieCfg.type));
+      const shape = this._makeCannonShape();
       const body = new CANNON.Body({
         mass: 280,
         shape,
@@ -616,27 +469,23 @@ class DiceEngine {
   }
 
   _readResults() {
+    const up = new THREE.Vector3(0, 1, 0);
     return this.diceObjects.map((d, idx) => {
-      const sides      = parseInt(d.type);
       const faceNormals = d.mesh.userData.faceNormals || [];
-      const readMode   = d.mesh.userData.readMode || 'top';
-      const faceLabel  = d.mesh.userData.faceLabel || (fi => fi + 1);
+      const faceValues  = d.mesh.userData.faceValues  || [1,2,3,4,5,6];
       let value = 1;
       if (faceNormals.length > 0) {
-        const q   = d.mesh.quaternion;
-        const ref = readMode === 'bottom'
-          ? new THREE.Vector3(0,-1,0)
-          : new THREE.Vector3(0, 1,0);
+        const q = d.mesh.quaternion;
         let bestDot = -Infinity, bestFi = 0;
         faceNormals.forEach((n, fi) => {
-          const dot = n.clone().applyQuaternion(q).dot(ref);
+          const dot = n.clone().applyQuaternion(q).dot(up);
           if (dot > bestDot) { bestDot = dot; bestFi = fi; }
         });
-        value = faceLabel(bestFi);
+        value = faceValues[bestFi];
       } else {
-        value = Math.floor(Math.random() * sides) + 1;
+        value = Math.ceil(Math.random() * 6);
       }
-      return { die: idx+1, type: sides, value };
+      return { die: idx+1, type: 6, value };
     });
   }
 
@@ -827,22 +676,19 @@ function buildDieCard(die, idx) {
   card.className = "die-card";
   card.dataset.idx = idx;
 
-  const dieSides = [4, 6, 8, 10, 12, 20];
-  const typeButtons = dieSides.map(s =>
-    `<button class="die-type-btn${parseInt(die.type) === s ? " active" : ""}" data-sides="${s}">d${s}</button>`
-  ).join("");
+  // Always D6 — type selector removed
+  config.dice[idx].type = 6;
 
   card.innerHTML = `
     <div class="die-card-header">
       <span class="die-badge">Die ${idx + 1}</span>
-      <span class="die-label">d${die.type}</span>
+      <span class="die-label">d6</span>
       <button class="btn-remove-die" title="Remove">×</button>
     </div>
-    <div class="die-card-row die-type-seg">${typeButtons}</div>
     <div class="die-colors">
       <label>Die</label>
       <input type="color" class="cfg-color die-color" value="${die.dieColor || "#c0392b"}">
-      <label style="margin-left:8px">Face</label>
+      <label style="margin-left:8px">Pips</label>
       <input type="color" class="cfg-color dot-color" value="${die.dotColor || "#ffffff"}">
     </div>
     <div class="die-face-seg">
@@ -850,17 +696,6 @@ function buildDieCard(die, idx) {
       <button class="die-face-btn${die.faceStyle === "numbers" ? " active" : ""}" data-face="numbers">Numbers</button>
     </div>
   `;
-
-  // Type buttons
-  card.querySelectorAll(".die-type-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const sides = parseInt(btn.dataset.sides);
-      config.dice[idx].type = sides;
-      config.dice[idx].faceStyle = sides === 6 ? config.dice[idx].faceStyle : "numbers";
-      renderDiceList();
-      onConfigChange();
-    });
-  });
 
   // Colors
   card.querySelector(".die-color").addEventListener("input", e => {
