@@ -90,11 +90,14 @@ class DiceEngine {
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     }
 
-    // Lights
-    const amb = new THREE.AmbientLight(0xffffff, (this.cfg.ambientLight || 40) / 100);
+    // Lights — strong ambient so flat-shaded faces never go black,
+    // plus three directional/point lights for depth and colour interest.
+    const ambIntensity = Math.max(0.72, (this.cfg.ambientLight || 40) / 100);
+    const amb = new THREE.AmbientLight(0xffffff, ambIntensity);
     this.scene.add(amb);
+    this._ambLight = amb; // keep ref for updateConfig
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.55);
     dirLight.position.set(6, 14, 8);
     dirLight.castShadow = this.cfg.shadowQuality !== "off";
     dirLight.shadow.mapSize.width = this.cfg.shadowQuality === "high" ? 2048 : 1024;
@@ -107,9 +110,15 @@ class DiceEngine {
     dirLight.shadow.camera.bottom = -12;
     this.scene.add(dirLight);
 
-    const fillLight = new THREE.PointLight(0x4488ff, 0.3, 40);
-    fillLight.position.set(-8, 6, -4);
+    // Fill from below-left so bottom faces aren't pitch black
+    const fillLight = new THREE.DirectionalLight(0x8899cc, 0.35);
+    fillLight.position.set(-8, -4, -6);
     this.scene.add(fillLight);
+
+    // Warm rim from behind
+    const rimLight = new THREE.DirectionalLight(0xffddaa, 0.22);
+    rimLight.position.set(0, 4, -12);
+    this.scene.add(rimLight);
 
     // Table / floor
     if (this.cfg.showTable !== false) {
@@ -225,21 +234,22 @@ class DiceEngine {
   }
 
   _drawFaceIntoCtx(ctx, ox, oy, size, sides, faceNum, dieColor, dotColor, faceStyle) {
-    // Solid background
+    // Full background fill (entire atlas cell) — prevents bleed from adjacent cells
     ctx.fillStyle = dieColor;
     ctx.fillRect(ox, oy, size, size);
 
-    // Slightly lighter face plate
-    const pad = Math.round(size * 0.04);
-    const r   = Math.round(size * 0.09);
-    ctx.fillStyle = this._adjustColor(dieColor, 18);
+    // Face plate — fills most of the cell so the number is always visible
+    // Use a large radius so it looks like a proper die face even on triangular dice
+    const pad = Math.round(size * 0.06);
+    const r   = Math.round(size * 0.15);
+    ctx.fillStyle = this._adjustColor(dieColor, 20);
     this._roundRect(ctx, ox + pad, oy + pad, size - pad*2, size - pad*2, r);
     ctx.fill();
 
     // Edge highlight
-    ctx.strokeStyle = "rgba(255,255,255,0.18)";
-    ctx.lineWidth   = 2;
-    this._roundRect(ctx, ox + pad + 1, oy + pad + 1, size - pad*2 - 2, size - pad*2 - 2, r);
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth   = 2.5;
+    this._roundRect(ctx, ox + pad + 1, oy + pad + 1, size - pad*2 - 2, size - pad*2 - 2, r - 1);
     ctx.stroke();
 
     const useStyle = (sides !== 6 && faceStyle === "dots") ? "numbers" : faceStyle;
@@ -458,13 +468,19 @@ class DiceEngine {
         return [ d.dot(uAxis), d.dot(vAxis) ];
       });
 
-      // Normalise to [0.05, 0.95]
-      let uMin = Infinity, uMax = -Infinity, vMin = Infinity, vMax = -Infinity;
-      pts2d.forEach(([u,v]) => { uMin=Math.min(uMin,u); uMax=Math.max(uMax,u); vMin=Math.min(vMin,v); vMax=Math.max(vMax,v); });
-      const span = Math.max(uMax-uMin, vMax-vMin) || 1;
+      // Normalise symmetrically from centroid (which is at origin in local space).
+      // Use the maximum absolute extent in either axis as the half-span,
+      // so the shape is always centred at (0.5, 0.5) in UV space.
+      let halfSpan = 0;
+      pts2d.forEach(([u,v]) => {
+        halfSpan = Math.max(halfSpan, Math.abs(u), Math.abs(v));
+      });
+      halfSpan = halfSpan || 1;
+      const margin = 0.08; // breathing room around the face edges
+      const scale  = (1 - margin * 2) / (halfSpan * 2);
       const norm2d = pts2d.map(([u,v]) => [
-        (u-uMin)/span * 0.9 + 0.05,
-        (v-vMin)/span * 0.9 + 0.05,
+        u * scale + 0.5,  // centred at 0.5
+        v * scale + 0.5,
       ]);
 
       // Triangle fan
@@ -793,11 +809,10 @@ class DiceEngine {
   updateConfig(cfg) {
     this.cfg = cfg;
     this.scene.background = new THREE.Color(cfg.sceneBg || "#0d0d0d");
-    this.scene.fog.color = new THREE.Color(cfg.sceneBg || "#0d0d0d");
-    // Update ambient light
-    this.scene.children.forEach(c => {
-      if (c instanceof THREE.AmbientLight) c.intensity = (cfg.ambientLight || 40) / 100;
-    });
+    this.scene.fog.color  = new THREE.Color(cfg.sceneBg || "#0d0d0d");
+    if (this._ambLight) {
+      this._ambLight.intensity = Math.max(0.72, (cfg.ambientLight || 40) / 100);
+    }
   }
 }
 
