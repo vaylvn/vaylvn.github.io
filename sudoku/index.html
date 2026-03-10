@@ -2,60 +2,120 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Numi – Sudoku</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <title>Sudoku</title>
+  <link rel="stylesheet" href="sudoku.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="page">
-    <header class="top-bar">
-      <button class="back-btn" type="button">&larr; Back</button>
-      <h1 class="title">Numi – Sudoku</h1>
+
+  <div class="app">
+
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">sudoku</h1>
+        <span class="difficulty-tag" id="difficultyTag">—</span>
+      </div>
+      <div class="header-right">
+        <div class="timer-wrap">
+          <button class="icon-btn" id="timerToggle" title="Toggle timer visibility">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </button>
+          <span class="timer" id="timer">0:00</span>
+        </div>
+        <button class="icon-btn" id="newGameBtn" title="New game">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.81"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <main class="main">
-      <section class="panel panel-top">
-        <div class="segment-group" id="difficulty-group">
-          <button class="segment active" data-diff="easy">Easy</button>
-          <button class="segment" data-diff="medium">Medium</button>
-          <button class="segment" data-diff="hard">Hard</button>
-          <button class="segment" data-diff="expert">Expert</button>
-        </div>
 
-        <div class="toggle-group">
-          <button id="auto-check-toggle" class="toggle toggle-on" type="button">
-            Auto-check: ON
+      <div class="board-container">
+        <div class="board" id="board"></div>
+        <div class="completion-overlay" id="completionOverlay">
+          <div class="completion-inner">
+            <div class="completion-check">✓</div>
+            <p class="completion-label">solved</p>
+            <p class="completion-time" id="completionTime"></p>
+            <button class="btn-new" id="completionNewGame">new game</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+
+        <div class="numpad" id="numpad">
+          <button class="num-btn" data-num="1">1</button>
+          <button class="num-btn" data-num="2">2</button>
+          <button class="num-btn" data-num="3">3</button>
+          <button class="num-btn" data-num="4">4</button>
+          <button class="num-btn" data-num="5">5</button>
+          <button class="num-btn" data-num="6">6</button>
+          <button class="num-btn" data-num="7">7</button>
+          <button class="num-btn" data-num="8">8</button>
+          <button class="num-btn" data-num="9">9</button>
+          <button class="num-btn erase-btn" data-num="0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20 20H7L3 16l9-13 8 10z"/><line x1="6.26" y1="18.67" x2="18" y2="6.93"/>
+            </svg>
           </button>
         </div>
-      </section>
 
-      <section class="grid-wrapper">
-        <div id="sudoku-grid" class="sudoku-grid" aria-label="Sudoku grid"></div>
-      </section>
+        <div class="controls">
+          <div class="control-group">
+            <label class="control-label">difficulty</label>
+            <div class="diff-buttons">
+              <button class="diff-btn active" data-diff="easy">easy</button>
+              <button class="diff-btn" data-diff="medium">medium</button>
+              <button class="diff-btn" data-diff="hard">hard</button>
+            </div>
+          </div>
 
-      <section class="panel panel-bottom">
-        <div class="bottom-buttons">
-          <button id="new-game-btn" class="btn" type="button">New Game</button>
-          <button id="clear-btn" class="btn btn-secondary" type="button">Clear</button>
+          <div class="control-group">
+            <label class="control-label">options</label>
+            <div class="toggle-row">
+              <span class="toggle-label">highlight peers</span>
+              <label class="toggle">
+                <input type="checkbox" id="highlightPeers" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">show errors</span>
+              <label class="toggle">
+                <input type="checkbox" id="showErrors" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">pencil marks</span>
+              <label class="toggle">
+                <input type="checkbox" id="pencilMode">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <button class="btn-hint" id="hintBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            hint
+          </button>
         </div>
-      </section>
 
-      <section class="mobile-keypad" id="mobile-keypad" aria-label="Number keypad">
-        <button type="button" data-num="1">1</button>
-        <button type="button" data-num="2">2</button>
-        <button type="button" data-num="3">3</button>
-        <button type="button" data-num="4">4</button>
-        <button type="button" data-num="5">5</button>
-        <button type="button" data-num="6">6</button>
-        <button type="button" data-num="7">7</button>
-        <button type="button" data-num="8">8</button>
-        <button type="button" data-num="9">9</button>
-      </section>
-
+      </div>
     </main>
+
   </div>
 
   <script src="sudoku.js"></script>
-  <script src="ui.js"></script>
 </body>
 </html>
