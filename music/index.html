@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fretless</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="rhythm.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ SCREEN: HOME ═══════════════════════════════ -->
+<div class="screen active" id="screenHome">
+  <div class="home-wrap">
+    <div class="home-header">
+      <h1 class="wordmark">fretless</h1>
+      <p class="tagline">rhythm engine · chart editor</p>
+    </div>
+    <div class="home-actions">
+      <button class="home-btn primary" id="btnPlay">
+        <span class="btn-icon">▶</span>
+        <span class="btn-text">
+          <span class="btn-label">play</span>
+          <span class="btn-sub">load audio + chart</span>
+        </span>
+      </button>
+      <button class="home-btn" id="btnEdit">
+        <span class="btn-icon">✦</span>
+        <span class="btn-text">
+          <span class="btn-label">editor</span>
+          <span class="btn-sub">create a chart</span>
+        </span>
+      </button>
+    </div>
+    <div class="home-keys">
+      <span class="key-chip">D</span>
+      <span class="key-chip">F</span>
+      <span class="key-chip">J</span>
+      <span class="key-chip">K</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN: PLAY SETUP ════════════════════════ -->
+<div class="screen" id="screenPlaySetup">
+  <div class="setup-wrap">
+    <button class="back-btn" id="backFromPlay">← back</button>
+    <h2 class="setup-title">load track</h2>
+
+    <div class="setup-row">
+      <label class="setup-label">audio file</label>
+      <label class="file-drop" id="audioDropPlay">
+        <input type="file" accept="audio/*" id="audioFilePlay" hidden/>
+        <span class="file-drop-text" id="audioFileNamePlay">drop or click to browse</span>
+      </label>
+    </div>
+
+    <div class="setup-row">
+      <label class="setup-label">chart file <span class="setup-hint">(.json)</span></label>
+      <label class="file-drop" id="chartDrop">
+        <input type="file" accept=".json,application/json" id="chartFile" hidden/>
+        <span class="file-drop-text" id="chartFileName">drop or click to browse</span>
+      </label>
+    </div>
+
+    <div class="setup-row">
+      <label class="setup-label">offset <span class="setup-hint">ms (audio latency)</span></label>
+      <div class="offset-row">
+        <input type="range" id="offsetSlider" min="-200" max="200" value="0" class="offset-slider"/>
+        <span class="offset-val" id="offsetVal">0 ms</span>
+      </div>
+    </div>
+
+    <button class="setup-go" id="btnStartPlay" disabled>start →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN: GAME ══════════════════════════════ -->
+<div class="screen" id="screenGame">
+  <div class="game-wrap">
+
+    <div class="game-hud">
+      <div class="hud-left">
+        <span class="hud-title" id="hudTitle">—</span>
+        <span class="hud-artist" id="hudArtist"></span>
+      </div>
+      <div class="hud-right">
+        <div class="hud-stat">
+          <span class="hud-val" id="hudScore">0</span>
+          <span class="hud-key">score</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-val" id="hudCombo">0</span>
+          <span class="hud-key">combo</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-val" id="hudAcc">—</span>
+          <span class="hud-key">acc</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="highway-outer">
+      <canvas class="highway" id="highway"></canvas>
+      <div class="hit-zone" id="hitZone">
+        <div class="hit-pad" data-lane="0"><span class="hit-key">D</span></div>
+        <div class="hit-pad" data-lane="1"><span class="hit-key">F</span></div>
+        <div class="hit-pad" data-lane="2"><span class="hit-key">J</span></div>
+        <div class="hit-pad" data-lane="3"><span class="hit-key">K</span></div>
+      </div>
+    </div>
+
+    <div class="game-footer">
+      <button class="game-btn" id="btnPause">⏸ pause</button>
+      <div class="progress-track"><div class="progress-now" id="gameProgress"></div></div>
+      <button class="game-btn" id="btnQuit">✕ quit</button>
+    </div>
+
+  </div>
+
+  <!-- Pause overlay -->
+  <div class="pause-veil" id="pauseVeil">
+    <div class="pause-box">
+      <p class="pause-label">paused</p>
+      <button class="pause-btn" id="btnResume">resume</button>
+      <button class="pause-btn secondary" id="btnQuitPause">quit</button>
+    </div>
+  </div>
+
+  <!-- Results overlay -->
+  <div class="results-veil" id="resultsVeil">
+    <div class="results-box">
+      <p class="results-grade" id="resultsGrade">S</p>
+      <div class="results-stats">
+        <div class="results-row"><span>score</span><span id="rScore">0</span></div>
+        <div class="results-row"><span>accuracy</span><span id="rAcc">0%</span></div>
+        <div class="results-row"><span>max combo</span><span id="rCombo">0</span></div>
+        <div class="results-row accent"><span>perfect</span><span id="rPerfect">0</span></div>
+        <div class="results-row"><span>good</span><span id="rGood">0</span></div>
+        <div class="results-row bad"><span>miss</span><span id="rMiss">0</span></div>
+      </div>
+      <button class="results-btn" id="resultsHome">home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN: EDITOR ════════════════════════════ -->
+<div class="screen" id="screenEditor">
+  <div class="editor-wrap">
+
+    <div class="editor-header">
+      <button class="back-btn" id="backFromEditor">← back</button>
+      <h2 class="setup-title">chart editor</h2>
+      <div class="editor-hdr-actions">
+        <button class="editor-btn" id="btnExportChart">export .json</button>
+      </div>
+    </div>
+
+    <div class="editor-meta">
+      <input class="meta-input" id="metaTitle"  placeholder="track title" maxlength="60"/>
+      <input class="meta-input" id="metaArtist" placeholder="artist" maxlength="60"/>
+      <input class="meta-input number" id="metaBpm" placeholder="BPM" type="number" min="40" max="300"/>
+    </div>
+
+    <div class="editor-audio-row">
+      <label class="file-drop compact" id="audioDropEditor">
+        <input type="file" accept="audio/*" id="audioFileEditor" hidden/>
+        <span class="file-drop-text" id="audioFileNameEditor">load audio</span>
+      </label>
+      <button class="editor-btn" id="btnEditorPlay">▶</button>
+      <button class="editor-btn" id="btnEditorStop">■</button>
+      <span class="editor-time" id="editorTime">0:00.0</span>
+    </div>
+
+    <div class="editor-keys-hint">
+      tap <span class="key-chip small">D</span><span class="key-chip small">F</span><span class="key-chip small">J</span><span class="key-chip small">K</span> while playing to place notes &nbsp;·&nbsp; click notes on timeline to delete
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-wrap">
+      <canvas class="timeline" id="timeline"></canvas>
+      <div class="timeline-cursor" id="timelineCursor"></div>
+    </div>
+
+    <!-- Lane tap buttons for mouse users -->
+    <div class="editor-lanes">
+      <button class="lane-tap-btn" data-lane="0">D</button>
+      <button class="lane-tap-btn" data-lane="1">F</button>
+      <button class="lane-tap-btn" data-lane="2">J</button>
+      <button class="lane-tap-btn" data-lane="3">K</button>
+    </div>
+
+    <div class="editor-footer">
+      <span class="editor-note-count" id="editorNoteCount">0 notes</span>
+      <button class="editor-btn danger" id="btnClearChart">clear all</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="rhythm.js"></script>
+</body>
+</html>
