@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resonance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="puzzle.css"/>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <span class="title">RESONANCE</span>
+      <div class="meta">
+        <span class="level-label" id="levelLabel">I</span>
+        <span class="moves-label" id="movesLabel">0</span>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas class="lines-canvas" id="linesCanvas"></canvas>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="footer">
+      <button class="btn-reset" id="resetBtn">↺</button>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <button class="btn-next" id="nextBtn" disabled>→</button>
+    </div>
+
+    <div class="solved-veil" id="solvedVeil">
+      <div class="solved-inner">
+        <div class="solved-glyph" id="solvedGlyph"></div>
+        <div class="solved-word">resonance</div>
+        <div class="solved-sub" id="solvedSub"></div>
+        <button class="solved-btn" id="solvedNextBtn">continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="puzzle.js"></script>
+</body>
+</html>

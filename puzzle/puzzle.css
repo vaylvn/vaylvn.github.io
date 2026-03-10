@@ -1,0 +1,327 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080810;
+  --surface:  #0e0e1a;
+  --border:   #1c1c30;
+  --dim:      #252540;
+  --text:     #d0d0e8;
+  --text2:    #555570;
+  --text3:    #2a2a45;
+
+  /* Frequency colours */
+  --f1: #3a7fff;   /* blue   */
+  --f2: #ff5e5e;   /* red    */
+  --f3: #ffe44d;   /* yellow */
+  --f4: #4dffa0;   /* green  */
+
+  --f1-glow: rgba(58,127,255,0.35);
+  --f2-glow: rgba(255,94,94,0.35);
+  --f3-glow: rgba(255,228,77,0.35);
+  --f4-glow: rgba(77,255,160,0.35);
+
+  --node-size: 64px;
+  --gap: 48px;
+
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Syne Mono', monospace;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-display); }
+
+/* noise overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 1000;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px 40px;
+  gap: 32px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 520px;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--text2);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.level-label, .moves-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text2);
+}
+
+.level-label::before { content: 'LVL '; color: var(--text3); }
+.moves-label::before { content: '↓ '; color: var(--text3); }
+
+/* ── Stage ── */
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.lines-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.grid {
+  display: grid;
+  gap: var(--gap);
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Node ── */
+.node {
+  width: var(--node-size);
+  height: var(--node-size);
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.node-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.node-glyph {
+  position: relative;
+  z-index: 2;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+}
+
+/* Click ripple */
+.node::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: none;
+}
+.node.clicked::after {
+  animation: ripple 0.4s ease-out forwards;
+}
+@keyframes ripple {
+  0%   { transform: scale(0.5); opacity: 0.15; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Frequency states */
+.node[data-freq="1"] .node-ring {
+  border-color: var(--f1);
+  box-shadow: 0 0 14px var(--f1-glow), inset 0 0 10px rgba(58,127,255,0.08);
+}
+.node[data-freq="2"] .node-ring {
+  border-color: var(--f2);
+  box-shadow: 0 0 14px var(--f2-glow), inset 0 0 10px rgba(255,94,94,0.08);
+}
+.node[data-freq="3"] .node-ring {
+  border-color: var(--f3);
+  box-shadow: 0 0 14px var(--f3-glow), inset 0 0 10px rgba(255,228,77,0.08);
+}
+.node[data-freq="4"] .node-ring {
+  border-color: var(--f4);
+  box-shadow: 0 0 14px var(--f4-glow), inset 0 0 10px rgba(77,255,160,0.08);
+}
+
+/* Glyphs as SVG shapes */
+.glyph-circle {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--f1);
+  box-shadow: 0 0 12px var(--f1-glow);
+}
+.glyph-square {
+  width: 20px; height: 20px;
+  background: var(--f2);
+  box-shadow: 0 0 12px var(--f2-glow);
+  transform: rotate(0deg);
+}
+.glyph-triangle {
+  width: 0; height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 22px solid var(--f3);
+  filter: drop-shadow(0 0 6px var(--f3-glow));
+  background: transparent !important;
+}
+.glyph-diamond {
+  width: 20px; height: 20px;
+  background: var(--f4);
+  box-shadow: 0 0 12px var(--f4-glow);
+  transform: rotate(45deg);
+}
+
+/* Pulse animation on resonant nodes */
+.node.resonant .node-ring {
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* Ripple out from clicked node to affected neighbours */
+.node.affected .node-glyph {
+  animation: jolt 0.3s ease-out;
+}
+@keyframes jolt {
+  0%   { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+/* ── Footer ── */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.btn-reset, .btn-next {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--text2);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 40px; height: 40px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.btn-reset:hover { color: var(--text); border-color: var(--dim); background: var(--surface); }
+.btn-next:not(:disabled):hover { color: var(--text); border-color: var(--dim); background: var(--surface); }
+.btn-next:disabled { opacity: 0.2; cursor: default; }
+
+.progress-bar {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--f1), var(--f4));
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+/* ── Solved veil ── */
+.solved-veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 16, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  backdrop-filter: blur(8px);
+}
+.solved-veil.show {
+  opacity: 1;
+  pointer-events: all;
+}
+.solved-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.solved-glyph {
+  font-size: 56px;
+  line-height: 1;
+  margin-bottom: 8px;
+  animation: floatIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes floatIn {
+  from { transform: translateY(20px) scale(0.8); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.solved-word {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.35em;
+  color: var(--text2);
+  text-transform: lowercase;
+}
+.solved-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text3);
+}
+.solved-btn {
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--bg);
+  background: var(--text);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 28px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.solved-btn:hover { opacity: 0.8; }
+
+/* ── All-solved state – nodes shimmer ── */
+.all-solved .node-ring {
+  animation: solved-glow 1.5s ease-in-out infinite alternate !important;
+}
+@keyframes solved-glow {
+  from { box-shadow: 0 0 10px var(--f4-glow); border-color: var(--f4); }
+  to   { box-shadow: 0 0 30px var(--f4-glow); border-color: var(--f4); }
+}
+
+/* Connection line canvas sits behind nodes */
+.lines-canvas { z-index: 1; }
