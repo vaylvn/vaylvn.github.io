@@ -611,6 +611,24 @@
       // We start with index 0 centered: scrollPos = centerY
       let scrollPos = centerY; // pixels (can be any real number, infinite)
 
+      // Break a string into lines that fit within maxWidth
+      function wrapText(c, text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let current = '';
+        for (const word of words) {
+          const test = current ? current + ' ' + word : word;
+          if (c.measureText(test).width > maxWidth && current) {
+            lines.push(current);
+            current = word;
+          } else {
+            current = test;
+          }
+        }
+        if (current) lines.push(current);
+        return lines.length ? lines : [''];
+      }
+
       function paint(sp) {
         ctx2.clearRect(0, 0, W, viewH);
 
@@ -627,13 +645,18 @@
           ctx2.fillStyle = seg.color || '#1a1a1a';
           ctx2.fillRect(0, y, W, itemH);
 
-          // Label
+          // Label (word-wrapped)
           ctx2.save();
           ctx2.font = `600 ${cfg.fontSize||20}px 'Outfit', sans-serif`;
           ctx2.fillStyle = cfg.textColor || '#ffffff';
           ctx2.textAlign = 'center';
           ctx2.textBaseline = 'middle';
-          ctx2.fillText(seg.label, W / 2, y + itemH / 2, W - 32);
+          const maxW = W - 32;
+          const lineH = (cfg.fontSize || 20) * 1.25;
+          const lines = wrapText(ctx2, seg.label, maxW);
+          const totalH = lines.length * lineH;
+          const startY = y + itemH / 2 - totalH / 2 + lineH / 2;
+          lines.forEach((line, li) => ctx2.fillText(line, W / 2, startY + li * lineH));
           ctx2.restore();
         }
 
