@@ -548,21 +548,18 @@
       rootEl.innerHTML = '';
       if (!cfg.segments.length) return null;
 
+      const segs = cfg.segments;
+      const N = segs.length;
       const rows = cfg.visibleRows || 3;
       const itemH = cfg.itemH || 60;
       const viewH = rows * itemH;
       const halfRows = Math.floor(rows / 2);
+      const W = cfg.width || 300;
 
-      // Build a looping array: pad with copies so we can always scroll
-      // We'll use a long repeated list for seamless looping
-      const loopCount = 5; // repeat 5x for seamless
-      let allItems = [];
-      for (let i = 0; i < loopCount; i++) {
-        allItems = allItems.concat(cfg.segments.map((s, idx) => ({ ...s, origIdx: idx })));
-      }
-      const totalItems = allItems.length;
-      const midLoop = Math.floor(loopCount / 2) * cfg.segments.length; // start in middle of loop
+      // segAt: infinite index → segment (true modulo, works for any integer)
+      function segAt(i) { return segs[((i % N) + N) % N]; }
 
+      // ─── DOM structure ──────────────────────────────────────────────────
       const wrapper = document.createElement('div');
       wrapper.className = 'slot-wrapper';
 
@@ -571,76 +568,98 @@
 
       const viewport = document.createElement('div');
       viewport.className = 'slot-viewport';
-      viewport.style.cssText = `width:${cfg.width}px; height:${viewH}px; border-radius:${cfg.radius}px;`;
+      viewport.style.cssText = `width:${W}px; height:${viewH}px; border-radius:${cfg.radius||12}px; position:relative; overflow:hidden;`;
 
-      // Indicator arrows
-      const indicators = document.createElement('div');
-      indicators.className = 'slot-indicators';
-      indicators.style.height = `${itemH}px`;
-      indicators.innerHTML = `
-        <div class="slot-arrow left" style="--arrow-color:${cfg.arrowColor}; ${cfg.showArrows?'':'display:none'}"></div>
-        <div class="slot-arrow right" style="--arrow-color:${cfg.arrowColor}; ${cfg.showArrows?'':'display:none'}"></div>
+      // Canvas fills the viewport — we paint it every frame
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = viewH;
+      canvas.style.cssText = `position:absolute; top:0; left:0; display:block;`;
+      const ctx2 = canvas.getContext('2d');
+
+      // Overlay: arrows + highlight lines (sit above canvas)
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `position:absolute; inset:0; pointer-events:none; z-index:5;`;
+
+      const centerY = halfRows * itemH;
+
+      // Highlight lines at top/bottom of center row
+      overlay.innerHTML = `
+        <div style="position:absolute; left:0; right:0; top:${centerY}px; height:1px; background:rgba(255,255,255,0.10);"></div>
+        <div style="position:absolute; left:0; right:0; top:${centerY + itemH}px; height:1px; background:rgba(255,255,255,0.10); margin-top:-1px;"></div>
+        ${cfg.showArrows !== false ? `
+          <div style="position:absolute; left:8px; top:${centerY + itemH/2}px; transform:translateY(-50%);
+            width:0; height:0; border-top:8px solid transparent; border-bottom:8px solid transparent;
+            border-left:12px solid ${cfg.arrowColor||'#d4d4d4'}; filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));"></div>
+          <div style="position:absolute; right:8px; top:${centerY + itemH/2}px; transform:translateY(-50%);
+            width:0; height:0; border-top:8px solid transparent; border-bottom:8px solid transparent;
+            border-right:12px solid ${cfg.arrowColor||'#d4d4d4'}; filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));"></div>
+        ` : ''}
       `;
 
-      // Highlight band
-      const highlight = document.createElement('div');
-      highlight.className = 'slot-highlight';
-      highlight.style.height = `${itemH}px`;
-
-      // Fade top/bottom
-      const fadeTop = document.createElement('div');
-      fadeTop.className = 'slot-fade-top';
-      fadeTop.style.cssText = `height:${itemH * halfRows}px; background: linear-gradient(to bottom, ${hexToRgba(cfg.segments[0]?.color||'#1a1a1a', 0.9)}, transparent);`;
-
-      const fadeBottom = document.createElement('div');
-      fadeBottom.className = 'slot-fade-bottom';
-      fadeBottom.style.cssText = `height:${itemH * halfRows}px; background: linear-gradient(to top, ${hexToRgba(cfg.segments[0]?.color||'#1a1a1a', 0.9)}, transparent);`;
-
-      // Drum
-      const drum = document.createElement('div');
-      drum.className = 'slot-drum';
-
-      allItems.forEach(seg => {
-        const item = document.createElement('div');
-        item.className = 'slot-item';
-        item.style.cssText = `
-          height:${itemH}px;
-          width:${cfg.width}px;
-          background:${seg.color || '#1a1a1a'};
-          color:${cfg.textColor || '#fff'};
-          font-size:${cfg.fontSize || 20}px;
-          border-radius: 0;
-        `;
-        item.textContent = seg.label;
-        drum.appendChild(item);
-      });
-
-      viewport.appendChild(indicators);
-      viewport.appendChild(highlight);
-      viewport.appendChild(fadeTop);
-      viewport.appendChild(fadeBottom);
-      viewport.appendChild(drum);
+      viewport.appendChild(canvas);
+      viewport.appendChild(overlay);
       machine.appendChild(viewport);
       wrapper.appendChild(machine);
       rootEl.appendChild(wrapper);
 
-      // Position: show midLoop index in center
-      let currentIndex = midLoop; // current center item index
-      drum.style.transform = `translateY(${-currentIndex * itemH + halfRows * itemH}px)`;
+      // ─── Canvas paint ────────────────────────────────────────────────────
+      // scrollPos: the y-pixel offset of index 0's top edge relative to viewport top
+      // Index i top = scrollPos + i * itemH
+      // Center row index = the i where item top <= centerY < item top + itemH
+      //   => i = floor((centerY - scrollPos) / itemH)
+      // We start with index 0 centered: scrollPos = centerY
+      let scrollPos = centerY; // pixels (can be any real number, infinite)
 
-      // Update fade gradient to match current center item color
-      function updateFades(idx) {
-        const seg = allItems[idx];
-        const c = hexToRgba(seg.color || '#1a1a1a', 0.92);
-        fadeTop.style.background = `linear-gradient(to bottom, ${c}, transparent)`;
-        fadeBottom.style.background = `linear-gradient(to top, ${c}, transparent)`;
+      function paint(sp) {
+        ctx2.clearRect(0, 0, W, viewH);
+
+        // Which indices are visible?
+        const firstI = Math.floor(-sp / itemH) - 1;
+        const lastI  = firstI + rows + 3;
+
+        for (let i = firstI; i <= lastI; i++) {
+          const seg = segAt(i);
+          const y = Math.round(sp + i * itemH);
+          if (y + itemH < 0 || y > viewH) continue;
+
+          // Background
+          ctx2.fillStyle = seg.color || '#1a1a1a';
+          ctx2.fillRect(0, y, W, itemH);
+
+          // Label
+          ctx2.save();
+          ctx2.font = `600 ${cfg.fontSize||20}px 'Outfit', sans-serif`;
+          ctx2.fillStyle = cfg.textColor || '#ffffff';
+          ctx2.textAlign = 'center';
+          ctx2.textBaseline = 'middle';
+          ctx2.fillText(seg.label, W / 2, y + itemH / 2, W - 32);
+          ctx2.restore();
+        }
+
+        // Top fade
+        const topSeg = segAt(Math.floor((centerY - sp) / itemH) - 1);
+        const topColor = hexToRgba(topSeg?.color || '#1a1a1a', 0.95);
+        const topGrad = ctx2.createLinearGradient(0, 0, 0, centerY);
+        topGrad.addColorStop(0, topColor);
+        topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx2.fillStyle = topGrad;
+        ctx2.fillRect(0, 0, W, centerY);
+
+        // Bottom fade
+        const botSeg = segAt(Math.floor((centerY + itemH - sp) / itemH) + 1);
+        const botColor = hexToRgba(botSeg?.color || '#1a1a1a', 0.95);
+        const botGrad = ctx2.createLinearGradient(0, centerY + itemH, 0, viewH);
+        botGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        botGrad.addColorStop(1, botColor);
+        ctx2.fillStyle = botGrad;
+        ctx2.fillRect(0, centerY + itemH, W, viewH - (centerY + itemH));
       }
-      updateFades(currentIndex);
 
-      // ─── Spin logic ──────────────────────────────────────────────────────
-      let spinning = false;
+      paint(scrollPos);
+
+      // ─── Audio ───────────────────────────────────────────────────────────
       let cachedAudio = null;
-
       function preloadAudio(src) {
         if (!src) { cachedAudio = null; return; }
         try { cachedAudio = new Audio(src); cachedAudio.load(); } catch {}
@@ -651,74 +670,62 @@
           a.volume = 0.35; a.currentTime = 0; a.play().catch(() => {});
         } catch {}
       }
-
       if (cfg.sound !== 'none') {
         const src = cfg.customSound || SOUNDS[cfg.sound];
         if (src) preloadAudio(src);
       }
 
+      // ─── Spin ────────────────────────────────────────────────────────────
+      let spinning = false;
+
+      // currentCenterIndex: which segment index is currently centred
+      // scrollPos = centerY - currentCenterIndex * itemH
+      let currentCenterIndex = 0; // always kept in sync
+
       function spin(targetSegIdx) {
-        if (spinning || !cfg.segments.length) return;
+        if (spinning || !N) return;
         spinning = true;
 
-        // Decide target: random or forced
         const finalSegIdx = (targetSegIdx !== undefined)
-          ? targetSegIdx % cfg.segments.length
-          : Math.floor(Math.random() * cfg.segments.length);
+          ? ((targetSegIdx % N) + N) % N
+          : Math.floor(Math.random() * N);
 
-        // Find a landing position that's in the upper part of our loop
-        // Spin at least 2 full rotations from current position
+        // Spin at least 2.5 full rotations
         const minSpins = 2 + Math.floor(Math.random() * 2);
-        const minOffset = minSpins * cfg.segments.length;
+        const minSteps = minSpins * N + N; // extra buffer
 
-        // Find nearest instance of finalSegIdx beyond minOffset from currentIndex
-        let target = currentIndex + minOffset;
-        // Align to finalSegIdx
-        const rem = ((finalSegIdx - (target % cfg.segments.length)) + cfg.segments.length) % cfg.segments.length;
-        target += rem;
+        // Target index: step forward minSteps, then align to finalSegIdx
+        let targetIndex = currentCenterIndex + minSteps;
+        const rem = ((finalSegIdx - ((targetIndex % N) + N) % N) + N) % N;
+        targetIndex += rem;
 
-        // Clamp so we don't go past end of allItems (stay in middle loops)
-        if (target >= totalItems - cfg.segments.length * 1) {
-          // rebuild position: wrap back to middle
-          const oldOrig = currentIndex % cfg.segments.length;
-          currentIndex = midLoop + oldOrig;
-          drum.style.transition = 'none';
-          drum.style.transform = `translateY(${-currentIndex * itemH + halfRows * itemH}px)`;
-          drum.getBoundingClientRect(); // force reflow
-          // redo target from new position
-          target = currentIndex + minOffset;
-          const rem2 = ((finalSegIdx - (target % cfg.segments.length)) + cfg.segments.length) % cfg.segments.length;
-          target += rem2;
-        }
-
-        const startIndex = currentIndex;
-        const distance = (target - startIndex) * itemH;
-        const duration = cfg.spinDuration;
-        const totalTicks = cfg.tickDensity;
+        const startIndex = currentCenterIndex;
+        const totalSteps = targetIndex - startIndex; // always positive
+        const duration = cfg.spinDuration || 4000;
         const soundSrc = cfg.customSound || SOUNDS[cfg.sound];
+        const totalTicks = cfg.tickDensity || 30;
         let lastTick = -1;
+
+        // startScrollPos at beginning of animation
+        const startScrollPos = scrollPos;
+        const endScrollPos = centerY - targetIndex * itemH;
 
         const startTime = performance.now();
 
         function ease(t) {
-          // Ease in fast, ease out slow (slot machine feel)
-          if (t < 0.2) return t / 0.2 * 0.35; // fast start
-          const t2 = (t - 0.2) / 0.8;
-          return 0.35 + (1 - Math.pow(1 - t2, 4)) * 0.65;
+          if (t < 0.15) return (t / 0.15) * 0.3;
+          const t2 = (t - 0.15) / 0.85;
+          return 0.3 + (1 - Math.pow(1 - t2, 4)) * 0.7;
         }
 
         function anim(now) {
           const p = Math.min((now - startTime) / duration, 1);
           const eased = ease(p);
-          const currentY = -(startIndex * itemH) + halfRows * itemH - eased * distance;
-          drum.style.transform = `translateY(${currentY}px)`;
 
-          // Determine which item is centered
-          const centeredIdx = Math.round((halfRows * itemH - currentY) / itemH);
-          const clamped = Math.max(0, Math.min(totalItems - 1, centeredIdx));
-          updateFades(clamped);
+          scrollPos = startScrollPos + eased * (endScrollPos - startScrollPos);
+          paint(scrollPos);
 
-          // Tick sound — more frequent at start, slows toward end
+          // Tick sound
           const tickIndex = Math.floor(eased * totalTicks);
           if (tickIndex > lastTick) {
             lastTick = tickIndex;
@@ -728,24 +735,21 @@
           if (p < 1) {
             requestAnimationFrame(anim);
           } else {
-            // Snap to exact
-            currentIndex = target;
-            drum.style.transform = `translateY(${-currentIndex * itemH + halfRows * itemH}px)`;
-            updateFades(currentIndex);
+            // Land exactly
+            currentCenterIndex = targetIndex;
+            scrollPos = centerY - currentCenterIndex * itemH;
+            paint(scrollPos);
             spinning = false;
 
-            // Play landing sound
             if (cfg.sound !== 'none' && soundSrc) playSound(soundSrc);
 
             // Bounce
             wrapper.classList.add('result-bounce');
             setTimeout(() => wrapper.classList.remove('result-bounce'), 400);
 
-            const landedSeg = allItems[currentIndex];
-            const result = landedSeg?.label || 'Unknown';
+            const result = segAt(currentCenterIndex)?.label || 'Unknown';
             console.log('Wheel result:', result);
 
-            // Post result to Flask
             fetch('http://127.0.0.1:5000/spinresult', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
