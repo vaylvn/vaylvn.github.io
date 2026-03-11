@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vayl · Wheel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --border-light: #333;
+      --text: #e8e8e8;
+      --text-dim: #888;
+      --text-dimmer: #555;
+      --accent: #d4d4d4;
+      --accent-dim: rgba(212, 212, 212, 0.1);
+      --accent-glow: rgba(212, 212, 212, 0.15);
+      --mono: 'DM Mono', monospace;
+      --sans: 'Outfit', sans-serif;
+      --panel-width: 340px;
+      --header-h: 52px;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { overflow: hidden; }
+    .hidden { display: none !important; }
+
+    /* ===== TOAST ===== */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--accent); color: #000;
+      font-family: var(--mono); font-size: 12px; font-weight: 500;
+      padding: 8px 16px; border-radius: 6px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s; z-index: 99999;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ===== CONFIG APP ===== */
+    #config-app {
+      display: flex; flex-direction: column;
+      width: 100%; height: 100%;
+    }
+
+    #config-header {
+      height: var(--header-h); min-height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; z-index: 10;
+    }
+    .logo { font-family: var(--mono); font-size: 15px; font-weight: 500; letter-spacing: 0.04em; color: var(--text); }
+    .logo-dot { color: var(--accent); }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .btn-primary {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--accent); color: #000; border: none;
+      border-radius: 6px; padding: 7px 14px;
+      font-family: var(--mono); font-size: 12px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.03em;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-ghost {
+      background: transparent; color: var(--accent);
+      border: 1px solid var(--accent); border-radius: 6px;
+      padding: 6px 12px; font-family: var(--mono); font-size: 11px;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .btn-ghost:hover { background: var(--accent-dim); }
+
+    #config-body { display: flex; flex: 1; overflow: hidden; }
+
+    #config-panel {
+      width: var(--panel-width); min-width: var(--panel-width);
+      height: 100%; overflow-y: auto; overflow-x: hidden;
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 0 0 40px;
+      scrollbar-width: thin; scrollbar-color: var(--border-light) transparent;
+    }
+    #config-panel::-webkit-scrollbar { width: 4px; }
+    #config-panel::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+    .config-section { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+    .config-section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-family: var(--mono); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-dimmer); margin-bottom: 12px;
+    }
+
+    .import-row { display: flex; gap: 8px; }
+    .import-row input { flex: 1; min-width: 0; }
+
+    .cfg-input, input[type="text"], input[type="number"] {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-family: var(--mono); font-size: 12px;
+      padding: 7px 10px; outline: none; transition: border-color 0.15s;
+    }
+    .cfg-input:focus, input[type="text"]:focus { border-color: var(--accent); }
+    .cfg-input::placeholder, input::placeholder { color: var(--text-dimmer); }
+
+    .cfg-select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text);
+      font-family: var(--mono); font-size: 12px; padding: 6px 10px;
+      outline: none; cursor: pointer; transition: border-color 0.15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+    }
+    .cfg-select:focus { border-color: var(--accent); }
+
+    .cfg-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 10px;
+    }
+    .cfg-row:last-child { margin-bottom: 0; }
+    .cfg-row label { font-size: 12px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+    .unit { color: var(--text-dimmer); font-size: 10px; }
+    .mt-8 { margin-top: 8px; }
+    .cfg-hint { font-size: 10px; color: var(--text-dimmer); font-family: var(--mono); margin-top: 4px; line-height: 1.4; }
+
+    .slider-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    input[type="range"] {
+      flex: 1; appearance: none; -webkit-appearance: none;
+      height: 3px; background: var(--border-light); border-radius: 2px;
+      outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 13px; height: 13px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+      transition: transform 0.1s; box-shadow: 0 0 6px var(--accent-glow);
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    input[type="range"]::-moz-range-thumb {
+      width: 13px; height: 13px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: pointer;
+    }
+    .slider-val { font-family: var(--mono); font-size: 11px; color: var(--accent); min-width: 34px; text-align: right; }
+
+    .cfg-color {
+      width: 32px; height: 28px; padding: 2px;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: var(--surface2); cursor: pointer; flex-shrink: 0;
+    }
+    .color-with-opacity { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+
+    .toggle-row { display: flex; align-items: center; gap: 8px; }
+    .toggle {
+      position: relative; width: 36px; height: 20px;
+      background: var(--border-light); border: none; border-radius: 10px;
+      cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle.active { background: var(--accent); }
+    .toggle-knob {
+      position: absolute; top: 3px; left: 3px;
+      width: 14px; height: 14px; background: #fff;
+      border-radius: 50%; transition: left 0.2s; pointer-events: none;
+    }
+    .toggle.active .toggle-knob { left: 19px; }
+    .toggle-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+    /* Segment table */
+    .seg-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .seg-table th {
+      font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-dimmer);
+      padding: 4px 6px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .seg-table td { padding: 4px 4px; vertical-align: middle; }
+    .seg-table input[type="text"] { padding: 4px 7px; font-size: 11px; }
+    .seg-table input[type="number"] { padding: 4px 6px; font-size: 11px; width: 50px; }
+    .seg-table input[type="color"] { width: 28px; height: 24px; padding: 1px; border-radius: 4px; }
+    .seg-table .btn-remove {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-dimmer); border-radius: 4px;
+      width: 22px; height: 22px; cursor: pointer;
+      font-size: 10px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .seg-table .btn-remove:hover { border-color: #ff4d6d; color: #ff4d6d; }
+    .seg-table tr:last-child td { border-bottom: none; }
+    .seg-table tr td { border-bottom: 1px solid var(--border); }
+
+    .segment-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .color-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .color-actions .btn-ghost { font-size: 10px; padding: 4px 8px; }
+
+    /* ===== PREVIEW PANE ===== */
+    #preview-pane {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--bg);
+    }
+    #preview-label {
+      font-family: var(--mono); font-size: 11px; color: var(--text-dimmer);
+      letter-spacing: 0.06em; padding: 10px 20px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    #preview-label span { opacity: 0.6; }
+    #preview-screen {
+      flex: 1; position: relative; overflow: hidden;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px; background-color: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== WIDGET APP ===== */
+    #widget-app {
+      width: 100%; height: 100%; background: transparent;
+    }
+    #widget-root {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+
+    /* ===== SLOT MACHINE ===== */
+    .slot-wrapper {
+      pointer-events: all;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 16px; cursor: pointer; user-select: none;
+    }
+
+    .slot-machine {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* The visible window — shows 3 rows, middle is selected */
+    .slot-viewport {
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    /* Left/right indicator arrows pointing inward to center row */
+    .slot-indicators {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      left: 0; right: 0;
+      display: flex; justify-content: space-between;
+      pointer-events: none; z-index: 10;
+      padding: 0 4px;
+    }
+
+    .slot-arrow {
+      width: 0; height: 0;
+      filter: drop-shadow(0 0 4px rgba(0,0,0,0.8));
+    }
+    .slot-arrow.left {
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 12px solid var(--arrow-color, #d4d4d4);
+    }
+    .slot-arrow.right {
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-right: 12px solid var(--arrow-color, #d4d4d4);
+    }
+
+    /* Highlight band for center row */
+    .slot-highlight {
+      position: absolute;
+      left: 0; right: 0;
+      top: 50%; transform: translateY(-50%);
+      pointer-events: none; z-index: 5;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* The scrolling drum */
+    .slot-drum {
+      display: flex; flex-direction: column;
+      transition: none; /* JS handles animation */
+      will-change: transform;
+    }
+
+    .slot-item {
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--sans); font-weight: 600;
+      letter-spacing: 0.01em;
+      flex-shrink: 0;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    /* Fade edges of drum */
+    .slot-fade-top, .slot-fade-bottom {
+      position: absolute; left: 0; right: 0; z-index: 8;
+      pointer-events: none;
+    }
+    .slot-fade-top { top: 0; }
+    .slot-fade-bottom { bottom: 0; }
+
+    /* Idle pulse hint */
+    @keyframes idlePulse {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+
+    @keyframes resultBounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.06); }
+      60% { transform: scale(0.97); }
+      100% { transform: scale(1); }
+    }
+
+    .slot-wrapper.result-bounce .slot-viewport {
+      animation: resultBounce 0.4s ease;
+    }
+
+    /* ===== WIDGET CONFIG PREVIEW same styles ===== */
+    #preview-screen .slot-wrapper { transform: scale(0.85); }
+  </style>
+</head>
+<body>
+
+  <!-- CONFIG MODE -->
+  <div id="config-app" class="hidden">
+    <header id="config-header">
+      <div class="logo">vayl <span class="logo-dot">·</span> wheel</div>
+      <div class="header-actions">
+        <button id="btn-copy-url" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy Widget URL
+        </button>
+      </div>
+    </header>
+
+    <div id="config-body">
+      <aside id="config-panel">
+
+        <section class="config-section">
+          <h2 class="section-label">Import Config</h2>
+          <div class="import-row">
+            <input type="text" id="import-url" placeholder="Paste a widget URL…" spellcheck="false">
+            <button id="btn-import" class="btn-ghost">Load</button>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Identity</h2>
+          <div class="cfg-row">
+            <label>Wheel name</label>
+            <input type="text" id="cfg-name" class="cfg-input" placeholder="wheel1" spellcheck="false" style="width:auto;flex:1;margin-left:12px;">
+          </div>
+          <p class="cfg-hint">Used to target this wheel from your bot (e.g. /spin wheel1)</p>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Auto-Spin</h2>
+          <div class="cfg-row">
+            <label>Enabled</label>
+            <div class="toggle-row">
+              <button class="toggle" id="cfg-autospin" data-on="false"><span class="toggle-knob"></span></button>
+              <span class="toggle-label" id="cfg-autospin-label">Off</span>
+            </div>
+          </div>
+          <div class="cfg-row mt-8">
+            <label>Delay <span class="unit">s</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-delay" min="0" max="30" step="1" value="0">
+              <span class="slider-val" id="cfg-delay-val">0</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Duration <span class="unit">ms</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-duration" min="1000" max="10000" step="250" value="4000">
+              <span class="slider-val" id="cfg-duration-val">4000</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Appearance</h2>
+          <div class="cfg-row">
+            <label>Width <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-width" min="160" max="600" step="10" value="300">
+              <span class="slider-val" id="cfg-width-val">300</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Item height <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-item-h" min="32" max="120" step="2" value="60">
+              <span class="slider-val" id="cfg-item-h-val">60</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Font size <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-font-size" min="12" max="48" step="1" value="20">
+              <span class="slider-val" id="cfg-font-size-val">20</span>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Text colour</label>
+            <input type="color" id="cfg-text-color" class="cfg-color" value="#ffffff">
+          </div>
+          <div class="cfg-row">
+            <label>Corner radius <span class="unit">px</span></label>
+            <div class="slider-row">
+              <input type="range" id="cfg-radius" min="0" max="40" step="2" value="12">
+              <span class="slider-val" id="cfg-radius-val">12</span>
+            </div>
+          </div>
+          <div class="cfg-row mt-8">
+            <label>Arrow colour</label>
+            <input type="color" id="cfg-arrow-color" class="cfg-color" value="#d4d4d4">
+          </div>
+          <div class="cfg-row">
+            <label>Show arrows</label>
+            <div class="toggle-row">
+              <button class="toggle active" id="cfg-arrows" data-on="true"><span class="toggle-knob"></span></button>
+            </div>
+          </div>
+          <div class="cfg-row">
+            <label>Visible rows</label>
+            <select id="cfg-visible-rows" class="cfg-select" style="width:auto;">
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="7">7</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Audio</h2>
+          <div class="cfg-row">
+            <label>Sound</label>
+            <select id="cfg-sound" class="cfg-select" style="width:auto;">
+              <option value="none">None</option>
+              <option value="click">Click</option>
+              <option value="tick">Tick</option>
+              <option value="boop">Boop</option>
+              <option value="beep">Beep</option>
+              <option value="tweet">Tweet</option>
+              <option value="custom">Custom URL</option>
+            </select>
+          </div>
+          <input type="text" id="cfg-custom-sound" class="cfg-input mt-8 hidden" placeholder="https://example.com/sound.mp3">
+          <div class="cfg-row mt-8">
+            <label>Tick density</label>
+            <div class="slider-row">
+              <input type="range" id="cfg-tick-density" min="5" max="80" step="5" value="30">
+              <span class="slider-val" id="cfg-tick-density-val">30</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <h2 class="section-label">Segments</h2>
+          <table class="seg-table">
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>Colour</th>
+                <th>Weight</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="seg-tbody"></tbody>
+          </table>
+          <div class="segment-actions">
+            <button id="btn-add-seg" class="btn-ghost">+ Add</button>
+            <button id="btn-import-txt" class="btn-ghost">Import .txt</button>
+            <input type="file" id="seg-file" accept=".txt" hidden>
+          </div>
+          <div class="color-actions">
+            <button id="btn-color-uniform" class="btn-ghost">Uniform</button>
+            <button id="btn-color-alt" class="btn-ghost">Alternate</button>
+            <button id="btn-color-random" class="btn-ghost">Random</button>
+          </div>
+        </section>
+
+        <div style="height:60px"></div>
+      </aside>
+
+      <main id="preview-pane">
+        <div id="preview-label">Live Preview <span>· click the drum to spin</span></div>
+        <div id="preview-screen">
+          <div id="preview-slot-root"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- WIDGET MODE -->
+  <div id="widget-app" class="hidden">
+    <div id="widget-root">
+      <div id="widget-slot-root"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+  (() => {
+    // ─── State ──────────────────────────────────────────────────────────────
+    const params = new URLSearchParams(location.search);
+    const isLive = params.has('data');
+    const SOUNDS = { click:'sounds/click.mp3', tick:'sounds/tick.mp3', boop:'sounds/boop.mp3', beep:'sounds/beep.mp3', tweet:'sounds/tweet.mp3' };
+
+    let config = {
+      name: 'wheel1',
+      autoSpin: false, spinDelay: 0, spinDuration: 4000,
+      width: 300, itemH: 60, fontSize: 20,
+      textColor: '#ffffff', arrowColor: '#d4d4d4',
+      showArrows: true, visibleRows: 3, radius: 12,
+      sound: 'none', customSound: '', tickDensity: 30,
+      segments: [
+        { label: 'Option A', color: '#1a1a1a' },
+        { label: 'Option B', color: '#222222' },
+        { label: 'Option C', color: '#1a1a1a' },
+        { label: 'Option D', color: '#222222' },
+        { label: 'Option E', color: '#1a1a1a' },
+      ]
+    };
+
+    // ─── Slot Machine renderer ───────────────────────────────────────────────
+    function buildSlot(rootEl, cfg, interactive = true) {
+      rootEl.innerHTML = '';
+      if (!cfg.segments.length) return null;
+
+      const rows = cfg.visibleRows || 3;
+      const itemH = cfg.itemH || 60;
+      const viewH = rows * itemH;
+      const halfRows = Math.floor(rows / 2);
+
+      // Build a looping array: pad with copies so we can always scroll
+      // We'll use a long repeated list for seamless looping
+      const loopCount = 5; // repeat 5x for seamless
+      let allItems = [];
+      for (let i = 0; i < loopCount; i++) {
+        allItems = allItems.concat(cfg.segments.map((s, idx) => ({ ...s, origIdx: idx })));
+      }
+      const totalItems = allItems.length;
+      const midLoop = Math.floor(loopCount / 2) * cfg.segments.length; // start in middle of loop
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'slot-wrapper';
+
+      const machine = document.createElement('div');
+      machine.className = 'slot-machine';
+
+      const viewport = document.createElement('div');
+      viewport.className = 'slot-viewport';
+      viewport.style.cssText = `width:${cfg.width}px; height:${viewH}px; border-radius:${cfg.radius}px;`;
+
+      // Indicator arrows
+      const indicators = document.createElement('div');
+      indicators.className = 'slot-indicators';
+      indicators.style.height = `${itemH}px`;
+      indicators.innerHTML = `
+        <div class="slot-arrow left" style="--arrow-color:${cfg.arrowColor}; ${cfg.showArrows?'':'display:none'}"></div>
+        <div class="slot-arrow right" style="--arrow-color:${cfg.arrowColor}; ${cfg.showArrows?'':'display:none'}"></div>
+      `;
+
+      // Highlight band
+      const highlight = document.createElement('div');
+      highlight.className = 'slot-highlight';
+      highlight.style.height = `${itemH}px`;
+
+      // Fade top/bottom
+      const fadeTop = document.createElement('div');
+      fadeTop.className = 'slot-fade-top';
+      fadeTop.style.cssText = `height:${itemH * halfRows}px; background: linear-gradient(to bottom, ${hexToRgba(cfg.segments[0]?.color||'#1a1a1a', 0.9)}, transparent);`;
+
+      const fadeBottom = document.createElement('div');
+      fadeBottom.className = 'slot-fade-bottom';
+      fadeBottom.style.cssText = `height:${itemH * halfRows}px; background: linear-gradient(to top, ${hexToRgba(cfg.segments[0]?.color||'#1a1a1a', 0.9)}, transparent);`;
+
+      // Drum
+      const drum = document.createElement('div');
+      drum.className = 'slot-drum';
+
+      allItems.forEach(seg => {
+        const item = document.createElement('div');
+        item.className = 'slot-item';
+        item.style.cssText = `
+          height:${itemH}px;
+          width:${cfg.width}px;
+          background:${seg.color || '#1a1a1a'};
+          color:${cfg.textColor || '#fff'};
+          font-size:${cfg.fontSize || 20}px;
+          border-radius: 0;
+        `;
+        item.textContent = seg.label;
+        drum.appendChild(item);
+      });
+
+      viewport.appendChild(indicators);
+      viewport.appendChild(highlight);
+      viewport.appendChild(fadeTop);
+      viewport.appendChild(fadeBottom);
+      viewport.appendChild(drum);
+      machine.appendChild(viewport);
+      wrapper.appendChild(machine);
+      rootEl.appendChild(wrapper);
+
+      // Position: show midLoop index in center
+      let currentIndex = midLoop; // current center item index
+      drum.style.transform = `translateY(${-currentIndex * itemH + halfRows * itemH}px)`;
+
+      // Update fade gradient to match current center item color
+      function updateFades(idx) {
+        const seg = allItems[idx];
+        const c = hexToRgba(seg.color || '#1a1a1a', 0.92);
+        fadeTop.style.background = `linear-gradient(to bottom, ${c}, transparent)`;
+        fadeBottom.style.background = `linear-gradient(to top, ${c}, transparent)`;
+      }
+      updateFades(currentIndex);
+
+      // ─── Spin logic ──────────────────────────────────────────────────────
+      let spinning = false;
+      let cachedAudio = null;
+
+      function preloadAudio(src) {
+        if (!src) { cachedAudio = null; return; }
+        try { cachedAudio = new Audio(src); cachedAudio.load(); } catch {}
+      }
+      function playSound(src) {
+        try {
+          const a = cachedAudio ? cachedAudio.cloneNode() : new Audio(src);
+          a.volume = 0.35; a.currentTime = 0; a.play().catch(() => {});
+        } catch {}
+      }
+
+      if (cfg.sound !== 'none') {
+        const src = cfg.customSound || SOUNDS[cfg.sound];
+        if (src) preloadAudio(src);
+      }
+
+      function spin(targetSegIdx) {
+        if (spinning || !cfg.segments.length) return;
+        spinning = true;
+
+        // Decide target: random or forced
+        const finalSegIdx = (targetSegIdx !== undefined)
+          ? targetSegIdx % cfg.segments.length
+          : Math.floor(Math.random() * cfg.segments.length);
+
+        // Find a landing position that's in the upper part of our loop
+        // Spin at least 2 full rotations from current position
+        const minSpins = 2 + Math.floor(Math.random() * 2);
+        const minOffset = minSpins * cfg.segments.length;
+
+        // Find nearest instance of finalSegIdx beyond minOffset from currentIndex
+        let target = currentIndex + minOffset;
+        // Align to finalSegIdx
+        const rem = ((finalSegIdx - (target % cfg.segments.length)) + cfg.segments.length) % cfg.segments.length;
+        target += rem;
+
+        // Clamp so we don't go past end of allItems (stay in middle loops)
+        if (target >= totalItems - cfg.segments.length * 1) {
+          // rebuild position: wrap back to middle
+          const oldOrig = currentIndex % cfg.segments.length;
+          currentIndex = midLoop + oldOrig;
+          drum.style.transition = 'none';
+          drum.style.transform = `translateY(${-currentIndex * itemH + halfRows * itemH}px)`;
+          drum.getBoundingClientRect(); // force reflow
+          // redo target from new position
+          target = currentIndex + minOffset;
+          const rem2 = ((finalSegIdx - (target % cfg.segments.length)) + cfg.segments.length) % cfg.segments.length;
+          target += rem2;
+        }
+
+        const startIndex = currentIndex;
+        const distance = (target - startIndex) * itemH;
+        const duration = cfg.spinDuration;
+        const totalTicks = cfg.tickDensity;
+        const soundSrc = cfg.customSound || SOUNDS[cfg.sound];
+        let lastTick = -1;
+
+        const startTime = performance.now();
+
+        function ease(t) {
+          // Ease in fast, ease out slow (slot machine feel)
+          if (t < 0.2) return t / 0.2 * 0.35; // fast start
+          const t2 = (t - 0.2) / 0.8;
+          return 0.35 + (1 - Math.pow(1 - t2, 4)) * 0.65;
+        }
+
+        function anim(now) {
+          const p = Math.min((now - startTime) / duration, 1);
+          const eased = ease(p);
+          const currentY = -(startIndex * itemH) + halfRows * itemH - eased * distance;
+          drum.style.transform = `translateY(${currentY}px)`;
+
+          // Determine which item is centered
+          const centeredIdx = Math.round((halfRows * itemH - currentY) / itemH);
+          const clamped = Math.max(0, Math.min(totalItems - 1, centeredIdx));
+          updateFades(clamped);
+
+          // Tick sound — more frequent at start, slows toward end
+          const tickIndex = Math.floor(eased * totalTicks);
+          if (tickIndex > lastTick) {
+            lastTick = tickIndex;
+            if (cfg.sound !== 'none' && soundSrc) playSound(soundSrc);
+          }
+
+          if (p < 1) {
+            requestAnimationFrame(anim);
+          } else {
+            // Snap to exact
+            currentIndex = target;
+            drum.style.transform = `translateY(${-currentIndex * itemH + halfRows * itemH}px)`;
+            updateFades(currentIndex);
+            spinning = false;
+
+            // Play landing sound
+            if (cfg.sound !== 'none' && soundSrc) playSound(soundSrc);
+
+            // Bounce
+            wrapper.classList.add('result-bounce');
+            setTimeout(() => wrapper.classList.remove('result-bounce'), 400);
+
+            const landedSeg = allItems[currentIndex];
+            const result = landedSeg?.label || 'Unknown';
+            console.log('Wheel result:', result);
+
+            // Post result to Flask
+            fetch('http://127.0.0.1:5000/spinresult', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ result, name: cfg.name })
+            }).catch(() => {});
+          }
+        }
+
+        requestAnimationFrame(anim);
+      }
+
+      if (interactive) {
+        wrapper.addEventListener('click', () => spin());
+      }
+
+      return { spin, wrapper };
+    }
+
+    // ─── Hex → rgba helper ────────────────────────────────────────────────
+    function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1,3), 16);
+      const g = parseInt(hex.slice(3,5), 16);
+      const b = parseInt(hex.slice(5,7), 16);
+      if (isNaN(r)) return `rgba(26,26,26,${alpha})`;
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    // ─── Toast ────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // ─── Config URL encode/decode ─────────────────────────────────────────
+    function encodeConfig(cfg) { return btoa(JSON.stringify(cfg)); }
+    function decodeConfig(str) { return JSON.parse(atob(str)); }
+
+    // ─── WIDGET MODE ──────────────────────────────────────────────────────
+    if (isLive) {
+      document.getElementById('widget-app').classList.remove('hidden');
+      try {
+        config = decodeConfig(params.get('data'));
+        const root = document.getElementById('widget-slot-root');
+        const slot = buildSlot(root, config, true);
+
+        if (config.autoSpin && slot) {
+          setTimeout(() => slot.spin(), (config.spinDelay ?? 0) * 1000);
+        }
+
+        // Poll Flask for commands
+        async function poll() {
+          try {
+            const r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.name)}`);
+            const data = await r.json();
+            if (data.cmd === 'spin' && slot) slot.spin();
+            if (data.cmd === 'populate' && Array.isArray(data.entries)) {
+              config.segments = data.entries.map(e => ({
+                label: typeof e === 'string' ? e : e.label,
+                color: typeof e === 'object' && e.color ? e.color : (config.segments[0]?.color || '#1a1a1a')
+              }));
+              buildSlot(root, config, true);
+            }
+          } catch {}
+          setTimeout(poll, 200);
+        }
+        poll();
+
+      } catch {
+        document.body.innerHTML = '<h3 style="color:#888;padding:40px;font-family:monospace">Invalid widget data.</h3>';
+      }
+      return;
+    }
+
+    // ─── CONFIG MODE ──────────────────────────────────────────────────────
+    document.getElementById('config-app').classList.remove('hidden');
+
+    // Preview slot ref
+    let previewSlot = null;
+
+    // Segment table
+    const tbody = document.getElementById('seg-tbody');
+
+    function randomColor() {
+      const palette = ['#1a1a1a','#222222','#1e1e1e','#282828','#202020'];
+      return palette[Math.floor(Math.random() * palette.length)];
+    }
+
+    function addSegRow(seg) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${seg.label || ''}" placeholder="Label" style="width:100%;min-width:80px;"></td>
+        <td><input type="color" value="${seg.color || '#1a1a1a'}"></td>
+        <td><input type="number" min="1" max="99" value="${seg.weight || 1}" style="width:44px;"></td>
+        <td><button class="btn-remove">✕</button></td>
+      `;
+      tr.querySelector('.btn-remove').onclick = () => { tr.remove(); update(); };
+      tr.querySelectorAll('input').forEach(i => i.oninput = update);
+      tbody.appendChild(tr);
+    }
+
+    function getSegmentsFromTable() {
+      return [...tbody.querySelectorAll('tr')].map(tr => {
+        const inputs = tr.querySelectorAll('input');
+        return {
+          label: inputs[0].value,
+          color: inputs[1].value,
+          weight: parseFloat(inputs[2].value) || 1
+        };
+      });
+    }
+
+    function rebuildTable() {
+      tbody.innerHTML = '';
+      config.segments.forEach(s => addSegRow(s));
+    }
+
+    // ─── Controls ─────────────────────────────────────────────────────────
+    function bindSlider(id, key) {
+      const el = document.getElementById(id);
+      const val = document.getElementById(id + '-val');
+      el.oninput = () => { if (val) val.textContent = el.value; update(); };
+    }
+    function bindToggle(id, key) {
+      const btn = document.getElementById(id);
+      btn.onclick = () => {
+        const on = btn.dataset.on === 'true';
+        btn.dataset.on = String(!on);
+        btn.classList.toggle('active', !on);
+        const label = document.getElementById(id + '-label');
+        if (label) label.textContent = !on ? 'On' : 'Off';
+        update();
+      };
+    }
+
+    ['cfg-delay','cfg-duration','cfg-width','cfg-item-h','cfg-font-size','cfg-radius','cfg-tick-density'].forEach(id => bindSlider(id));
+    bindToggle('cfg-autospin', 'autoSpin');
+    bindToggle('cfg-arrows', 'showArrows');
+
+    ['cfg-text-color','cfg-arrow-color'].forEach(id => {
+      document.getElementById(id).oninput = update;
+    });
+
+    document.getElementById('cfg-name').oninput = update;
+    document.getElementById('cfg-visible-rows').onchange = update;
+
+    const soundSel = document.getElementById('cfg-sound');
+    const customSoundEl = document.getElementById('cfg-custom-sound');
+    soundSel.onchange = () => {
+      customSoundEl.classList.toggle('hidden', soundSel.value !== 'custom');
+      update();
+    };
+    customSoundEl.oninput = update;
+
+    // Segment buttons
+    document.getElementById('btn-add-seg').onclick = () => {
+      addSegRow({ label: '', color: randomColor(), weight: 1 });
+      update();
+    };
+
+    document.getElementById('btn-import-txt').onclick = () => document.getElementById('seg-file').click();
+    document.getElementById('seg-file').onchange = function() {
+      const file = this.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const lines = reader.result.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        tbody.innerHTML = '';
+        lines.forEach(l => addSegRow({ label: l, color: randomColor(), weight: 1 }));
+        update(); this.value = '';
+      };
+      reader.readAsText(file);
+    };
+
+    document.getElementById('btn-color-uniform').onclick = () => {
+      const segs = getSegmentsFromTable();
+      if (!segs.length) return;
+      const base = segs[0].color;
+      tbody.querySelectorAll('tr').forEach(tr => tr.querySelectorAll('input')[1].value = base);
+      update();
+    };
+    document.getElementById('btn-color-alt').onclick = () => {
+      const rows = [...tbody.querySelectorAll('tr')];
+      if (rows.length < 2) return;
+      const c0 = rows[0].querySelectorAll('input')[1].value;
+      const c1 = rows[1].querySelectorAll('input')[1].value;
+      rows.forEach((tr, i) => tr.querySelectorAll('input')[1].value = i % 2 === 0 ? c0 : c1);
+      update();
+    };
+    document.getElementById('btn-color-random').onclick = () => {
+      tbody.querySelectorAll('tr').forEach(tr => tr.querySelectorAll('input')[1].value = randomColor());
+      update();
+    };
+
+    // Copy URL
+    document.getElementById('btn-copy-url').onclick = () => {
+      update();
+      const encoded = encodeConfig(config);
+      const url = `${location.origin}${location.pathname}?data=${encoded}`;
+      navigator.clipboard.writeText(url).then(() => showToast('URL copied!'));
+    };
+
+    // Import URL
+    document.getElementById('btn-import').onclick = () => {
+      try {
+        const raw = document.getElementById('import-url').value.trim();
+        const u = new URL(raw);
+        const enc = u.searchParams.get('data'); if (!enc) throw 0;
+        config = decodeConfig(enc);
+        applyConfigToUI();
+        update();
+        showToast('Config loaded!');
+      } catch { showToast('Invalid URL'); }
+    };
+
+    function applyConfigToUI() {
+      const s = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+      const sv = (id, val) => {
+        const el = document.getElementById(id); if (!el) return;
+        el.value = val;
+        const vEl = document.getElementById(id + '-val');
+        if (vEl) vEl.textContent = val;
+      };
+
+      document.getElementById('cfg-name').value = config.name || 'wheel1';
+      sv('cfg-delay', config.spinDelay ?? 0);
+      sv('cfg-duration', config.spinDuration ?? 4000);
+      sv('cfg-width', config.width ?? 300);
+      sv('cfg-item-h', config.itemH ?? 60);
+      sv('cfg-font-size', config.fontSize ?? 20);
+      sv('cfg-radius', config.radius ?? 12);
+      sv('cfg-tick-density', config.tickDensity ?? 30);
+      s('cfg-text-color', config.textColor ?? '#ffffff');
+      s('cfg-arrow-color', config.arrowColor ?? '#d4d4d4');
+      s('cfg-visible-rows', config.visibleRows ?? 3);
+      s('cfg-sound', config.sound ?? 'none');
+      s('cfg-custom-sound', config.customSound ?? '');
+      customSoundEl.classList.toggle('hidden', config.sound !== 'custom');
+
+      const setToggle = (id, val) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.dataset.on = String(!!val);
+        btn.classList.toggle('active', !!val);
+        const label = document.getElementById(id + '-label');
+        if (label) label.textContent = val ? 'On' : 'Off';
+      };
+      setToggle('cfg-autospin', config.autoSpin);
+      setToggle('cfg-arrows', config.showArrows !== false);
+
+      rebuildTable();
+    }
+
+    function update() {
+      config.name = document.getElementById('cfg-name').value || 'wheel1';
+      config.autoSpin = document.getElementById('cfg-autospin').dataset.on === 'true';
+      config.spinDelay = parseFloat(document.getElementById('cfg-delay').value) || 0;
+      config.spinDuration = parseFloat(document.getElementById('cfg-duration').value) || 4000;
+      config.width = parseFloat(document.getElementById('cfg-width').value) || 300;
+      config.itemH = parseFloat(document.getElementById('cfg-item-h').value) || 60;
+      config.fontSize = parseFloat(document.getElementById('cfg-font-size').value) || 20;
+      config.textColor = document.getElementById('cfg-text-color').value;
+      config.arrowColor = document.getElementById('cfg-arrow-color').value;
+      config.showArrows = document.getElementById('cfg-arrows').dataset.on === 'true';
+      config.visibleRows = parseInt(document.getElementById('cfg-visible-rows').value) || 3;
+      config.radius = parseFloat(document.getElementById('cfg-radius').value) || 12;
+      config.sound = document.getElementById('cfg-sound').value;
+      config.customSound = config.sound === 'custom' ? customSoundEl.value.trim() : '';
+      config.tickDensity = parseFloat(document.getElementById('cfg-tick-density').value) || 30;
+      config.segments = getSegmentsFromTable();
+
+      // Rebuild preview
+      const root = document.getElementById('preview-slot-root');
+      previewSlot = buildSlot(root, config, true);
+    }
+
+    // Init
+    rebuildTable();
+    update();
+  })();
+  </script>
+</body>
+</html>
