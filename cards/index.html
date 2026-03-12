@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vayl · Cards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cinzel:wght@400;700&family=Raleway:wght@400;600;700&family=Oswald:wght@400;600&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d0d; --surface: #161616; --surface2: #1e1e1e;
+      --border: #2a2a2a; --border-light: #333;
+      --text: #e8e8e8; --text-dim: #888; --text-dimmer: #555;
+      --accent: #d4d4d4; --accent-dim: rgba(212,212,212,0.1); --accent-glow: rgba(212,212,212,0.15);
+      --mono: 'DM Mono', monospace; --sans: 'Outfit', sans-serif;
+      --panel-width: 340px; --header-h: 52px;
+    }
+    html, body { width:100%; height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    body { overflow:hidden; }
+    .hidden { display:none !important; }
+
+    /* ── Toast ── */
+    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--accent); color:#000; font-family:var(--mono); font-size:12px; font-weight:500; padding:8px 16px; border-radius:6px; opacity:0; pointer-events:none; transition:opacity 0.2s,transform 0.2s; z-index:99999; white-space:nowrap; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── Config shell ── */
+    #config-app { display:flex; flex-direction:column; width:100%; height:100%; }
+    #config-header { height:var(--header-h); min-height:var(--header-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:10; }
+    .logo { font-family:var(--mono); font-size:15px; font-weight:500; letter-spacing:0.04em; }
+    .logo-dot { color:var(--accent); }
+    .header-actions { display:flex; gap:10px; align-items:center; }
+    .btn-primary { display:flex; align-items:center; gap:7px; background:var(--accent); color:#000; border:none; border-radius:6px; padding:7px 14px; font-family:var(--mono); font-size:12px; font-weight:500; cursor:pointer; letter-spacing:0.03em; transition:opacity 0.15s,transform 0.1s; }
+    .btn-primary:hover { opacity:0.85; }
+    .btn-primary:active { transform:scale(0.97); }
+    .btn-ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:6px; padding:6px 12px; font-family:var(--mono); font-size:11px; cursor:pointer; transition:background 0.15s; white-space:nowrap; }
+    .btn-ghost:hover { background:var(--accent-dim); }
+    #config-body { display:flex; flex:1; overflow:hidden; }
+    #config-panel { width:var(--panel-width); min-width:var(--panel-width); height:100%; overflow-y:auto; overflow-x:hidden; background:var(--surface); border-right:1px solid var(--border); padding:0 0 40px; scrollbar-width:thin; scrollbar-color:var(--border-light) transparent; }
+    #config-panel::-webkit-scrollbar { width:4px; }
+    #config-panel::-webkit-scrollbar-thumb { background:var(--border-light); border-radius:2px; }
+    .config-section { padding:18px 20px; border-bottom:1px solid var(--border); }
+    .config-section:last-child { border-bottom:none; }
+    .section-label { font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dimmer); margin-bottom:12px; }
+    .import-row { display:flex; gap:8px; }
+    .import-row input { flex:1; min-width:0; }
+    .cfg-input, input[type="text"], input[type="number"] { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:12px; padding:7px 10px; outline:none; transition:border-color 0.15s; }
+    .cfg-input:focus, input[type="text"]:focus { border-color:var(--accent); }
+    .cfg-input::placeholder, input::placeholder { color:var(--text-dimmer); }
+    .cfg-select { background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:12px; padding:6px 10px; outline:none; cursor:pointer; transition:border-color 0.15s; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:28px; }
+    .cfg-select:focus { border-color:var(--accent); }
+    .cfg-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .cfg-row:last-child { margin-bottom:0; }
+    .cfg-row label { font-size:12px; color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
+    .unit { color:var(--text-dimmer); font-size:10px; }
+    .mt-8 { margin-top:8px; }
+    .cfg-hint { font-size:10px; color:var(--text-dimmer); font-family:var(--mono); margin-top:4px; line-height:1.4; }
+    .slider-row { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+    input[type="range"] { flex:1; appearance:none; -webkit-appearance:none; height:3px; background:var(--border-light); border-radius:2px; outline:none; cursor:pointer; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--accent); cursor:pointer; transition:transform 0.1s; box-shadow:0 0 6px var(--accent-glow); }
+    input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.2); }
+    input[type="range"]::-moz-range-thumb { width:13px; height:13px; border-radius:50%; background:var(--accent); border:none; cursor:pointer; }
+    .slider-val { font-family:var(--mono); font-size:11px; color:var(--accent); min-width:34px; text-align:right; }
+    .cfg-color { width:32px; height:28px; padding:2px; border:1px solid var(--border); border-radius:5px; background:var(--surface2); cursor:pointer; flex-shrink:0; }
+    .color-with-opacity { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+    .toggle-row { display:flex; align-items:center; gap:8px; }
+    .toggle { position:relative; width:36px; height:20px; background:var(--border-light); border:none; border-radius:10px; cursor:pointer; transition:background 0.2s; flex-shrink:0; }
+    .toggle.active { background:var(--accent); }
+    .toggle-knob { position:absolute; top:3px; left:3px; width:14px; height:14px; background:#fff; border-radius:50%; transition:left 0.2s; pointer-events:none; }
+    .toggle.active .toggle-knob { left:19px; }
+    .toggle-label { font-family:var(--mono); font-size:11px; color:var(--text-dim); }
+
+    /* Segment table */
+    .seg-table { width:100%; border-collapse:collapse; font-size:11px; }
+    .seg-table th { font-family:var(--mono); font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dimmer); padding:4px 6px; text-align:left; border-bottom:1px solid var(--border); }
+    .seg-table td { padding:4px 4px; vertical-align:middle; border-bottom:1px solid var(--border); }
+    .seg-table tr:last-child td { border-bottom:none; }
+    .seg-table input[type="text"] { padding:4px 7px; font-size:11px; }
+    .seg-table .btn-remove { background:transparent; border:1px solid var(--border); color:var(--text-dimmer); border-radius:4px; width:22px; height:22px; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+    .seg-table .btn-remove:hover { border-color:#ff4d6d; color:#ff4d6d; }
+    .segment-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+
+    /* Preview pane */
+    #preview-pane { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+    #preview-label { font-family:var(--mono); font-size:11px; color:var(--text-dimmer); letter-spacing:0.06em; padding:10px 20px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    #preview-label span { opacity:0.6; }
+    #preview-screen { flex:1; position:relative; overflow:hidden; background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px); background-size:40px 40px; background-color:var(--bg); display:flex; align-items:center; justify-content:center; }
+
+    /* Widget mode */
+    #widget-app { width:100%; height:100%; background:transparent; }
+    #widget-root { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+
+    /* ── Card stage ── */
+    .card-stage {
+      position:relative;
+      pointer-events:all;
+      cursor:pointer;
+      /* size set by JS via cfg */
+    }
+
+    /* Each card is a 3-D flippable element */
+    .card {
+      position:absolute;
+      border-radius:12px;
+      transform-style:preserve-3d;
+      will-change:transform;
+      box-shadow:0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .card-face {
+      position:absolute;
+      inset:0;
+      border-radius:12px;
+      backface-visibility:hidden;
+      -webkit-backface-visibility:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+
+    .card-back  { transform:rotateY(0deg); }
+    .card-front { transform:rotateY(180deg); }
+
+    .card-face img {
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover; border-radius:12px;
+    }
+
+    .card-label {
+      position:relative; z-index:2;
+      text-align:center;
+      padding:12px;
+      word-break:break-word;
+      line-height:1.3;
+    }
+
+    /* Back pattern overlay (shown when no image) */
+    .card-back-pattern {
+      position:absolute; inset:0; border-radius:12px;
+      opacity:0.18;
+      background-image:
+        repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 0, transparent 50%);
+      background-size:8px 8px;
+    }
+
+    /* Idle breathing */
+    @keyframes idleFloat {
+      0%,100% { transform:translateY(0px) rotate(var(--base-rot,0deg)); }
+      50%      { transform:translateY(-4px) rotate(var(--base-rot,0deg)); }
+    }
+
+    /* Result card glow pulse */
+    @keyframes resultGlow {
+      0%,100% { box-shadow:0 8px 32px rgba(0,0,0,0.55), 0 0 0 rgba(255,255,255,0); }
+      50%      { box-shadow:0 16px 48px rgba(0,0,0,0.6), 0 0 32px rgba(255,255,255,0.12); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- CONFIG MODE -->
+<div id="config-app" class="hidden">
+  <header id="config-header">
+    <div class="logo">vayl <span class="logo-dot">·</span> cards</div>
+    <div class="header-actions">
+      <button id="btn-copy-url" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Widget URL
+      </button>
+    </div>
+  </header>
+
+  <div id="config-body">
+    <aside id="config-panel">
+
+      <section class="config-section">
+        <h2 class="section-label">Import Config</h2>
+        <div class="import-row">
+          <input type="text" id="import-url" placeholder="Paste a widget URL…" spellcheck="false">
+          <button id="btn-import" class="btn-ghost">Load</button>
+        </div>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Identity</h2>
+        <div class="cfg-row">
+          <label>Deck name</label>
+          <input type="text" id="cfg-name" class="cfg-input" placeholder="deck1" spellcheck="false" style="width:auto;flex:1;margin-left:12px;">
+        </div>
+        <p class="cfg-hint">Used to target this deck from your bot</p>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Auto-Shuffle</h2>
+        <div class="cfg-row">
+          <label>Enabled</label>
+          <div class="toggle-row">
+            <button class="toggle" id="cfg-autoshuffle" data-on="false"><span class="toggle-knob"></span></button>
+            <span class="toggle-label" id="cfg-autoshuffle-label">Off</span>
+          </div>
+        </div>
+        <div class="cfg-row mt-8">
+          <label>Delay <span class="unit">s</span></label>
+          <div class="slider-row">
+            <input type="range" id="cfg-delay" min="0" max="30" step="1" value="0">
+            <span class="slider-val" id="cfg-delay-val">0</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Card Size</h2>
+        <div class="cfg-row">
+          <label>Width <span class="unit">px</span></label>
+          <div class="slider-row">
+            <input type="range" id="cfg-card-w" min="100" max="400" step="10" value="200">
+            <span class="slider-val" id="cfg-card-w-val">200</span>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <label>Height <span class="unit">px</span></label>
+          <div class="slider-row">
+            <input type="range" id="cfg-card-h" min="140" max="560" step="10" value="280">
+            <span class="slider-val" id="cfg-card-h-val">280</span>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <label>Stack depth</label>
+          <div class="slider-row">
+            <input type="range" id="cfg-stack-depth" min="1" max="8" step="1" value="5">
+            <span class="slider-val" id="cfg-stack-depth-val">5</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Card Back</h2>
+        <div class="cfg-row">
+          <label>Colour</label>
+          <input type="color" id="cfg-back-color" class="cfg-color" value="#1a2540">
+        </div>
+        <div class="cfg-row">
+          <label>Image URL</label>
+        </div>
+        <input type="text" id="cfg-back-img" class="cfg-input" placeholder="https://… (optional)" spellcheck="false">
+        <p class="cfg-hint mt-8">Overrides colour if set</p>
+
+        <div class="cfg-row mt-8" style="margin-top:10px;">
+          <label>Built-in back</label>
+          <select id="cfg-back-preset" class="cfg-select" style="width:auto;">
+            <option value="">— none —</option>
+            <option value="diamonds">Diamonds</option>
+            <option value="circuit">Circuit</option>
+            <option value="hatch">Crosshatch</option>
+            <option value="scales">Scales</option>
+            <option value="dots">Dots</option>
+          </select>
+        </div>
+        <p class="cfg-hint">Drawn over the back colour · overridden by image URL</p>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Card Front</h2>
+        <div class="cfg-row">
+          <label>Colour</label>
+          <input type="color" id="cfg-front-color" class="cfg-color" value="#0d0d0d">
+        </div>
+        <div class="cfg-row">
+          <label>Image URL</label>
+        </div>
+        <input type="text" id="cfg-front-img" class="cfg-input" placeholder="https://… (optional)" spellcheck="false">
+        <p class="cfg-hint mt-8">Overrides colour if set · label drawn on top</p>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Typography</h2>
+        <div class="cfg-row">
+          <label>Font</label>
+          <select id="cfg-font" class="cfg-select" style="width:auto;">
+            <option value="Outfit">Outfit</option>
+            <option value="Playfair Display">Playfair Display</option>
+            <option value="Cinzel">Cinzel</option>
+            <option value="Raleway">Raleway</option>
+            <option value="Oswald">Oswald</option>
+            <option value="Lato">Lato</option>
+            <option value="DM Mono">DM Mono</option>
+          </select>
+        </div>
+        <div class="cfg-row">
+          <label>Size <span class="unit">px</span></label>
+          <div class="slider-row">
+            <input type="range" id="cfg-font-size" min="10" max="48" step="1" value="20">
+            <span class="slider-val" id="cfg-font-size-val">20</span>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <label>Text colour</label>
+          <input type="color" id="cfg-text-color" class="cfg-color" value="#ffffff">
+        </div>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Animation</h2>
+        <div class="cfg-row">
+          <label>Shuffle passes</label>
+          <div class="slider-row">
+            <input type="range" id="cfg-passes" min="1" max="5" step="1" value="2">
+            <span class="slider-val" id="cfg-passes-val">2</span>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <label>Speed</label>
+          <select id="cfg-speed" class="cfg-select" style="width:auto;">
+            <option value="slow">Slow</option>
+            <option value="normal" selected>Normal</option>
+            <option value="fast">Fast</option>
+          </select>
+        </div>
+        <div class="cfg-row">
+          <label>Idle breathing</label>
+          <div class="toggle-row">
+            <button class="toggle active" id="cfg-breathe" data-on="true"><span class="toggle-knob"></span></button>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <label>Result hold <span class="unit">s</span></label>
+          <div class="slider-row">
+            <input type="range" id="cfg-hold" min="1" max="10" step="1" value="3">
+            <span class="slider-val" id="cfg-hold-val">3</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="config-section">
+        <h2 class="section-label">Cards</h2>
+        <table class="seg-table">
+          <thead>
+            <tr><th style="width:100%">Label</th><th></th></tr>
+          </thead>
+          <tbody id="seg-tbody"></tbody>
+        </table>
+        <div class="segment-actions">
+          <button id="btn-add-seg" class="btn-ghost">+ Add</button>
+          <button id="btn-import-txt" class="btn-ghost">Import .txt</button>
+          <input type="file" id="seg-file" accept=".txt" hidden>
+        </div>
+      </section>
+
+      <div style="height:60px"></div>
+    </aside>
+
+    <main id="preview-pane">
+      <div id="preview-label">Live Preview <span>· click the deck to shuffle</span></div>
+      <div id="preview-screen">
+        <div id="preview-root"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- WIDGET MODE -->
+<div id="widget-app" class="hidden">
+  <div id="widget-root">
+    <div id="widget-stage-root"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const isLive = params.has('data');
+
+  // ── Default config ──────────────────────────────────────────────────────
+  let config = {
+    name: 'deck1',
+    autoShuffle: false, shuffleDelay: 0,
+    cardW: 200, cardH: 280, stackDepth: 5,
+    backColor: '#1a2540', backImg: '', backPreset: 'diamonds',
+    frontColor: '#0d0d0d', frontImg: '',
+    font: 'Outfit', fontSize: 20, textColor: '#ffffff',
+    shufflePasses: 2, speed: 'normal',
+    breathe: true, holdTime: 3,
+    entries: ['Option A', 'Option B', 'Option C', 'Option D', 'Option E']
+  };
+
+  // ── Speed map ───────────────────────────────────────────────────────────
+  const SPEEDS = { slow: 1.7, normal: 1.0, fast: 0.5 };
+
+  // ── Toast ───────────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── Encode / decode ─────────────────────────────────────────────────────
+  function encode(cfg) { return btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))); }
+  function decode(s)   { return JSON.parse(decodeURIComponent(escape(atob(s)))); }
+
+  // ── Canvas back-pattern renderer ────────────────────────────────────────
+  function drawBackPattern(canvas, preset, color) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = color;
+    ctx.fillStyle   = color;
+    ctx.lineWidth   = 1;
+
+    if (preset === 'diamonds') {
+      const s = 18;
+      ctx.beginPath();
+      for (let y = -s; y < H + s; y += s) {
+        for (let x = -s; x < W + s; x += s * 2) {
+          const ox = (Math.floor(y / s) % 2) * s;
+          ctx.moveTo(x + ox,     y);
+          ctx.lineTo(x + ox + s, y + s / 2);
+          ctx.lineTo(x + ox,     y + s);
+          ctx.lineTo(x + ox - s, y + s / 2);
+          ctx.closePath();
+        }
+      }
+      ctx.globalAlpha = 0.2; ctx.stroke(); ctx.globalAlpha = 1;
+    } else if (preset === 'circuit') {
+      ctx.globalAlpha = 0.18;
+      const grid = 20;
+      for (let y = grid; y < H; y += grid) {
+        for (let x = grid; x < W; x += grid) {
+          ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+          if (Math.random() > 0.5) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + grid, y); ctx.stroke(); }
+          if (Math.random() > 0.5) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + grid); ctx.stroke(); }
+        }
+      }
+      ctx.globalAlpha = 1;
+    } else if (preset === 'hatch') {
+      ctx.globalAlpha = 0.15;
+      const s = 10;
+      for (let i = -H; i < W + H; i += s) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i - H, H); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else if (preset === 'scales') {
+      ctx.globalAlpha = 0.18;
+      const r = 12;
+      for (let row = 0; row * r < H + r; row++) {
+        const ox = (row % 2) * r;
+        for (let col = -1; col * r * 2 < W + r * 2; col++) {
+          ctx.beginPath();
+          ctx.arc(col * r * 2 + ox, row * r, r, Math.PI, 0);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    } else if (preset === 'dots') {
+      ctx.globalAlpha = 0.22;
+      const s = 14;
+      for (let y = s; y < H; y += s) {
+        for (let x = s; x < W; x += s) {
+          ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ── Build a card DOM element ─────────────────────────────────────────────
+  function makeCard(cfg, isFront = false, label = '') {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = `width:${cfg.cardW}px; height:${cfg.cardH}px; position:absolute;`;
+
+    // Back face
+    const back = document.createElement('div');
+    back.className = 'card-face card-back';
+    back.style.background = cfg.backColor || '#1a2540';
+
+    if (cfg.backImg) {
+      const img = document.createElement('img');
+      img.src = cfg.backImg; img.alt = '';
+      back.appendChild(img);
+    } else if (cfg.backPreset && cfg.backPreset !== '') {
+      // Draw pattern onto a canvas, use as bg
+      const pc = document.createElement('canvas');
+      pc.width = cfg.cardW; pc.height = cfg.cardH;
+      pc.style.cssText = 'position:absolute;inset:0;border-radius:12px;';
+      drawBackPattern(pc, cfg.backPreset, '#ffffff');
+      back.appendChild(pc);
+    }
+
+    // Border highlight on back
+    back.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.08)';
+
+    // Front face
+    const front = document.createElement('div');
+    front.className = 'card-face card-front';
+    front.style.background = cfg.frontColor || '#0d0d0d';
+    front.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.08)';
+
+    if (cfg.frontImg) {
+      const img = document.createElement('img');
+      img.src = cfg.frontImg; img.alt = '';
+      front.appendChild(img);
+    }
+
+    if (label) {
+      const lbl = document.createElement('div');
+      lbl.className = 'card-label';
+      lbl.style.cssText = `font-family:'${cfg.font||'Outfit'}',sans-serif; font-size:${cfg.fontSize||20}px; color:${cfg.textColor||'#fff'}; font-weight:600;`;
+      lbl.textContent = label;
+      front.appendChild(lbl);
+    }
+
+    card.appendChild(back);
+    card.appendChild(front);
+    return card;
+  }
+
+  // ── Sleep helper ────────────────────────────────────────────────────────
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ── Animate a card's transform over duration ─────────────────────────────
+  function animCard(card, fromT, toT, duration, easing = 'ease') {
+    return new Promise(resolve => {
+      card.style.transition = 'none';
+      card.style.transform = fromT;
+      card.getBoundingClientRect();
+      card.style.transition = `transform ${duration}ms ${easing}`;
+      card.style.transform = toT;
+      setTimeout(resolve, duration);
+    });
+  }
+
+  // ── Build the full card stage and return a { shuffle } controller ────────
+  function buildStage(rootEl, cfg, interactive = true) {
+    rootEl.innerHTML = '';
+
+    const entries = cfg.entries && cfg.entries.length ? cfg.entries : ['No cards'];
+    const depth   = Math.min(cfg.stackDepth || 5, 8);
+    const spd     = SPEEDS[cfg.speed || 'normal'] || 1.0;
+    const W = cfg.cardW || 200;
+    const H = cfg.cardH || 280;
+
+    // Stage container — sized to give room for shuffle movement
+    const stageW = W + 120;
+    const stageH = H + 80;
+    const stage = document.createElement('div');
+    stage.className = 'card-stage';
+    stage.style.cssText = `width:${stageW}px; height:${stageH}px; perspective:900px;`;
+
+    // Cards are centred within the stage
+    const cx = (stageW - W) / 2;
+    const cy = (stageH - H) / 2;
+
+    // Build the visible stack (depth cards, all face-down)
+    const stackCards = [];
+    for (let i = 0; i < depth; i++) {
+      const card = makeCard(cfg);
+      // Stagger: bottom cards offset slightly down/right
+      const offset = (depth - 1 - i) * 2;
+      const rot    = (Math.random() - 0.5) * 3;
+      card.style.cssText += `left:${cx + offset * 0.5}px; top:${cy + offset}px;`;
+      card.style.transform = `rotate(${rot}deg)`;
+      card.dataset.baseRot = rot;
+      stage.appendChild(card);
+      stackCards.push(card);
+      if (cfg.breathe && i === depth - 1) {
+        card.style.animation = `idleFloat ${2.5 + Math.random()}s ease-in-out infinite`;
+        card.style.setProperty('--base-rot', `${rot}deg`);
+      }
+    }
+
+    rootEl.appendChild(stage);
+
+    let animating = false;
+    let resultCard = null;
+
+    // ── Shuffle animation ─────────────────────────────────────────────────
+    async function shuffle(forcedEntry) {
+      if (animating) return;
+      animating = true;
+
+      // Kill idle animation on top card
+      stackCards[stackCards.length - 1].style.animation = 'none';
+
+      // Remove any lingering result card
+      if (resultCard) { resultCard.remove(); resultCard = null; }
+
+      const passes = cfg.shufflePasses || 2;
+      const t = ms => Math.round(ms * spd);
+
+      // ── Phase 1: Riffle shuffle passes ──────────────────────────────────
+      for (let pass = 0; pass < passes; pass++) {
+        // Split deck: top half lifts left, bottom half lifts right
+        const mid   = Math.floor(stackCards.length / 2);
+        const topH  = stackCards.slice(mid);
+        const botH  = stackCards.slice(0, mid);
+
+        // Lift top half up-left
+        await Promise.all(topH.map((c, i) => {
+          const br = parseFloat(c.dataset.baseRot || 0);
+          const from = c.style.transform;
+          const to   = `translate(${-28 - i * 3}px, ${-18 - i * 2}px) rotate(${br - 6}deg)`;
+          return animCard(c, from, to, t(220), 'ease-out');
+        }));
+
+        // Interleave: cards from each half drop back one by one
+        const interleaved = [];
+        const maxLen = Math.max(topH.length, botH.length);
+        for (let i = 0; i < maxLen; i++) {
+          if (i < botH.length) interleaved.push(botH[i]);
+          if (i < topH.length) interleaved.push(topH[i]);
+        }
+
+        for (let i = 0; i < interleaved.length; i++) {
+          const c  = interleaved[i];
+          const br = parseFloat(c.dataset.baseRot || 0);
+          const offset = (stackCards.length - 1 - stackCards.indexOf(c)) * 2;
+          const to = `translate(0px, 0px) rotate(${br + (Math.random() - 0.5) * 2}deg)`;
+          c.style.transition = `transform ${t(120)}ms ease`;
+          c.style.transform  = to;
+          // Re-order in DOM to simulate interleave
+          stage.appendChild(c);
+          await sleep(t(40));
+        }
+        await sleep(t(180));
+
+        // Tidy back to base positions
+        stackCards.forEach((c, i) => {
+          const offset = (depth - 1 - i) * 2;
+          const br     = parseFloat(c.dataset.baseRot || 0);
+          c.style.transition = `transform ${t(200)}ms ease`;
+          c.style.transform  = `translate(${offset * 0.5 - cx + cx}px, ${0}px) rotate(${br}deg)`;
+          c.style.left = `${cx + offset * 0.5}px`;
+          c.style.top  = `${cy + offset}px`;
+        });
+        await sleep(t(250));
+      }
+
+      // ── Phase 2: Deal the top card ──────────────────────────────────────
+      const topCard = stackCards[stackCards.length - 1];
+      const entry = forcedEntry !== undefined
+        ? entries[Math.abs(forcedEntry) % entries.length]
+        : entries[Math.floor(Math.random() * entries.length)];
+
+      // Create revealed card (same position as top card, then animate)
+      const dealt = makeCard(cfg, true, entry);
+      dealt.style.cssText += `left:${cx}px; top:${cy}px; z-index:100;`;
+      dealt.style.transform = `rotate(${parseFloat(topCard.dataset.baseRot||0)}deg)`;
+      stage.appendChild(dealt);
+      resultCard = dealt;
+
+      // Slide top of stack card away (simulate it being the dealt card)
+      topCard.style.transition = `transform ${t(80)}ms ease, opacity ${t(80)}ms`;
+      topCard.style.transform += ' scale(0.96)';
+      topCard.style.opacity   = '0';
+      await sleep(t(80));
+      topCard.remove();
+      stackCards.pop();
+
+      // Flip and arc the dealt card to centre-stage
+      dealt.style.transition = `transform ${t(520)}ms cubic-bezier(0.22,1,0.36,1)`;
+      dealt.style.transform  = `translate(0px, ${-cy * 0.4}px) rotateY(180deg) rotate(-2deg) scale(1.06)`;
+      await sleep(t(520));
+
+      // Subtle settle
+      dealt.style.transition = `transform ${t(180)}ms ease`;
+      dealt.style.transform  = `translate(0px, ${-cy * 0.4}px) rotateY(180deg) rotate(0deg) scale(1.04)`;
+      dealt.style.animation  = `resultGlow 2s ease-in-out infinite`;
+      await sleep(t(180));
+
+      // Post result to Flask
+      const result = entry;
+      fetch('http://127.0.0.1:5000/spinresult', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result, name: cfg.name })
+      }).catch(() => {});
+      console.log('Cards result:', result);
+
+      // ── Phase 3: Hold then return ───────────────────────────────────────
+      await sleep((cfg.holdTime || 3) * 1000);
+
+      // Slide result card off top
+      dealt.style.animation  = '';
+      dealt.style.transition = `transform ${t(400)}ms ease-in, opacity ${t(400)}ms ease-in`;
+      dealt.style.transform  = `translate(0px, ${-stageH}px) rotateY(180deg) rotate(-8deg) scale(0.9)`;
+      dealt.style.opacity    = '0';
+      await sleep(t(400));
+      dealt.remove();
+      resultCard = null;
+
+      // Restore a fresh card to the top of the stack
+      const newCard = makeCard(cfg);
+      const offset  = (depth - 1) * 2;
+      newCard.style.cssText += `left:${cx + offset * 0.5}px; top:${cy + offset}px; z-index:0;`;
+      const rot = (Math.random() - 0.5) * 3;
+      newCard.dataset.baseRot = rot;
+      newCard.style.transform = `rotate(${rot}deg) scale(0.95)`;
+      newCard.style.opacity   = '0';
+      stage.insertBefore(newCard, stage.firstChild);
+      stackCards.push(newCard);
+
+      await sleep(50);
+      newCard.style.transition = `transform ${t(300)}ms ease, opacity ${t(300)}ms ease`;
+      newCard.style.transform  = `rotate(${rot}deg)`;
+      newCard.style.opacity    = '1';
+
+      // Re-enable idle breathing on new top card
+      if (cfg.breathe) {
+        const top = stackCards[stackCards.length - 1];
+        top.style.animation = `idleFloat ${2.5}s ease-in-out infinite`;
+        top.style.setProperty('--base-rot', `${parseFloat(top.dataset.baseRot||0)}deg`);
+      }
+
+      await sleep(t(300));
+      animating = false;
+    }
+
+    if (interactive) {
+      stage.addEventListener('click', () => shuffle());
+    }
+
+    return { shuffle };
+  }
+
+  // ── WIDGET MODE ────────────────────────────────────────────────────────
+  if (isLive) {
+    document.getElementById('widget-app').classList.remove('hidden');
+    try {
+      config = decode(params.get('data'));
+      const root = document.getElementById('widget-stage-root');
+      const ctrl = buildStage(root, config, true);
+
+      if (config.autoShuffle && ctrl) {
+        setTimeout(() => ctrl.shuffle(), (config.shuffleDelay || 0) * 1000);
+      }
+
+      async function poll() {
+        try {
+          const r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.name)}`);
+          const data = await r.json();
+          if (data.cmd === 'spin' && ctrl) ctrl.shuffle();
+          if (data.cmd === 'populate' && Array.isArray(data.entries)) {
+            config.entries = data.entries.map(e => typeof e === 'string' ? e : e.label);
+            buildStage(root, config, true);
+          }
+        } catch {}
+        setTimeout(poll, 200);
+      }
+      poll();
+    } catch (e) {
+      document.body.innerHTML = '<p style="color:#888;padding:40px;font-family:monospace">Invalid widget data.</p>';
+    }
+    return;
+  }
+
+  // ── CONFIG MODE ────────────────────────────────────────────────────────
+  document.getElementById('config-app').classList.remove('hidden');
+
+  // Bindings
+  function sv(id, key) {
+    const el = document.getElementById(id);
+    const vEl = document.getElementById(id + '-val');
+    el.oninput = () => { if (vEl) vEl.textContent = el.value; update(); };
+  }
+  function bindToggle(id) {
+    const btn = document.getElementById(id);
+    btn.onclick = () => {
+      const on = btn.dataset.on === 'true';
+      btn.dataset.on = String(!on);
+      btn.classList.toggle('active', !on);
+      const lbl = document.getElementById(id + '-label');
+      if (lbl) lbl.textContent = !on ? 'On' : 'Off';
+      update();
+    };
+  }
+
+  ['cfg-delay','cfg-card-w','cfg-card-h','cfg-stack-depth','cfg-font-size','cfg-passes','cfg-hold'].forEach(sv);
+  bindToggle('cfg-autoshuffle');
+  bindToggle('cfg-breathe');
+
+  ['cfg-back-color','cfg-front-color','cfg-text-color'].forEach(id => {
+    document.getElementById(id).oninput = update;
+  });
+  ['cfg-name','cfg-back-img','cfg-front-img'].forEach(id => {
+    document.getElementById(id).oninput = update;
+  });
+  ['cfg-font','cfg-speed','cfg-back-preset'].forEach(id => {
+    document.getElementById(id).onchange = update;
+  });
+
+  // Segment table
+  const tbody = document.getElementById('seg-tbody');
+
+  function addRow(label) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input type="text" value="${label}" placeholder="Card label" style="width:100%;"></td><td><button class="btn-remove">✕</button></td>`;
+    tr.querySelector('.btn-remove').onclick = () => { tr.remove(); update(); };
+    tr.querySelector('input').oninput = update;
+    tbody.appendChild(tr);
+  }
+
+  function getEntries() {
+    return [...tbody.querySelectorAll('tr')].map(tr => tr.querySelector('input').value).filter(v => v.trim());
+  }
+
+  function rebuildTable(entries) {
+    tbody.innerHTML = '';
+    entries.forEach(addRow);
+  }
+
+  document.getElementById('btn-add-seg').onclick = () => { addRow(''); update(); };
+  document.getElementById('btn-import-txt').onclick = () => document.getElementById('seg-file').click();
+  document.getElementById('seg-file').onchange = function() {
+    const file = this.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const lines = reader.result.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      tbody.innerHTML = '';
+      lines.forEach(addRow);
+      update(); this.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  document.getElementById('btn-copy-url').onclick = () => {
+    update();
+    const url = `${location.origin}${location.pathname}?data=${encode(config)}`;
+    navigator.clipboard.writeText(url).then(() => showToast('URL copied!'));
+  };
+
+  document.getElementById('btn-import').onclick = () => {
+    try {
+      const raw = document.getElementById('import-url').value.trim();
+      const u = new URL(raw);
+      const enc = u.searchParams.get('data'); if (!enc) throw 0;
+      config = decode(enc);
+      applyToUI();
+      update();
+      showToast('Config loaded!');
+    } catch { showToast('Invalid URL'); }
+  };
+
+  function applyToUI() {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+    const setSV = (id, v) => { set(id, v); const vEl = document.getElementById(id+'-val'); if (vEl) vEl.textContent = v; };
+    const setToggle = (id, v) => {
+      const btn = document.getElementById(id); if (!btn) return;
+      btn.dataset.on = String(!!v);
+      btn.classList.toggle('active', !!v);
+      const lbl = document.getElementById(id+'-label');
+      if (lbl) lbl.textContent = v ? 'On' : 'Off';
+    };
+
+    set('cfg-name', config.name);
+    setSV('cfg-delay', config.shuffleDelay ?? 0);
+    setSV('cfg-card-w', config.cardW ?? 200);
+    setSV('cfg-card-h', config.cardH ?? 280);
+    setSV('cfg-stack-depth', config.stackDepth ?? 5);
+    set('cfg-back-color', config.backColor);
+    set('cfg-back-img', config.backImg);
+    set('cfg-back-preset', config.backPreset ?? '');
+    set('cfg-front-color', config.frontColor);
+    set('cfg-front-img', config.frontImg);
+    set('cfg-font', config.font);
+    setSV('cfg-font-size', config.fontSize ?? 20);
+    set('cfg-text-color', config.textColor);
+    setSV('cfg-passes', config.shufflePasses ?? 2);
+    set('cfg-speed', config.speed ?? 'normal');
+    setSV('cfg-hold', config.holdTime ?? 3);
+    setToggle('cfg-autoshuffle', config.autoShuffle);
+    setToggle('cfg-breathe', config.breathe !== false);
+
+    rebuildTable(config.entries || []);
+  }
+
+  let debounceTimer;
+  function update() {
+    config.name           = document.getElementById('cfg-name').value || 'deck1';
+    config.autoShuffle    = document.getElementById('cfg-autoshuffle').dataset.on === 'true';
+    config.shuffleDelay   = parseFloat(document.getElementById('cfg-delay').value) || 0;
+    config.cardW          = parseInt(document.getElementById('cfg-card-w').value) || 200;
+    config.cardH          = parseInt(document.getElementById('cfg-card-h').value) || 280;
+    config.stackDepth     = parseInt(document.getElementById('cfg-stack-depth').value) || 5;
+    config.backColor      = document.getElementById('cfg-back-color').value;
+    config.backImg        = document.getElementById('cfg-back-img').value.trim();
+    config.backPreset     = document.getElementById('cfg-back-preset').value;
+    config.frontColor     = document.getElementById('cfg-front-color').value;
+    config.frontImg       = document.getElementById('cfg-front-img').value.trim();
+    config.font           = document.getElementById('cfg-font').value;
+    config.fontSize       = parseInt(document.getElementById('cfg-font-size').value) || 20;
+    config.textColor      = document.getElementById('cfg-text-color').value;
+    config.shufflePasses  = parseInt(document.getElementById('cfg-passes').value) || 2;
+    config.speed          = document.getElementById('cfg-speed').value;
+    config.breathe        = document.getElementById('cfg-breathe').dataset.on === 'true';
+    config.holdTime       = parseInt(document.getElementById('cfg-hold').value) || 3;
+    config.entries        = getEntries();
+
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      buildStage(document.getElementById('preview-root'), config, true);
+    }, 80);
+  }
+
+  // Init
+  rebuildTable(config.entries);
+  update();
+})();
+</script>
+</body>
+</html>
