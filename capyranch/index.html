@@ -161,7 +161,12 @@ const IDLE_MIN    = 1500;
 const IDLE_MAX    = 4000;
 const SIT_MIN     = 3000;
 const SIT_MAX     = 7000;
-const WALK_SPEED  = 0.4;   // pixels per ms at 1x scale
+const WALK_SPEED  = 0.06;  // pixels per ms — slow, lazy wander
+const WALK_SPEED_Y = 0.025; // y-axis drift speed, much slower than x
+
+// Y wander bounds — in display pixels from the bottom of scene canvas
+// Capys drift between Y_MIN (near bottom) and Y_MAX (near top of strip)
+// Expressed as fractions of sceneH, computed at runtime in pickNextState
 
 // Max capys on screen — prevent chaos
 const MAX_CAPYS   = 20;
@@ -221,30 +226,22 @@ function drawBackground() {
     return;
   }
 
-  // Placeholder: simple grass strip
-  // Sky gradient strip at top
-  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, sceneH * 0.55);
-  skyGrad.addColorStop(0, 'rgba(0,0,0,0)');
-  skyGrad.addColorStop(1, 'rgba(0,0,0,0)');
-  bgCtx.fillStyle = skyGrad;
-  bgCtx.fillRect(0, 0, sceneW, sceneH * 0.55);
+  // Placeholder: simple grass strip anchored to bottom of canvas
+  const grassTop = sceneH - 10 * SCALE; // grass surface — capy feet land here
 
-  // Ground band
-  const groundY = GROUND_Y_PX * SCALE;
+  // Dirt fill
+  bgCtx.fillStyle = '#6b4c2a';
+  bgCtx.fillRect(0, grassTop + 3, sceneW, sceneH - grassTop);
 
   // Grass top strip
   bgCtx.fillStyle = '#4a8c2a';
-  bgCtx.fillRect(0, groundY, sceneW, 3 * SCALE);
+  bgCtx.fillRect(0, grassTop, sceneW, 3);
 
-  // Dirt/ground fill
-  bgCtx.fillStyle = '#6b4c2a';
-  bgCtx.fillRect(0, groundY + 3 * SCALE, sceneW, sceneH - groundY);
-
-  // Grass texture — tiny darker blades, tiled
+  // Grass blades
   bgCtx.fillStyle = '#3a7020';
   for (let x = 0; x < sceneW; x += 6 * SCALE) {
-    bgCtx.fillRect(x,             groundY - 1 * SCALE, 1 * SCALE, 2 * SCALE);
-    bgCtx.fillRect(x + 3 * SCALE, groundY,             1 * SCALE, 1 * SCALE);
+    bgCtx.fillRect(x,             grassTop - SCALE, 1, 2 * SCALE);
+    bgCtx.fillRect(x + 3 * SCALE, grassTop,         1, SCALE);
   }
 }
 
@@ -260,7 +257,9 @@ class CapyState {
 
     // Position — spawn at random x along ground
     this.x         = Math.random() * (sceneW - 80) + 40;  // pixel x (display coords)
-    this.y         = GROUND_Y_PX * SCALE;                  // display y (ground surface)
+    this.y         = 0;                                    // current y offset from bottom (display px)
+    this.targetY   = 0;                                    // y destination for current wander
+    this.yDir      = 0;                                    // +1 up, -1 down, 0 not moving y
 
     // Direction: 1 = right, -1 = left
     this.dir       = Math.random() < 0.5 ? 1 : -1;
@@ -303,6 +302,11 @@ class CapyState {
       this.state    = 'walk';
       this.stateDur = randBetween(WALK_MIN, WALK_MAX);
       this.dir      = Math.random() < 0.5 ? 1 : -1;
+      // Pick a new y target within the wander band
+      const yMin = 0;
+      const yMax = sceneH * 0.38; // top 38% of scene strip is max wander height
+      this.targetY = yMin + Math.random() * (yMax - yMin);
+      this.yDir    = this.targetY > this.y ? 1 : -1;
     } else if (roll < 0.75) {
       this.state    = 'idle';
       this.stateDur = randBetween(IDLE_MIN, IDLE_MAX);
@@ -341,7 +345,15 @@ class CapyState {
     if (this.state === 'walk') {
       this.x += this.dir * WALK_SPEED * dt;
 
-      // Bounce off edges
+      // Drift toward targetY
+      const yDiff = this.targetY - this.y;
+      if (Math.abs(yDiff) > 1) {
+        this.y += Math.sign(yDiff) * WALK_SPEED_Y * dt;
+      } else {
+        this.y = this.targetY;
+      }
+
+      // Bounce off x edges
       const margin = SPRITE.frameW * SCALE;
       if (this.x < margin) {
         this.x  = margin;
@@ -360,13 +372,11 @@ class CapyState {
       this.pickNextState();
     }
 
-    // Update label position
-    const capyDisplayW = SPRITE.frameW * SCALE;
+    // Update label position — account for y wander offset
     const capyDisplayH = SPRITE.frameH * SCALE;
-    const labelX = this.x;
-    const labelY = sceneH - this.y - capyDisplayH - 4;  // 4px gap above capy
-    this.labelEl.style.left   = labelX + 'px';
-    this.labelEl.style.bottom = (sceneH - labelY - 28) + 'px'; // 28 = approx label height
+    const bottomOffset = Math.round(this.y) + capyDisplayH + 4;
+    this.labelEl.style.left   = this.x + 'px';
+    this.labelEl.style.bottom = bottomOffset + 'px';
   }
 
   draw(ctx) {
@@ -385,7 +395,7 @@ class CapyState {
     const dw = sw * SCALE;
     const dh = sh * SCALE;
     const dx = Math.round(this.x - dw / 2);
-    const dy = sceneH - this.y - dh;
+    const dy = sceneH - dh - this.y; // this.y=0 means feet on ground line
 
     ctx.save();
     if (this.dir === -1) {
@@ -416,7 +426,7 @@ function drawPlaceholderCapy(ctx, capy) {
   const dw = SPRITE.frameW * SCALE;
   const dh = SPRITE.frameH * SCALE;
   const dx = Math.round(capy.x - dw / 2);
-  const dy = sceneH - capy.y - dh;
+  const dy = sceneH - dh - capy.y;
 
   // Body
   ctx.fillStyle = capy.color;
@@ -525,7 +535,7 @@ function loadSprite() {
     console.log('CapyRanch: sprite loaded', spriteImg.width, 'x', spriteImg.height);
   };
   spriteImg.onerror = () => {
-    console.warn('CapyRanch: capy.png not found, using placeholder renderer');
+    console.warn('CapyRanch: capy_fw.png not found, using placeholder renderer');
     spriteImg = null;
   };
   spriteImg.src = 'capy.png';
