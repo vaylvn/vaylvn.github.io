@@ -542,6 +542,35 @@ function loadSprite() {
 }
 
 // ============================================================
+//  SCENE LOADING
+// ============================================================
+function loadScene() {
+  const img = new Image();
+  img.onload = () => {
+    bgImg = img;
+    // Resize scene height to match the PNG at scale
+    // so capys and labels always sit correctly regardless of scene dimensions
+    const newH = img.height * SCALE;
+    if (newH !== sceneH) {
+      sceneH = newH;
+      document.getElementById('scene').style.height = sceneH + 'px';
+      bgCanvas.width  = sceneW; bgCanvas.height  = sceneH;
+      capyCanvas.width = sceneW; capyCanvas.height = sceneH;
+      bgCtx.imageSmoothingEnabled  = false;
+      capyCtx.imageSmoothingEnabled = false;
+    }
+    drawBackground();
+    console.log('CapyRanch: scene loaded', SCENE, img.width + 'x' + img.height);
+  };
+  img.onerror = () => {
+    console.warn('CapyRanch: scene not found (' + SCENE + '), using placeholder');
+    bgImg = null;
+    drawBackground();
+  };
+  img.src = 'scenes/' + SCENE + '.png';
+}
+
+// ============================================================
 //  TWITCH IRC
 // ============================================================
 function connectToChat(channel) {
@@ -580,6 +609,7 @@ window.addEventListener('resize', () => {
 
 resizeCanvases();
 loadSprite();
+loadScene();
 
 if (CHANNEL) {
   document.getElementById('no-channel').classList.add('hidden');
