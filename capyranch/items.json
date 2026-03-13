@@ -1,0 +1,6 @@
+{
+  "hats": [],
+  "scenes": [
+    { "id": "field", "file": "scenes/field.png", "label": "Grassy Field" }
+  ]
+}
