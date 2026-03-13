@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drop Zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #080c10;
+  --grid-gap: 10px;
+  --plat-safe: #1a2a3a;
+  --plat-safe-top: #2a4060;
+  --plat-warn: #3a2010;
+  --plat-warn-top: #c05010;
+  --plat-edge: #0a1520;
+  --text-primary: #d8e8f0;
+  --text-dim: rgba(200,220,240,0.35);
+  --accent: #40a8e0;
+}
+
+body {
+  background: var(--bg);
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  font-family: 'Rajdhani', sans-serif;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(40,80,120,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(40,80,120,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ---- IDLE / LOBBY SCREEN ---- */
+#lobby {
+  position: absolute;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  transition: opacity 0.6s;
+}
+#lobby.hidden { opacity: 0; pointer-events: none; }
+
+#lobby-title {
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+#lobby-title span { color: var(--accent); }
+
+#lobby-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(14px, 2vw, 18px);
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+#lobby-cmd {
+  margin-top: 8px;
+  font-size: clamp(20px, 3vw, 32px);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+#lobby-channel {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Player join ticker */
+#join-ticker {
+  margin-top: 16px;
+  display: flex; flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 600px;
+}
+
+.ticker-name {
+  background: rgba(40,80,120,0.3);
+  border: 1px solid rgba(64,168,224,0.2);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  animation: pop-in 0.2s ease;
+}
+@keyframes pop-in {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+#countdown-ring {
+  margin-top: 20px;
+  position: relative;
+  width: 80px; height: 80px;
+  display: none;
+}
+#countdown-ring.visible { display: block; }
+#countdown-ring svg { transform: rotate(-90deg); }
+#ring-track { stroke: rgba(64,168,224,0.12); }
+#ring-fill {
+  stroke: var(--accent);
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  transition: stroke-dashoffset linear;
+}
+#countdown-num {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ---- GAME BOARD ---- */
+#board-wrap {
+  position: absolute;
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+#board-wrap.visible { opacity: 1; pointer-events: auto; }
+
+#board {
+  display: grid;
+  gap: var(--grid-gap);
+}
+
+/* ---- PLATFORM CELL ---- */
+.cell {
+  position: relative;
+  cursor: default;
+}
+
+/* Isometric-ish platform using CSS */
+.platform {
+  position: relative;
+  width: 100%; height: 100%;
+  border-radius: 6px;
+  transition: transform 0.15s;
+}
+
+.plat-top {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px 6px 4px 4px;
+  background: var(--plat-safe-top);
+  border: 1px solid rgba(64,168,224,0.15);
+  border-bottom: none;
+}
+
+.plat-front {
+  position: absolute;
+  bottom: -8px; left: 2px; right: 2px;
+  height: 10px;
+  background: var(--plat-edge);
+  border-radius: 0 0 4px 4px;
+  border: 1px solid rgba(64,168,224,0.08);
+  border-top: none;
+}
+
+/* Warn state */
+.cell.warn .plat-top {
+  background: var(--plat-warn-top);
+  border-color: rgba(200,80,16,0.5);
+  animation: flicker 0.18s ease-in-out infinite alternate;
+}
+.cell.warn .plat-front { background: #1a0a04; }
+
+@keyframes flicker {
+  from { background: var(--plat-warn-top); }
+  to   { background: #e04010; box-shadow: 0 0 12px rgba(220,64,16,0.6); }
+}
+
+/* Drop animation */
+.cell.dropping .platform {
+  animation: plat-drop 0.5s ease-in forwards;
+}
+@keyframes plat-drop {
+  0%   { transform: translateY(0) scale(1); opacity:1; }
+  30%  { transform: translateY(-6px) scale(1.04); }
+  100% { transform: translateY(120px) scale(0.6); opacity:0; }
+}
+
+/* Empty cell (already dropped) */
+.cell.gone .platform { visibility: hidden; }
+
+/* Player ball */
+.player-ball {
+  position: absolute;
+  left: 50%; top: 0;
+  transform: translate(-50%, -100%) translateY(-6px);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px;
+  pointer-events: none;
+  animation: ball-float 2.2s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes ball-float {
+  0%,100% { transform: translate(-50%, -100%) translateY(-6px); }
+  50%      { transform: translate(-50%, -100%) translateY(-12px); }
+}
+
+.ball-circle {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine */
+.ball-circle::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 5px;
+  width: 8px; height: 6px;
+  background: rgba(255,255,255,0.35);
+  border-radius: 50%;
+}
+
+.ball-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.6);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.04em;
+}
+
+/* Drop ball animation */
+.player-ball.falling {
+  animation: ball-fall 0.6s ease-in forwards;
+}
+@keyframes ball-fall {
+  0%   { opacity:1; transform: translate(-50%,-100%) translateY(-6px); }
+  100% { opacity:0; transform: translate(-50%, 80px) rotate(180deg) scale(0.5); }
+}
+
+/* ---- HUD ---- */
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 16px 20px;
+  pointer-events: none;
+}
+
+.hud-pill {
+  background: rgba(8,12,16,0.8);
+  border: 1px solid rgba(64,168,224,0.12);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.hud-pill strong { color: var(--text-primary); font-weight: normal; }
+
+/* ---- WINNER OVERLAY ---- */
+#winner-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  background: radial-gradient(ellipse at center, rgba(8,12,16,0.92) 40%, rgba(8,12,16,0.98));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s;
+}
+#winner-overlay.visible { opacity: 1; }
+
+#winner-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+#winner-name {
+  font-size: clamp(48px, 8vw, 100px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+#winner-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Confetti canvas */
+#confetti-canvas {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+
+/* ---- STATUS LINE ---- */
+#status-line {
+  position: absolute;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---- NO CHANNEL ---- */
+#no-channel {
+  text-align: center;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+#no-channel h1 {
+  font-size: 28px; font-weight: 700; font-family: 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 12px;
+}
+#no-channel p { font-size: 13px; line-height: 2; letter-spacing: 0.08em; }
+#no-channel code {
+  background: rgba(64,168,224,0.12); padding: 2px 8px;
+  border-radius: 4px; color: var(--accent);
+}
+#no-channel.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div id="no-channel">
+  <h1>Drop Zone</h1>
+  <p>Add <code>?streamer=yourchannel</code> to the URL<br>to connect to Twitch chat.</p>
+</div>
+
+<div id="lobby" class="hidden">
+  <div id="lobby-title">DROP <span>ZONE</span></div>
+  <div id="lobby-sub">Last platform standing wins</div>
+  <div id="lobby-cmd">Type !play to join</div>
+  <div id="lobby-channel"></div>
+  <div id="join-ticker"></div>
+  <div id="countdown-ring">
+    <svg width="80" height="80" viewBox="0 0 80 80">
+      <circle id="ring-track" cx="40" cy="40" r="35" fill="none" stroke-width="4"/>
+      <circle id="ring-fill"  cx="40" cy="40" r="35" fill="none" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div id="countdown-num">10</div>
+  </div>
+</div>
+
+<div id="board-wrap">
+  <div id="board"></div>
+</div>
+
+<div id="winner-overlay">
+  <div id="winner-label">Winner</div>
+  <div id="winner-name"></div>
+  <div id="winner-sub">next game in 10s  •  !play to rejoin</div>
+</div>
+
+<div id="hud">
+  <div class="hud-pill" id="hud-left">Drop Zone</div>
+  <div class="hud-pill" id="hud-right">waiting</div>
+</div>
+
+<div id="status-line" id="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/build/tmi.min.js"></script>
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const params  = new URLSearchParams(window.location.search);
+const CHANNEL = (params.get('streamer') || '').toLowerCase().trim();
+
+const LOBBY_DURATION   = 15000;  // ms to wait for !play
+const WARN_DURATION    = 1800;   // ms platform flashes before drop
+const DROP_INTERVAL_START = 2200;
+const DROP_INTERVAL_MIN   = 800;
+const DROP_SPEED_UP    = 120;    // ms faster each drop
+const WINNER_DISPLAY   = 10000;  // ms winner screen stays up
+
+// Grid sizes based on player count
+function gridSize(n) {
+  if (n <= 4)  return 2;
+  if (n <= 9)  return 3;
+  if (n <= 16) return 4;
+  if (n <= 25) return 5;
+  return 6; // max 36 players
+}
+
+// ============================================================
+//  STATE
+// ============================================================
+let phase = 'idle'; // idle | lobby | game | winner
+let players = [];   // { username, color, cellIndex }
+let cells  = [];    // DOM cell elements, indexed
+let aliveCells = [];
+let dropInterval = DROP_INTERVAL_START;
+let dropTimer = null;
+let lobbyTimer = null;
+let lobbyCountdownInterval = null;
+let lobbyJoined = new Set();
+let winnerTimer = null;
+let GRID = 4;
+
+// ============================================================
+//  COLOR FROM USERNAME
+// ============================================================
+const BALL_COLORS = [
+  '#e05858','#e08840','#d4c040','#6fc45a',
+  '#40c4a8','#4098e0','#7858e0','#e040a8',
+  '#e07080','#80c458','#40d4d4','#a060e0',
+];
+
+function colorForUser(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return BALL_COLORS[h % BALL_COLORS.length];
+}
+
+// ============================================================
+//  DOM REFS
+// ============================================================
+const lobbyEl    = document.getElementById('lobby');
+const boardWrap  = document.getElementById('board-wrap');
+const boardEl    = document.getElementById('board');
+const winnerEl   = document.getElementById('winner-overlay');
+const noChannel  = document.getElementById('no-channel');
+const hudLeft    = document.getElementById('hud-left');
+const hudRight   = document.getElementById('hud-right');
+const statusLine = document.getElementById('status-line');
+const tickerEl   = document.getElementById('join-ticker');
+const ringFill   = document.getElementById('ring-fill');
+const cdNum      = document.getElementById('countdown-num');
+const cdRing     = document.getElementById('countdown-ring');
+const lobbyChannel = document.getElementById('lobby-channel');
+
+// ============================================================
+//  PHASE: IDLE → show lobby
+// ============================================================
+function startLobby() {
+  phase = 'lobby';
+  lobbyJoined = new Set();
+  players = [];
+  tickerEl.innerHTML = '';
+  cdRing.classList.remove('visible');
+
+  lobbyEl.classList.remove('hidden');
+  boardWrap.classList.remove('visible');
+  winnerEl.classList.remove('visible');
+
+  hudRight.innerHTML = 'waiting for players';
+  statusLine.textContent = '!play to join  •  game starts in ' + (LOBBY_DURATION/1000) + 's';
+
+  // Countdown ring
+  cdRing.classList.add('visible');
+  ringFill.style.transition = 'none';
+  ringFill.style.strokeDashoffset = '0';
+  void ringFill.offsetWidth;
+  ringFill.style.transition = `stroke-dashoffset ${LOBBY_DURATION}ms linear`;
+  ringFill.style.strokeDashoffset = '220';
+
+  let remaining = Math.ceil(LOBBY_DURATION / 1000);
+  cdNum.textContent = remaining;
+  lobbyCountdownInterval = setInterval(() => {
+    remaining--;
+    cdNum.textContent = Math.max(0, remaining);
+  }, 1000);
+
+  lobbyTimer = setTimeout(beginGame, LOBBY_DURATION);
+}
+
+// ============================================================
+//  PHASE: LOBBY — player joins
+// ============================================================
+function playerJoin(username) {
+  if (phase !== 'lobby') return;
+  if (lobbyJoined.has(username)) return;
+  if (lobbyJoined.size >= 36) return;
+
+  lobbyJoined.add(username);
+  const color = colorForUser(username);
+  players.push({ username, color, cellIndex: -1 });
+
+  // Add to ticker
+  const tag = document.createElement('div');
+  tag.className = 'ticker-name';
+  tag.textContent = username;
+  tag.style.borderColor = color + '44';
+  tag.style.color = color;
+  tickerEl.appendChild(tag);
+
+  hudRight.innerHTML = `<strong>${lobbyJoined.size}</strong> joined`;
+
+  // If we somehow fill max, start early
+  if (lobbyJoined.size >= 36) {
+    clearTimeout(lobbyTimer);
+    clearInterval(lobbyCountdownInterval);
+    beginGame();
+  }
+}
+
+// ============================================================
+//  PHASE: BEGIN GAME
+// ============================================================
+function beginGame() {
+  clearTimeout(lobbyTimer);
+  clearInterval(lobbyCountdownInterval);
+
+  if (players.length === 0) {
+    // Nobody joined — go back idle
+    lobbyEl.classList.add('hidden');
+    phase = 'idle';
+    statusLine.textContent = '';
+    hudRight.textContent = 'waiting';
+    // Restart lobby after a pause
+    setTimeout(startLobby, 5000);
+    return;
+  }
+
+  if (players.length === 1) {
+    // Only one player — instant win
+    revealWinner(players[0]);
+    return;
+  }
+
+  GRID = gridSize(players.length);
+  const cellCount = GRID * GRID;
+
+  // Shuffle players into random cells
+  const indices = Array.from({length: cellCount}, (_, i) => i);
+  shuffle(indices);
+  players.forEach((p, i) => { p.cellIndex = indices[i]; });
+
+  // Build board
+  buildBoard(GRID, cellCount);
+
+  // Transition
+  lobbyEl.classList.add('hidden');
+  boardWrap.classList.remove('hidden');
+  boardWrap.classList.add('visible');
+
+  // Place players
+  players.forEach(p => placePlayer(p));
+
+  // Setup alive cells list — only cells WITH players are in play
+  // Cells without players drop first in shuffle
+  aliveCells = players.map(p => p.cellIndex);
+  const emptyCells = indices.filter(i => !aliveCells.includes(i));
+
+  // Full drop queue: empties first (fast), then player cells
+  shuffle(emptyCells);
+  const dropQueue = [...emptyCells, ...shuffle([...aliveCells])];
+
+  phase = 'game';
+  dropInterval = DROP_INTERVAL_START;
+  hudLeft.textContent = 'Drop Zone';
+  hudRight.innerHTML = `<strong>${players.length}</strong> players`;
+  statusLine.textContent = 'platforms dropping...';
+
+  scheduleNextDrop(dropQueue, 0);
+}
+
+// ============================================================
+//  BUILD BOARD
+// ============================================================
+function buildBoard(grid, count) {
+  boardEl.innerHTML = '';
+  cells = [];
+
+  // Responsive cell size
+  const maxW = Math.min(window.innerWidth - 60, window.innerHeight - 100);
+  const cellSize = Math.floor((maxW - (grid - 1) * 10) / grid);
+
+  boardEl.style.gridTemplateColumns = `repeat(${grid}, ${cellSize}px)`;
+  boardEl.style.gridTemplateRows    = `repeat(${grid}, ${cellSize}px)`;
+
+  for (let i = 0; i < count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.style.width  = cellSize + 'px';
+    cell.style.height = cellSize + 'px';
+
+    cell.innerHTML = `
+      <div class="platform">
+        <div class="plat-top"></div>
+        <div class="plat-front"></div>
+      </div>
+    `;
+    boardEl.appendChild(cell);
+    cells.push(cell);
+  }
+}
+
+// ============================================================
+//  PLACE PLAYER ON CELL
+// ============================================================
+function placePlayer(player) {
+  const cell = cells[player.cellIndex];
+  if (!cell) return;
+
+  const ball = document.createElement('div');
+  ball.className = 'player-ball';
+  ball.dataset.user = player.username;
+
+  ball.innerHTML = `
+    <div class="ball-circle" style="background:${player.color}"></div>
+    <div class="ball-label">${escapeHtml(player.username)}</div>
+  `;
+  cell.appendChild(ball);
+  player.ballEl = ball;
+}
+
+// ============================================================
+//  DROP SEQUENCE
+// ============================================================
+function scheduleNextDrop(queue, idx) {
+  if (phase !== 'game') return;
+  if (idx >= queue.length) return;
+
+  const cellIdx = queue[idx];
+  const cell = cells[cellIdx];
+
+  // Check if this is a player cell
+  const occupant = players.find(p => p.cellIndex === cellIdx && p.alive !== false);
+
+  // Warn phase
+  if (occupant) cell.classList.add('warn');
+
+  setTimeout(() => {
+    if (phase !== 'game') return;
+
+    // Drop player ball first
+    if (occupant) {
+      occupant.alive = false;
+      occupant.ballEl.classList.add('falling');
+      setTimeout(() => occupant.ballEl.remove(), 600);
+
+      // Update HUD
+      const alive = players.filter(p => p.alive !== false);
+      hudRight.innerHTML = `<strong>${alive.length}</strong> remaining`;
+
+      // Check win condition
+      if (alive.length === 1) {
+        setTimeout(() => revealWinner(alive[0]), 800);
+        return;
+      }
+      if (alive.length === 0) {
+        // Edge case: simultaneous drops
+        setTimeout(startLobby, 3000);
+        return;
+      }
+    }
+
+    // Drop platform
+    cell.classList.remove('warn');
+    cell.classList.add('dropping');
+    setTimeout(() => cell.classList.add('gone'), 500);
+
+    // Speed up
+    dropInterval = Math.max(DROP_INTERVAL_MIN, dropInterval - DROP_SPEED_UP);
+
+    // Next drop
+    dropTimer = setTimeout(() => scheduleNextDrop(queue, idx + 1), dropInterval);
+
+  }, occupant ? WARN_DURATION : 200);
+}
+
+// ============================================================
+//  WINNER
+// ============================================================
+function revealWinner(player) {
+  phase = 'winner';
+  if (dropTimer) clearTimeout(dropTimer);
+
+  const winnerName = document.getElementById('winner-name');
+  winnerName.textContent = player.username;
+  winnerName.style.color = player.color;
+
+  winnerEl.classList.add('visible');
+  spawnConfetti(player.color);
+
+  hudRight.innerHTML = `🏆 ${escapeHtml(player.username)}`;
+  statusLine.textContent = 'next game starting in 10s';
+
+  winnerTimer = setTimeout(() => {
+    stopConfetti();
+    winnerEl.classList.remove('visible');
+    boardWrap.classList.remove('visible');
+    boardEl.innerHTML = '';
+    phase = 'idle';
+    startLobby();
+  }, WINNER_DISPLAY);
+}
+
+// ============================================================
+//  CONFETTI
+// ============================================================
+const confCanvas = document.getElementById('confetti-canvas');
+const confCtx = confCanvas.getContext('2d');
+let confettiPieces = [];
+let confettiRunning = false;
+let confettiRAF = null;
+
+function spawnConfetti(winColor) {
+  confCanvas.width  = window.innerWidth;
+  confCanvas.height = window.innerHeight;
+  confettiPieces = [];
+  confettiRunning = true;
+
+  const colors = [winColor, '#f0e060', '#60e0f0', '#e060a0', '#a0e060', '#ffffff'];
+  for (let i = 0; i < 160; i++) {
+    confettiPieces.push({
+      x: Math.random() * confCanvas.width,
+      y: -10 - Math.random() * 200,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 4,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.15,
+      w: 6 + Math.random() * 8,
+      h: 3 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+    });
+  }
+  animateConfetti();
+}
+
+function animateConfetti() {
+  if (!confettiRunning) return;
+  confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+  let alive = 0;
+  confettiPieces.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.rotV;
+    p.vy += 0.04;
+    if (p.y > confCanvas.height - 40) p.alpha -= 0.015;
+    if (p.alpha <= 0) return;
+    alive++;
+    confCtx.save();
+    confCtx.globalAlpha = p.alpha;
+    confCtx.translate(p.x, p.y);
+    confCtx.rotate(p.rot);
+    confCtx.fillStyle = p.color;
+    confCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    confCtx.restore();
+  });
+  if (alive > 0) confettiRAF = requestAnimationFrame(animateConfetti);
+}
+
+function stopConfetti() {
+  confettiRunning = false;
+  if (confettiRAF) cancelAnimationFrame(confettiRAF);
+  confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+}
+
+// ============================================================
+//  UTILS
+// ============================================================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+//  TWITCH IRC
+// ============================================================
+function connectToChat(channel) {
+  lobbyChannel.textContent = channel;
+  document.querySelector('#hud-left').textContent = channel;
+
+  if (typeof tmi === 'undefined') {
+    statusLine.textContent = 'tmi.js failed to load';
+    return;
+  }
+
+  const client = new tmi.Client({ channels: [channel] });
+
+  client.connect().then(() => {
+    noChannel.classList.add('hidden');
+    startLobby();
+  }).catch(e => {
+    noChannel.classList.remove('hidden');
+    document.querySelector('#no-channel p').textContent = 'Could not connect to ' + channel;
+  });
+
+  client.on('message', (ch, tags, message, self) => {
+    if (self) return;
+    const username = (tags['display-name'] || tags.username || '').toLowerCase();
+    const msg = message.trim().toLowerCase();
+
+    if (msg === '!play') playerJoin(username);
+
+    // Streamer commands
+    if (username === channel) {
+      if (msg === '!start' && phase === 'lobby') {
+        clearTimeout(lobbyTimer);
+        clearInterval(lobbyCountdownInterval);
+        beginGame();
+      }
+      if (msg === '!reset') {
+        clearTimeout(dropTimer);
+        clearTimeout(winnerTimer);
+        stopConfetti();
+        winnerEl.classList.remove('visible');
+        boardWrap.classList.remove('visible');
+        boardEl.innerHTML = '';
+        phase = 'idle';
+        statusLine.textContent = '';
+        startLobby();
+      }
+    }
+  });
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+if (CHANNEL) {
+  lobbyEl.classList.remove('hidden');
+  connectToChat(CHANNEL);
+} else {
+  noChannel.classList.remove('hidden');
+}
+
+window.addEventListener('resize', () => {
+  confCanvas.width  = window.innerWidth;
+  confCanvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
