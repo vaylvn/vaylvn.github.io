@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CapyRanch</title>
+<title>CapyCinema</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -11,462 +11,356 @@ body {
   width:100vw; height:100vh;
   overflow:hidden;
   background:transparent;
-  font-family:monospace;
 }
 
-#scene {
+#cinema {
   position:absolute;
   bottom:0; left:0; right:0;
-  height:180px; /* scene strip height at display resolution */
-  overflow:hidden;
+  /* height set by JS based on row count */
+  pointer-events:none;
 }
 
-/* Scene background canvas — tiled bg image */
-#bg-canvas {
-  position:absolute;
-  bottom:0; left:0;
-  image-rendering:pixelated;
-}
-
-/* Main capy canvas — all capys drawn here */
 #capy-canvas {
   position:absolute;
   bottom:0; left:0;
   image-rendering:pixelated;
+  image-rendering:crisp-edges;
 }
 
-/* Name labels — HTML overlay so text is crisp */
+/* Name labels — HTML so text stays crisp */
 #labels {
   position:absolute;
   bottom:0; left:0; right:0;
-  height:100%;
-  pointer-events:none;
+  /* height matches canvas */
 }
 
 .capy-label {
   position:absolute;
-  bottom:0; /* JS positions this */
   transform:translateX(-50%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:1px;
-  pointer-events:none;
-  white-space:nowrap;
-}
-
-.capy-name {
-  font-family:'Courier New', monospace;
-  font-size:11px;
-  font-weight:bold;
-  color:#fff;
-  text-shadow:
-    1px  0 0 #000,
-   -1px  0 0 #000,
-    0  1px 0 #000,
-    0 -1px 0 #000;
-  letter-spacing:0.02em;
-  line-height:1;
-}
-
-.capy-level {
-  font-family:'Courier New', monospace;
-  font-size:9px;
-  color:#f0c040;
-  text-shadow:
-    1px  0 0 #000,
-   -1px  0 0 #000,
-    0  1px 0 #000,
-    0 -1px 0 #000;
-  line-height:1;
-}
-
-/* No channel message */
-#no-channel {
-  position:absolute;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  color:rgba(255,255,255,0.5);
-  font-family:'Courier New', monospace;
-  font-size:13px;
-  line-height:2;
-  text-shadow:0 1px 4px rgba(0,0,0,0.8);
-}
-#no-channel.hidden { display:none; }
-
-/* Debug info (remove in prod) */
-#debug {
-  position:absolute;
-  top:8px; left:8px;
   font-family:'Courier New', monospace;
   font-size:10px;
-  color:rgba(255,255,255,0.3);
+  font-weight:bold;
+  color:rgba(255,255,255,0.7);
+  text-shadow:
+     1px  0   0 rgba(0,0,0,0.9),
+    -1px  0   0 rgba(0,0,0,0.9),
+     0    1px 0 rgba(0,0,0,0.9),
+     0   -1px 0 rgba(0,0,0,0.9);
+  letter-spacing:0.02em;
+  white-space:nowrap;
   pointer-events:none;
-  display:none;
+  transition:opacity 0.4s;
+  opacity:0; /* fades in on spawn */
 }
+
+.capy-label.visible { opacity:1; }
 </style>
 </head>
 <body>
 
-<div id="scene">
-  <canvas id="bg-canvas"></canvas>
+<div id="cinema">
   <canvas id="capy-canvas"></canvas>
   <div id="labels"></div>
 </div>
 
-<div id="no-channel">
-  Add <strong>?streamer=yourchannel</strong> to connect to chat.<br>
-  Chatters will appear as capybaras when they type.
-</div>
-
-<div id="debug"></div>
-
-<script src="../chat2/tmi.min.js"></script>
+<script src="../../chat2/tmi.min.js"></script>
 <script>
 // ============================================================
 //  CONFIG
 // ============================================================
 const params  = new URLSearchParams(window.location.search);
 const CHANNEL = (params.get('streamer') || '').toLowerCase().trim();
-const SCENE   = params.get('scene') || 'field';   // future: field, beach, snow
-const SCALE   = 3;                                 // render scale: 16px → 48px
+const SCALE   = 3;  // 16px → 48px
 
-// Sprite sheet spec
+// Sprite sheet
 const SPRITE = {
-  frameW: 16,
-  frameH: 16,
-  frames: {
-    idle:  [0, 1],         // breathing bob
-    walk:  [2, 3, 4, 5],   // walk cycle
-    sit:   [6],
-    react: [7],
-  },
-  fps: {
-    idle: 2,
-    walk: 8,
-    sit:  1,
-    react:6,
-  },
+  frameW:   16,
+  frameH:   16,
+  frames:   3,        // 0=neutral, 1=lean left, 2=lean right
+  HAT_ANCHOR_Y: 2,    // px from top of frame where top of head sits
+  fps:      3,        // fidget cycle speed (slow, subtle)
 };
 
-// Scene strip dimensions (at 1x — scaled up for display)
-const SCENE_H_PX  = 48;   // height of scene in sprite pixels
-const GROUND_Y_PX = 38;   // y pixel where ground surface is (capy stands here)
+// Seating grid
+const SEAT = {
+  w:          SCALE * SPRITE.frameW,      // seat width in display px  (48)
+  h:          SCALE * SPRITE.frameH,      // seat height in display px (48)
+  gapX:       10,     // horizontal gap between seats
+  gapY:       8,      // vertical gap between rows (perspective — back row slightly higher)
+  marginX:    24,     // left/right edge margin
+  maxRows:    2,      // max rows before we stop accepting new capys
+  maxPerRow:  null,   // computed from screen width
+};
 
-// Capy behaviour timings
-const WALK_MIN    = 2000;
-const WALK_MAX    = 5000;
-const IDLE_MIN    = 1500;
-const IDLE_MAX    = 4000;
-const SIT_MIN     = 3000;
-const SIT_MAX     = 7000;
-const WALK_SPEED  = 0.06;  // pixels per ms — slow, lazy wander
-const WALK_SPEED_Y = 0.025; // y-axis drift speed, much slower than x
+// Sine wave bob params
+const BOB = {
+  idleAmp:    1.5,    // px, gentle breathing
+  idleFreq:   0.0008, // hz — very slow
+  reactAmp:   10,     // px, excited bob
+  reactFreq:  0.008,
+  reactCycles:null,   // computed per message length
+};
 
-// Y wander bounds — in display pixels from the bottom of scene canvas
-// Capys drift between Y_MIN (near bottom) and Y_MAX (near top of strip)
-// Expressed as fractions of sceneH, computed at runtime in pickNextState
+// Tint applied to sprite to make it silhouette-ish
+// Dark brown, not pure black — lets hats read against it
+const TINT_COLOUR = 'rgba(15, 8, 2, 0.82)';
 
-// Max capys on screen — prevent chaos
-const MAX_CAPYS   = 20;
-
-// Diminishing returns window for XP (ms) — Phase 2
-const XP_WINDOW   = 30000;
+// Max chatters before we stop spawning new seats
+const MAX_CAPYS = 40;
 
 // ============================================================
 //  STATE
 // ============================================================
-const capys   = new Map();  // username → CapyState
-let spriteImg = null;
-let bgImg     = null;
-let sceneW    = 0;
-let sceneH    = 0;
-let lastTime  = 0;
+const capys     = new Map();   // username → CapyAudience
+const seats     = [];          // { row, col, x, y, occupied: username|null }
+let spriteImg   = null;
+let canvasW     = 0;
+let canvasH     = 0;
+let lastTime    = 0;
 
 // ============================================================
-//  CANVAS SETUP
+//  CANVAS
 // ============================================================
-const bgCanvas   = document.getElementById('bg-canvas');
-const bgCtx      = bgCanvas.getContext('2d');
-const capyCanvas = document.getElementById('capy-canvas');
-const capyCtx    = capyCanvas.getContext('2d');
-const labelsEl   = document.getElementById('labels');
+const canvas  = document.getElementById('capy-canvas');
+const ctx     = canvas.getContext('2d');
+const labelsEl = document.getElementById('labels');
 
-function resizeCanvases() {
-  sceneW = window.innerWidth;
-  sceneH = SCENE_H_PX * SCALE;
+function buildSeatingGrid() {
+  canvasW = window.innerWidth;
 
-  document.getElementById('scene').style.height = sceneH + 'px';
+  // How many seats fit per row?
+  const usable = canvasW - SEAT.marginX * 2;
+  SEAT.maxPerRow = Math.floor((usable + SEAT.gapX) / (SEAT.w + SEAT.gapX));
 
-  bgCanvas.width   = sceneW;
-  bgCanvas.height  = sceneH;
-  capyCanvas.width  = sceneW;
-  capyCanvas.height = sceneH;
+  // Total canvas height = rows * (seat height + gap)
+  canvasH = SEAT.maxRows * SEAT.h + (SEAT.maxRows - 1) * SEAT.gapY + 20; // 20px floor
 
-  bgCtx.imageSmoothingEnabled    = false;
-  capyCtx.imageSmoothingEnabled  = false;
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
+  ctx.imageSmoothingEnabled = false;
 
-  drawBackground();
-}
+  document.getElementById('cinema').style.height = canvasH + 'px';
+  document.getElementById('labels').style.height  = canvasH + 'px';
 
-// ============================================================
-//  BACKGROUND — placeholder grass strip, replaced by scene PNG later
-// ============================================================
-function drawBackground() {
-  bgCtx.clearRect(0, 0, sceneW, sceneH);
-
-  if (bgImg) {
-    // Tile the scene background image
-    const tileW = bgImg.width  * SCALE;
-    const tileH = bgImg.height * SCALE;
-    for (let x = 0; x < sceneW; x += tileW) {
-      bgCtx.drawImage(bgImg, x, sceneH - tileH, tileW, tileH);
+  // Generate seat positions
+  seats.length = 0;
+  for (let row = 0; row < SEAT.maxRows; row++) {
+    // Front row (row 0) is at the bottom, back row higher up
+    const rowY = canvasH - SEAT.h - row * (SEAT.h + SEAT.gapY);
+    for (let col = 0; col < SEAT.maxPerRow; col++) {
+      const seatX = SEAT.marginX + col * (SEAT.w + SEAT.gapX) + SEAT.w / 2;
+      seats.push({ row, col, x: seatX, y: rowY, occupied: null });
     }
-    return;
-  }
-
-  // Placeholder: simple grass strip anchored to bottom of canvas
-  const grassTop = sceneH - 10 * SCALE; // grass surface — capy feet land here
-
-  // Dirt fill
-  bgCtx.fillStyle = '#6b4c2a';
-  bgCtx.fillRect(0, grassTop + 3, sceneW, sceneH - grassTop);
-
-  // Grass top strip
-  bgCtx.fillStyle = '#4a8c2a';
-  bgCtx.fillRect(0, grassTop, sceneW, 3);
-
-  // Grass blades
-  bgCtx.fillStyle = '#3a7020';
-  for (let x = 0; x < sceneW; x += 6 * SCALE) {
-    bgCtx.fillRect(x,             grassTop - SCALE, 1, 2 * SCALE);
-    bgCtx.fillRect(x + 3 * SCALE, grassTop,         1, SCALE);
   }
 }
 
 // ============================================================
-//  CAPY STATE
+//  CAPY AUDIENCE MEMBER
 // ============================================================
-class CapyState {
-  constructor(username) {
-    this.username  = username;
-    this.level     = 1;       // Phase 2: from Firebase
-    this.hat       = null;    // Phase 2: from Firebase
-    this.color     = colorForUser(username);
+class CapyAudience {
+  constructor(username, seat) {
+    this.username   = username;
+    this.seat       = seat;
+    seat.occupied   = username;
 
-    // Position — spawn at random x along ground
-    this.x         = Math.random() * (sceneW - 80) + 40;  // pixel x (display coords)
-    this.y         = 0;                                    // current y offset from bottom (display px)
-    this.targetY   = 0;                                    // y destination for current wander
-    this.yDir      = 0;                                    // +1 up, -1 down, 0 not moving y
+    // Sprite animation
+    this.frame      = 0;
+    this.frameTime  = 0;
+    // Fidget sequence: mostly neutral, occasional lean
+    this.fidgetSeq  = buildFidgetSeq();
+    this.fidgetIdx  = 0;
+    this.fidgetTime = 0;
+    this.fidgetDur  = randBetween(2000, 5000); // ms per fidget step
 
-    // Direction: 1 = right, -1 = left
-    this.dir       = Math.random() < 0.5 ? 1 : -1;
+    // Bob (sine wave)
+    this.bobOffset  = 0;       // current y offset from bob
+    this.bobPhase   = Math.random() * Math.PI * 2; // randomise phase so they're not all in sync
+    this.reacting   = false;
+    this.reactTime  = 0;
+    this.reactDur   = 0;
 
-    // Animation state
-    this.state     = 'idle';   // idle | walk | sit | react
-    this.frame     = 0;
-    this.frameTime = 0;        // ms accumulator for frame cycling
-    this.stateTime = 0;        // ms accumulator for state duration
-    this.stateDur  = randBetween(IDLE_MIN, IDLE_MAX);
+    // Spawn animation — slide up from below
+    this.spawnY     = canvasH + SEAT.h; // start below screen
+    this.targetY    = seat.y;
+    this.currentY   = this.spawnY;
+    this.spawning   = true;
 
-    // Label DOM element
-    this.labelEl   = this.createLabel();
+    // Label
+    this.labelEl    = this.createLabel();
     labelsEl.appendChild(this.labelEl);
-
-    // Pick initial behaviour
-    this.pickNextState();
   }
 
   createLabel() {
     const el = document.createElement('div');
     el.className = 'capy-label';
-    el.innerHTML = `
-      <div class="capy-name">${escapeHtml(this.username)}</div>
-      <div class="capy-level">Lv.${this.level}</div>
-    `;
+    el.textContent = this.username;
     return el;
   }
 
-  updateLabel() {
-    const nameEl  = this.labelEl.querySelector('.capy-name');
-    const levelEl = this.labelEl.querySelector('.capy-level');
-    if (nameEl)  nameEl.textContent  = this.username;
-    if (levelEl) levelEl.textContent = 'Lv.' + this.level;
+  react(msgLength) {
+    // Map message length to number of bob cycles
+    const cycles    = msgLength < 20 ? 1 : msgLength < 60 ? 2 : 4;
+    this.reacting   = true;
+    this.reactTime  = 0;
+    this.reactDur   = cycles * (1000 / BOB.reactFreq / 1000); // ms for N cycles
+    // Reacting resets bob phase to 0 so bob starts upward
+    this.bobPhase   = -Math.PI / 2;
   }
 
-  pickNextState() {
-    const roll = Math.random();
-    if (roll < 0.5) {
-      this.state    = 'walk';
-      this.stateDur = randBetween(WALK_MIN, WALK_MAX);
-      this.dir      = Math.random() < 0.5 ? 1 : -1;
-      // Pick a new y target within the wander band
-      const yMin = 0;
-      const yMax = sceneH * 0.38; // top 38% of scene strip is max wander height
-      this.targetY = yMin + Math.random() * (yMax - yMin);
-      this.yDir    = this.targetY > this.y ? 1 : -1;
-    } else if (roll < 0.75) {
-      this.state    = 'idle';
-      this.stateDur = randBetween(IDLE_MIN, IDLE_MAX);
+  update(dt, ts) {
+    // Spawn slide-in
+    if (this.spawning) {
+      const speed = 0.6; // px per ms
+      this.currentY -= speed * dt;
+      if (this.currentY <= this.targetY) {
+        this.currentY = this.targetY;
+        this.spawning = false;
+        // Fade in label once seated
+        setTimeout(() => this.labelEl.classList.add('visible'), 100);
+      }
+    }
+
+    // Fidget frame cycling
+    this.fidgetTime += dt;
+    if (this.fidgetTime >= this.fidgetDur) {
+      this.fidgetTime = 0;
+      this.fidgetIdx  = (this.fidgetIdx + 1) % this.fidgetSeq.length;
+      this.frame      = this.fidgetSeq[this.fidgetIdx];
+      this.fidgetDur  = randBetween(800, 3000);
+    }
+
+    // Bob sine wave
+    if (this.reacting) {
+      this.reactTime += dt;
+      const amp  = BOB.reactAmp;
+      const freq = BOB.reactFreq;
+      this.bobOffset = -Math.abs(Math.sin(this.bobPhase + this.reactTime * freq * Math.PI * 2)) * amp;
+      if (this.reactTime >= this.reactDur) {
+        this.reacting  = false;
+        this.reactTime = 0;
+        this.bobOffset = 0;
+        // Re-randomise idle phase
+        this.bobPhase  = Math.random() * Math.PI * 2;
+      }
     } else {
-      this.state    = 'sit';
-      this.stateDur = randBetween(SIT_MIN, SIT_MAX);
+      // Gentle idle breathing bob
+      this.bobOffset = Math.sin(this.bobPhase + ts * BOB.idleFreq * Math.PI * 2) * BOB.idleAmp;
     }
-    this.frame     = 0;
-    this.frameTime = 0;
-    this.stateTime = 0;
+
+    // Update label position
+    const drawY = this.currentY + this.bobOffset;
+    this.labelEl.style.left   = this.seat.x + 'px';
+    this.labelEl.style.bottom = (canvasH - drawY - 2) + 'px'; // just above sprite top
   }
 
-  react() {
-    this.state     = 'react';
-    this.stateDur  = 1200;
-    this.frame     = 0;
-    this.frameTime = 0;
-    this.stateTime = 0;
-  }
-
-  update(dt) {
-    this.stateTime += dt;
-    this.frameTime += dt;
-
-    // Advance animation frame
-    const frames  = SPRITE.frames[this.state] || SPRITE.frames.idle;
-    const fps     = SPRITE.fps[this.state]    || SPRITE.fps.idle;
-    const msPerFrame = 1000 / fps;
-
-    if (this.frameTime >= msPerFrame) {
-      this.frameTime -= msPerFrame;
-      this.frame = (this.frame + 1) % frames.length;
-    }
-
-    // Move if walking
-    if (this.state === 'walk') {
-      this.x += this.dir * WALK_SPEED * dt;
-
-      // Drift toward targetY
-      const yDiff = this.targetY - this.y;
-      if (Math.abs(yDiff) > 1) {
-        this.y += Math.sign(yDiff) * WALK_SPEED_Y * dt;
-      } else {
-        this.y = this.targetY;
-      }
-
-      // Bounce off x edges
-      const margin = SPRITE.frameW * SCALE;
-      if (this.x < margin) {
-        this.x  = margin;
-        this.dir = 1;
-      } else if (this.x > sceneW - margin) {
-        this.x  = sceneW - margin;
-        this.dir = -1;
-      }
-    }
-
-    // State transition
-    if (this.stateTime >= this.stateDur && this.state !== 'react') {
-      this.pickNextState();
-    }
-    if (this.state === 'react' && this.stateTime >= this.stateDur) {
-      this.pickNextState();
-    }
-
-    // Update label position — account for y wander offset
-    const capyDisplayH = SPRITE.frameH * SCALE;
-    const bottomOffset = Math.round(this.y) + capyDisplayH + 4;
-    this.labelEl.style.left   = this.x + 'px';
-    this.labelEl.style.bottom = bottomOffset + 'px';
-  }
-
-  draw(ctx) {
+  draw(ts) {
     if (!spriteImg) {
-      drawPlaceholderCapy(ctx, this);
+      drawPlaceholder(ctx, this);
       return;
     }
 
-    const frames     = SPRITE.frames[this.state] || SPRITE.frames.idle;
-    const frameIndex = frames[this.frame % frames.length];
-    const sx         = frameIndex * SPRITE.frameW;
-    const sy         = 0;
-    const sw         = SPRITE.frameW;
-    const sh         = SPRITE.frameH;
-
+    const sx = this.frame * SPRITE.frameW;
+    const sw = SPRITE.frameW;
+    const sh = SPRITE.frameH;
     const dw = sw * SCALE;
     const dh = sh * SCALE;
-    const dx = Math.round(this.x - dw / 2);
-    const dy = sceneH - dh - this.y; // this.y=0 means feet on ground line
+    const dx = Math.round(this.seat.x - dw / 2);
+    const dy = Math.round(this.currentY + this.bobOffset);
 
-    ctx.save();
-    if (this.dir === -1) {
-      // Flip horizontally for left-facing
-      ctx.translate(dx + dw, dy);
-      ctx.scale(-1, 1);
-      ctx.drawImage(spriteImg, sx, sy, sw, sh, 0, 0, dw, dh);
-    } else {
-      ctx.drawImage(spriteImg, sx, sy, sw, sh, dx, dy, dw, dh);
-    }
-    ctx.restore();
+    // Draw sprite
+    ctx.drawImage(spriteImg, sx, 0, sw, sh, dx, dy, dw, dh);
 
-    // Hat rendering — Phase 2: load from hat PNG
-    // For now just draw the hat anchor point as a debug dot
-    // ctx.fillStyle = 'red';
-    // ctx.fillRect(Math.round(this.x - 2), sceneH - this.y - dh - 2, 4, 4);
+    // Apply dark tint on top — preserves hat colours drawn after
+    ctx.fillStyle = TINT_COLOUR;
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillRect(dx, dy, dw, dh);
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Hat — Phase 2
+    // Hat would draw here at dx, dy + (HAT_ANCHOR_Y * SCALE) - hatH
+    // with no tint so full colour shows
   }
 
   remove() {
+    this.seat.occupied = null;
     this.labelEl.remove();
   }
 }
 
 // ============================================================
-//  PLACEHOLDER CAPY — drawn programmatically until sprite loads
+//  PLACEHOLDER — rendered when sprite not loaded
 // ============================================================
-function drawPlaceholderCapy(ctx, capy) {
+function drawPlaceholder(ctx, capy) {
   const dw = SPRITE.frameW * SCALE;
   const dh = SPRITE.frameH * SCALE;
-  const dx = Math.round(capy.x - dw / 2);
-  const dy = sceneH - dh - capy.y;
+  const dx = Math.round(capy.seat.x - dw / 2);
+  const dy = Math.round(capy.currentY + capy.bobOffset);
 
-  // Body
-  ctx.fillStyle = capy.color;
-  ctx.fillRect(dx + 3, dy + 2, dw - 6, dh - 8);
+  // Dark silhouette body
+  ctx.fillStyle = '#1a0f05';
 
-  // Head bump
-  ctx.fillRect(dx + 4, dy, dw - 8, 6);
+  // Head
+  ctx.fillRect(dx + 6,  dy + 6,  dw - 12, dh - 10);
+  // Ear left
+  ctx.fillRect(dx + 4,  dy + 2,  6,       8);
+  // Ear right
+  ctx.fillRect(dx + dw - 10, dy + 2, 6,   8);
+  // Shoulders
+  ctx.fillRect(dx + 2,  dy + dh - 8, dw - 4, 8);
+}
 
-  // Ears
-  ctx.fillStyle = darken(capy.color, 0.2);
-  ctx.fillRect(dx + 4,      dy - 3, 4, 4);
-  ctx.fillRect(dx + dw - 8, dy - 3, 4, 4);
+// ============================================================
+//  FIDGET SEQUENCE GENERATOR
+// ============================================================
+function buildFidgetSeq() {
+  // Mostly neutral (frame 0), occasional lean left (1) or right (2)
+  const seq = [0, 0, 0, 0, 0];
+  // Randomly sprinkle in a lean
+  const leanAt = Math.floor(Math.random() * 5);
+  seq[leanAt] = Math.random() < 0.5 ? 1 : 2;
+  return seq;
+}
 
-  // Eyes
-  ctx.fillStyle = '#000';
-  ctx.fillRect(dx + 7,      dy + 2, 2, 2);
-  ctx.fillRect(dx + dw - 9, dy + 2, 2, 2);
+// ============================================================
+//  SEAT SELECTION — weighted random with social clustering
+// ============================================================
+function pickSeat() {
+  const free = seats.filter(s => !s.occupied);
+  if (free.length === 0) return null;
 
-  // Feet (animate slightly with walk frame)
-  const frames  = SPRITE.frames[capy.state] || SPRITE.frames.idle;
-  const fIdx    = frames[capy.frame % frames.length];
-  const footOff = (fIdx === 2 || fIdx === 5) ? 1 : (fIdx === 4 || fIdx === 3) ? -1 : 0;
+  // Score each free seat — prefer seats near occupied ones (social)
+  // but add randomness so it's not always perfectly clustered
+  const scored = free.map(seat => {
+    const neighbours = seats.filter(s =>
+      s.occupied &&
+      Math.abs(s.col - seat.col) <= 2 &&
+      s.row === seat.row
+    ).length;
+    // Base score + neighbour bonus + random noise
+    const score = Math.random() * 10 + neighbours * 3;
+    return { seat, score };
+  });
 
-  ctx.fillStyle = darken(capy.color, 0.15);
-  ctx.fillRect(dx + 5,           dy + dh - 6 + (footOff),  5, 5);
-  ctx.fillRect(dx + dw - 10,     dy + dh - 6 + (-footOff), 5, 5);
+  // Sort by score descending, pick from top 3 to keep some randomness
+  scored.sort((a, b) => b.score - a.score);
+  const topN = scored.slice(0, Math.min(3, scored.length));
+  return topN[Math.floor(Math.random() * topN.length)].seat;
 }
 
 // ============================================================
 //  GAME LOOP
 // ============================================================
 function gameLoop(ts) {
-  const dt = Math.min(ts - lastTime, 50); // cap at 50ms to avoid spiral on tab refocus
+  const dt = Math.min(ts - lastTime, 50);
   lastTime = ts;
 
-  capyCtx.clearRect(0, 0, sceneW, sceneH);
+  ctx.clearRect(0, 0, canvasW, canvasH);
 
-  for (const capy of capys.values()) {
-    capy.update(dt);
-    capy.draw(capyCtx);
+  // Sort by row so back row draws first (behind front row)
+  const sorted = [...capys.values()].sort((a, b) => b.seat.row - a.seat.row);
+  for (const capy of sorted) {
+    capy.update(dt, ts);
+    capy.draw(ts);
   }
 
   requestAnimationFrame(gameLoop);
@@ -477,32 +371,20 @@ function gameLoop(ts) {
 // ============================================================
 function getOrCreateCapy(username) {
   if (capys.has(username)) return capys.get(username);
-  if (capys.size >= MAX_CAPYS) return null; // at capacity
+  if (capys.size >= MAX_CAPYS) return null;
 
-  const capy = new CapyState(username);
+  const seat = pickSeat();
+  if (!seat) return null;
+
+  const capy = new CapyAudience(username, seat);
   capys.set(username, capy);
   return capy;
 }
 
-function onChatMessage(username) {
+function onChatMessage(username, message) {
   const capy = getOrCreateCapy(username);
   if (!capy) return;
-
-  // If they were sitting, wake them up
-  if (capy.state === 'sit') capy.pickNextState();
-}
-
-// ============================================================
-//  COLOUR FROM USERNAME
-// ============================================================
-const CAPY_COLORS = [
-  '#a0522d','#8b6914','#cd853f','#d2691e',
-  '#bc8a5f','#c4a35a','#b8860b','#a67c52',
-];
-function colorForUser(name) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return CAPY_COLORS[h % CAPY_COLORS.length];
+  capy.react(message.length);
 }
 
 // ============================================================
@@ -511,63 +393,15 @@ function colorForUser(name) {
 function randBetween(min, max) {
   return min + Math.random() * (max - min);
 }
-function escapeHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function darken(hex, amt) {
-  // Works on both hex and rgb() strings
-  if (hex.startsWith('#')) {
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    const d = v => Math.max(0, Math.round(v*(1-amt)));
-    return `rgb(${d(r)},${d(g)},${d(b)})`;
-  }
-  return hex;
-}
 
 // ============================================================
 //  SPRITE LOADING
 // ============================================================
 function loadSprite() {
   spriteImg = new Image();
-  spriteImg.onload = () => {
-    console.log('CapyRanch: sprite loaded', spriteImg.width, 'x', spriteImg.height);
-  };
-  spriteImg.onerror = () => {
-    console.warn('CapyRanch: capy_fw.png not found, using placeholder renderer');
-    spriteImg = null;
-  };
+  spriteImg.onload  = () => console.log('CapyCinema: sprite loaded');
+  spriteImg.onerror = () => { console.warn('CapyCinema: capy.png not found, using placeholder'); spriteImg = null; };
   spriteImg.src = 'capy.png';
-}
-
-// ============================================================
-//  SCENE LOADING
-// ============================================================
-function loadScene() {
-  const img = new Image();
-  img.onload = () => {
-    bgImg = img;
-    // Resize scene height to match the PNG at scale
-    // so capys and labels always sit correctly regardless of scene dimensions
-    const newH = img.height * SCALE;
-    if (newH !== sceneH) {
-      sceneH = newH;
-      document.getElementById('scene').style.height = sceneH + 'px';
-      bgCanvas.width  = sceneW; bgCanvas.height  = sceneH;
-      capyCanvas.width = sceneW; capyCanvas.height = sceneH;
-      bgCtx.imageSmoothingEnabled  = false;
-      capyCtx.imageSmoothingEnabled = false;
-    }
-    drawBackground();
-    console.log('CapyRanch: scene loaded', SCENE, img.width + 'x' + img.height);
-  };
-  img.onerror = () => {
-    console.warn('CapyRanch: scene not found (' + SCENE + '), using placeholder');
-    bgImg = null;
-    drawBackground();
-  };
-  img.src = 'scenes/' + SCENE + '.png';
 }
 
 // ============================================================
@@ -575,27 +409,17 @@ function loadScene() {
 // ============================================================
 function connectToChat(channel) {
   if (typeof tmi === 'undefined') {
-    console.error('CapyRanch: tmi.js not loaded');
+    console.error('CapyCinema: tmi.js not loaded');
     return;
   }
 
   const client = new tmi.Client({ channels: [channel] });
-  client.connect().catch(e => console.error('CapyRanch: IRC connect failed', e));
+  client.connect().catch(e => console.error('CapyCinema: connect failed', e));
 
   client.on('message', (ch, tags, message, self) => {
     if (self) return;
     const username = (tags['display-name'] || tags.username || '').toLowerCase();
-    const msg = message.trim().toLowerCase();
-
-    onChatMessage(username);
-
-    // Streamer commands
-    if (username === channel) {
-      if (msg === '!capycrate') {
-        // Phase 2: trigger crate drop, for now just make all capys react
-        for (const capy of capys.values()) capy.react();
-      }
-    }
+    onChatMessage(username, message);
   });
 }
 
@@ -603,24 +427,23 @@ function connectToChat(channel) {
 //  INIT
 // ============================================================
 window.addEventListener('resize', () => {
-  resizeCanvases();
-  drawBackground();
+  buildSeatingGrid();
 });
 
-resizeCanvases();
+buildSeatingGrid();
 loadSprite();
-loadScene();
 
 if (CHANNEL) {
-  document.getElementById('no-channel').classList.add('hidden');
   connectToChat(CHANNEL);
-  // Spawn a couple of demo capys so the streamer can see it working
-  // before anyone chats — remove these in prod or make optional
-  // ['demo1','demo2','demo3'].forEach(n => getOrCreateCapy(n));
+  // Demo capys for preview — remove in prod or gate behind !channel
 } else {
-  document.getElementById('no-channel').classList.remove('hidden');
-  // Spawn demo capys so the page isn't empty when previewing
-  ['capy_preview','valonvn','streamer'].forEach(n => getOrCreateCapy(n));
+  // No channel — spawn demo audience so streamer can preview
+  const demoNames = ['valonvn','capy_fan','tophatcapy','lurker99','swausage','pixelcapy','noodlearms'];
+  demoNames.forEach((n, i) => setTimeout(() => {
+    const c = getOrCreateCapy(n);
+    // Stagger demo reacts
+    if (c) setTimeout(() => c.react(n.length * 8), 1000 + i * 400);
+  }, i * 600));
 }
 
 requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
