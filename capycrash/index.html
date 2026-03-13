@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capy Drive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #game {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* HUD */
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px 28px;
+    pointer-events: none;
+  }
+
+  #streak-display {
+    background: rgba(10,10,10,0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: #e0e0e0;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #streak-display span {
+    color: #f0c040;
+    font-size: 18px;
+    font-weight: bold;
+    margin-left: 8px;
+  }
+
+  #channel-display {
+    background: rgba(10,10,10,0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: rgba(255,255,255,0.35);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  #timer-bar-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  #timer-bar-wrap.visible { opacity: 1; }
+
+  #timer-bar {
+    height: 100%;
+    background: #f0c040;
+    width: 100%;
+    transform-origin: left;
+    transition: transform linear;
+  }
+
+  /* Vote panel */
+  #vote-panel {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    width: 520px;
+    max-width: calc(100vw - 48px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s, transform 0.4s;
+  }
+
+  #vote-panel.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+
+  #vote-question {
+    text-align: center;
+    color: #f0f0f0;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(240,192,64,0.4);
+  }
+
+  #vote-bar-container {
+    background: rgba(10,10,10,0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 54px;
+    display: flex;
+    position: relative;
+  }
+
+  #vote-left-fill {
+    background: #3a6fc4;
+    height: 100%;
+    transition: width 0.15s ease;
+    min-width: 0;
+  }
+
+  #vote-right-fill {
+    background: #c43a3a;
+    height: 100%;
+    flex: 1;
+    transition: width 0.15s ease;
+  }
+
+  #vote-left-label, #vote-right-label {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+
+  #vote-left-label { left: 16px; }
+  #vote-right-label { right: 16px; }
+
+  #vote-counts {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+
+  .vote-count {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+  }
+
+  #vote-countdown {
+    text-align: center;
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Event notification banner */
+  #event-banner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    text-align: center;
+  }
+
+  #event-banner.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  #event-banner-text {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: bold;
+    color: #f0c040;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 40px rgba(240,192,64,0.5), 0 4px 0 rgba(0,0,0,0.6);
+    line-height: 1;
+  }
+
+  #event-banner-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* Outcome overlay */
+  #outcome-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  #outcome-overlay.visible { opacity: 1; }
+
+  #outcome-text {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-shadow: 0 4px 0 rgba(0,0,0,0.5);
+    line-height: 1;
+  }
+
+  #outcome-text.safe { color: #6fe06f; text-shadow: 0 0 60px rgba(111,224,111,0.4), 0 4px 0 rgba(0,0,0,0.5); }
+  #outcome-text.crash { color: #e06f6f; text-shadow: 0 0 60px rgba(224,111,111,0.4), 0 4px 0 rgba(0,0,0,0.5); }
+
+  #outcome-sub {
+    font-size: 16px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 12px;
+  }
+
+  /* Waiting / connecting state */
+  #waiting {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    pointer-events: none;
+  }
+
+  #waiting h1 {
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 10px;
+  }
+
+  #waiting p {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    line-height: 1.8;
+  }
+
+  #waiting code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #f0c040;
+  }
+
+  #waiting.hidden { display: none; }
+
+  /* Particle container */
+  #particles {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-float linear forwards;
+  }
+
+  @keyframes particle-float {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-80px) scale(0.3); }
+  }
+
+  /* Next event timer ring */
+  #next-event-hint {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="scene"></canvas>
+  <div id="particles"></div>
+
+  <div id="hud">
+    <div id="streak-display">Streak <span id="streak-val">0</span></div>
+    <div id="channel-display" id="channel-label">—</div>
+  </div>
+
+  <div id="waiting">
+    <h1>Capy Drive</h1>
+    <p id="waiting-msg">Add <code>?streamer=yourchannel</code> to the URL<br>to connect to Twitch chat.</p>
+  </div>
+
+  <div id="event-banner">
+    <div id="event-banner-text">!</div>
+    <div id="event-banner-sub">React fast!</div>
+  </div>
+
+  <div id="vote-panel">
+    <div id="vote-question">Which way?!</div>
+    <div id="vote-bar-container">
+      <div id="vote-left-fill" style="width:50%"></div>
+      <div id="vote-right-fill"></div>
+      <span id="vote-left-label">← Left</span>
+      <span id="vote-right-label">Right →</span>
+    </div>
+    <div id="vote-counts">
+      <span class="vote-count" id="left-count">0 votes</span>
+      <span class="vote-count" id="right-count">0 votes</span>
+    </div>
+    <div id="vote-countdown" id="vote-cd">5s remaining</div>
+  </div>
+
+  <div id="outcome-overlay">
+    <div id="outcome-text">Safe!</div>
+    <div id="outcome-sub" id="outcome-sub-text"></div>
+  </div>
+
+  <div id="timer-bar-wrap">
+    <div id="timer-bar"></div>
+  </div>
+
+  <div id="next-event-hint" id="next-hint"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/build/tmi.min.js"></script>
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const params = new URLSearchParams(window.location.search);
+const CHANNEL = (params.get('streamer') || '').toLowerCase().trim();
+
+const VOTE_DURATION = 5000;
+const AUTO_EVENT_MIN = 25000;
+const AUTO_EVENT_MAX = 45000;
+
+// ============================================================
+//  STATE
+// ============================================================
+let gameState = 'idle'; // idle | voting | outcome
+let voteLeft = 0, voteRight = 0;
+let voteTimerEnd = 0;
+let voteCountdownInterval = null;
+let autoEventTimer = null;
+let streak = 0;
+let carX = 0; // -1 = left lane, 0 = center, 1 = right lane
+let carTargetX = 0;
+let lastOutcome = null;
+
+// Canvas scene
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+// Road animation
+let roadOffset = 0;
+let carAnimX = 0; // actual rendered X offset (smooth)
+let shakeX = 0, shakeY = 0;
+let shakeDecay = 0;
+let obstacleX = null;
+let obstacleVisible = false;
+let obstacleAnim = 0; // 0 to 1 approach animation
+
+// Events data
+const EVENTS = [
+  { question: 'Which way?!', left: 'LEFT', right: 'RIGHT', leftKey: 'left', rightKey: 'right', safeLeft: Math.random() < 0.5 },
+  { question: 'Dodge it!', left: 'SWERVE', right: 'BRAKE', leftKey: 'swerve', rightKey: 'brake', safeLeft: Math.random() < 0.5 },
+  { question: 'Obstacle ahead!', left: 'LEFT', right: 'RIGHT', leftKey: 'left', rightKey: 'right', safeLeft: Math.random() < 0.5 },
+  { question: 'Which lane?!', left: 'LEFT', right: 'RIGHT', leftKey: 'left', rightKey: 'right', safeLeft: Math.random() < 0.5 },
+];
+let currentEvent = null;
+
+// ============================================================
+//  CANVAS SETUP
+// ============================================================
+function resizeCanvas() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  carAnimX = W / 2;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ============================================================
+//  DRAWING HELPERS
+// ============================================================
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function drawSky() {
+  // Dark moody sky
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H * 0.45);
+
+  // Horizon glow
+  const grad = ctx.createLinearGradient(0, H * 0.3, 0, H * 0.55);
+  grad.addColorStop(0, 'rgba(20,10,40,0)');
+  grad.addColorStop(1, 'rgba(40,20,60,0.6)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H * 0.3, W, H * 0.25);
+
+  // Stars
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  const stars = [
+    [0.05, 0.04], [0.15, 0.12], [0.25, 0.06], [0.35, 0.15],
+    [0.45, 0.03], [0.55, 0.1], [0.65, 0.07], [0.75, 0.18],
+    [0.85, 0.05], [0.92, 0.13], [0.1, 0.22], [0.4, 0.2],
+    [0.7, 0.25], [0.88, 0.3], [0.03, 0.3], [0.5, 0.28]
+  ];
+  stars.forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(x * W, y * H, 1, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Moon
+  ctx.fillStyle = '#e8e8d0';
+  ctx.beginPath();
+  ctx.arc(W * 0.82, H * 0.08, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0d0d1a';
+  ctx.beginPath();
+  ctx.arc(W * 0.84, H * 0.07, 14, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSilhouetteTrees(yBase, count, color) {
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const x = ((i / count) * W * 1.1 - (roadOffset * 0.08) % (W * 1.1 / count) + W * 0.05) % (W * 1.1);
+    const h = 40 + (i * 37 % 50);
+    const w = 18 + (i * 23 % 16);
+
+    // Simple triangle pine
+    ctx.beginPath();
+    ctx.moveTo(x, yBase - h);
+    ctx.lineTo(x - w, yBase);
+    ctx.lineTo(x + w, yBase);
+    ctx.closePath();
+    ctx.fill();
+
+    // Second layer
+    ctx.beginPath();
+    ctx.moveTo(x, yBase - h * 1.3);
+    ctx.lineTo(x - w * 0.7, yBase - h * 0.5);
+    ctx.lineTo(x + w * 0.7, yBase - h * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Trunk
+    ctx.fillRect(x - 3, yBase - 10, 6, 14);
+  }
+}
+
+function drawRoad() {
+  const horizon = H * 0.44;
+  const roadBottom = H;
+  const roadLeft = W * 0.15;
+  const roadRight = W * 0.85;
+
+  // Road surface
+  ctx.fillStyle = '#1a1a22';
+  ctx.beginPath();
+  ctx.moveTo(W * 0.44, horizon);
+  ctx.lineTo(W * 0.56, horizon);
+  ctx.lineTo(roadRight, roadBottom);
+  ctx.lineTo(roadLeft, roadBottom);
+  ctx.closePath();
+  ctx.fill();
+
+  // Road edges
+  ctx.strokeStyle = '#2a2a3a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W * 0.44, horizon);
+  ctx.lineTo(roadLeft, roadBottom);
+  ctx.moveTo(W * 0.56, horizon);
+  ctx.lineTo(roadRight, roadBottom);
+  ctx.stroke();
+
+  // Dashed centre line — perspective scaled
+  const dashes = 12;
+  for (let i = 0; i < dashes; i++) {
+    const t = ((i / dashes) + (roadOffset / 800) % 1) % 1;
+    const t2 = ((i / dashes + 0.07) + (roadOffset / 800) % 1) % 1;
+    if (t > t2) continue; // skip wrap-around segments
+
+    const x1 = lerp(W * 0.5, W * 0.5, t); // center x constant
+    const y1 = lerp(horizon, roadBottom, t);
+    const x2 = lerp(W * 0.5, W * 0.5, t2);
+    const y2 = lerp(horizon, roadBottom, t2);
+    const lineW = lerp(1, 6, t);
+
+    ctx.strokeStyle = 'rgba(255,255,200,0.25)';
+    ctx.lineWidth = lineW;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  // Left lane line
+  for (let i = 0; i < dashes; i++) {
+    const t = ((i / dashes) + (roadOffset / 800) % 1) % 1;
+    const t2 = ((i / dashes + 0.06) + (roadOffset / 800) % 1) % 1;
+    if (t > t2) continue;
+    const y1 = lerp(horizon, roadBottom, t);
+    const y2 = lerp(horizon, roadBottom, t2);
+    const xl1 = lerp(W * 0.47, W * 0.3, t);
+    const xl2 = lerp(W * 0.47, W * 0.3, t2);
+    ctx.strokeStyle = 'rgba(255,255,200,0.12)';
+    ctx.lineWidth = lerp(0.5, 3, t);
+    ctx.beginPath();
+    ctx.moveTo(xl1, y1);
+    ctx.lineTo(xl2, y2);
+    ctx.stroke();
+  }
+
+  // Right lane line
+  for (let i = 0; i < dashes; i++) {
+    const t = ((i / dashes) + (roadOffset / 800) % 1) % 1;
+    const t2 = ((i / dashes + 0.06) + (roadOffset / 800) % 1) % 1;
+    if (t > t2) continue;
+    const y1 = lerp(horizon, roadBottom, t);
+    const y2 = lerp(horizon, roadBottom, t2);
+    const xr1 = lerp(W * 0.53, W * 0.7, t);
+    const xr2 = lerp(W * 0.53, W * 0.7, t2);
+    ctx.strokeStyle = 'rgba(255,255,200,0.12)';
+    ctx.lineWidth = lerp(0.5, 3, t);
+    ctx.beginPath();
+    ctx.moveTo(xr1, y1);
+    ctx.lineTo(xr2, y2);
+    ctx.stroke();
+  }
+}
+
+function drawObstacle() {
+  if (!obstacleVisible || obstacleX === null) return;
+
+  // obstacleAnim goes 0 -> 1 as it approaches
+  const t = obstacleAnim;
+  const horizon = H * 0.44;
+  const laneXAtBottom = obstacleX < 0
+    ? lerp(W * 0.47, W * 0.27, 1)
+    : lerp(W * 0.53, W * 0.73, 1);
+  const obsX = lerp(W * 0.5, laneXAtBottom, t);
+  const obsY = lerp(horizon, H * 0.7, t);
+  const obsScale = lerp(0.1, 1, t);
+
+  // Barrier / cone shape
+  const bw = 50 * obsScale;
+  const bh = 70 * obsScale;
+
+  ctx.save();
+  ctx.translate(obsX, obsY);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(0, bh / 2 - 4, bw * 0.7, 6 * obsScale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Orange cone stripes
+  ctx.fillStyle = '#e05a10';
+  ctx.beginPath();
+  ctx.moveTo(0, -bh / 2);
+  ctx.lineTo(bw / 2, bh / 2);
+  ctx.lineTo(-bw / 2, bh / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-bw / 2, -bh * 0.08, bw, bh * 0.12);
+  ctx.fillRect(-bw * 0.35, bh * 0.18, bw * 0.7, bh * 0.1);
+
+  ctx.restore();
+}
+
+function drawCar(x) {
+  const carY = H * 0.75;
+  const carW = 80;
+  const carH = 48;
+
+  ctx.save();
+  ctx.translate(x, carY + shakeY);
+
+  // Car shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(0, carH / 2 + 4, carW * 0.7, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Car body
+  ctx.fillStyle = '#2a3a5c';
+  ctx.beginPath();
+  ctx.roundRect(-carW / 2, -carH / 2, carW, carH, 8);
+  ctx.fill();
+
+  // Roof
+  ctx.fillStyle = '#1e2e4a';
+  ctx.beginPath();
+  ctx.roundRect(-carW * 0.32, -carH / 2 - 22, carW * 0.64, 26, [6, 6, 0, 0]);
+  ctx.fill();
+
+  // Windows
+  ctx.fillStyle = 'rgba(100,160,220,0.5)';
+  ctx.beginPath();
+  ctx.roundRect(-carW * 0.28, -carH / 2 - 18, carW * 0.26, 18, 4);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(carW * 0.03, -carH / 2 - 18, carW * 0.26, 18, 4);
+  ctx.fill();
+
+  // Headlights
+  ctx.fillStyle = '#f0e060';
+  ctx.beginPath();
+  ctx.roundRect(-carW / 2 + 4, -carH / 2 + 6, 14, 8, 3);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(-carW / 2 + 4, -carH / 2 + 20, 14, 8, 3);
+  ctx.fill();
+
+  // Headlight glow
+  const hgl = ctx.createRadialGradient(-carW / 2, -carH / 2 + 14, 0, -carW / 2, -carH / 2 + 14, 40);
+  hgl.addColorStop(0, 'rgba(240,224,96,0.3)');
+  hgl.addColorStop(1, 'rgba(240,224,96,0)');
+  ctx.fillStyle = hgl;
+  ctx.beginPath();
+  ctx.ellipse(-carW / 2 - 8, -carH / 2 + 14, 40, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Taillights
+  ctx.fillStyle = '#c03020';
+  ctx.beginPath();
+  ctx.roundRect(carW / 2 - 10, -carH / 2 + 6, 8, 7, 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(carW / 2 - 10, -carH / 2 + 19, 8, 7, 2);
+  ctx.fill();
+
+  // Wheels
+  ctx.fillStyle = '#111';
+  const wheels = [
+    [-carW / 2 + 10, carH / 2 - 4],
+    [carW / 2 - 10, carH / 2 - 4],
+    [-carW / 2 + 10, -carH / 2 + 8],
+    [carW / 2 - 10, -carH / 2 + 8],
+  ];
+  wheels.forEach(([wx, wy]) => {
+    ctx.beginPath();
+    ctx.ellipse(wx, wy, 12, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#111';
+  });
+
+  // Capybara driver silhouette
+  ctx.fillStyle = '#8a6a40';
+  // Head
+  ctx.beginPath();
+  ctx.ellipse(-2, -carH / 2 - 8, 11, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Ears
+  ctx.fillStyle = '#7a5a34';
+  ctx.beginPath();
+  ctx.ellipse(-10, -carH / 2 - 16, 5, 4, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(6, -carH / 2 - 16, 5, 4, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  // Nose
+  ctx.fillStyle = '#6a4a28';
+  ctx.beginPath();
+  ctx.ellipse(-2, -carH / 2 - 6, 6, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawGround() {
+  // Grass/verge on sides
+  ctx.fillStyle = '#0d1a0d';
+  ctx.fillRect(0, H * 0.44, W * 0.15, H * 0.56);
+  ctx.fillRect(W * 0.85, H * 0.44, W * 0.15, H * 0.56);
+
+  // Ground fade at bottom
+  const grad = ctx.createLinearGradient(0, H * 0.8, 0, H);
+  grad.addColorStop(0, 'rgba(10,10,14,0)');
+  grad.addColorStop(1, 'rgba(10,10,14,0.9)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H * 0.8, W, H * 0.2);
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+let lastTime = 0;
+const ROAD_SPEED = 280;
+const CAR_LERP = 0.07;
+
+function gameLoop(ts) {
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  roadOffset += ROAD_SPEED * dt;
+
+  // Smooth car movement
+  const targetX = W / 2 + carTargetX * W * 0.18;
+  carAnimX = lerp(carAnimX, targetX, CAR_LERP);
+
+  // Shake decay
+  if (shakeDecay > 0) {
+    shakeX = (Math.random() - 0.5) * 14 * shakeDecay;
+    shakeY = (Math.random() - 0.5) * 8 * shakeDecay;
+    shakeDecay = Math.max(0, shakeDecay - dt * 3);
+  } else {
+    shakeX = 0;
+    shakeY = 0;
+  }
+
+  // Obstacle approach during voting
+  if (gameState === 'voting') {
+    const elapsed = VOTE_DURATION - (voteTimerEnd - Date.now());
+    obstacleAnim = clamp(elapsed / VOTE_DURATION * 0.85, 0, 0.85);
+  }
+
+  ctx.clearRect(0, 0, W, H);
+
+  drawSky();
+  drawSilhouetteTrees(H * 0.44, 22, '#0a150a');
+  drawSilhouetteTrees(H * 0.44, 12, '#0d1c0d');
+  drawRoad();
+  drawGround();
+  drawObstacle();
+  drawCar(carAnimX + shakeX);
+
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(t => { lastTime = t; gameLoop(t); });
+
+// ============================================================
+//  VOTE PANEL
+// ============================================================
+function updateVoteBar() {
+  const total = voteLeft + voteRight || 1;
+  const leftPct = (voteLeft / total) * 100;
+
+  document.getElementById('vote-left-fill').style.width = leftPct + '%';
+  document.getElementById('left-count').textContent = voteLeft + ' vote' + (voteLeft !== 1 ? 's' : '');
+  document.getElementById('right-count').textContent = voteRight + ' vote' + (voteRight !== 1 ? 's' : '');
+}
+
+function startVoteCountdown() {
+  if (voteCountdownInterval) clearInterval(voteCountdownInterval);
+  voteCountdownInterval = setInterval(() => {
+    const remaining = Math.ceil((voteTimerEnd - Date.now()) / 1000);
+    if (remaining <= 0) {
+      clearInterval(voteCountdownInterval);
+      document.getElementById('vote-countdown').textContent = 'Deciding...';
+    } else {
+      document.getElementById('vote-countdown').textContent = remaining + 's remaining';
+    }
+  }, 100);
+}
+
+// ============================================================
+//  EVENT FLOW
+// ============================================================
+function triggerEvent() {
+  if (gameState !== 'idle') return;
+
+  gameState = 'voting';
+  voteLeft = 0;
+  voteRight = 0;
+  const votedUsers = new Set();
+
+  currentEvent = { ...EVENTS[Math.floor(Math.random() * EVENTS.length)], safeLeft: Math.random() < 0.5 };
+
+  // Reassign safe/unsafe per trigger
+  obstacleX = currentEvent.safeLeft ? 1 : -1; // obstacle on the UNSAFE side
+  obstacleVisible = true;
+  obstacleAnim = 0;
+
+  document.getElementById('vote-question').textContent = currentEvent.question;
+  document.getElementById('vote-left-label').textContent = '← ' + currentEvent.left;
+  document.getElementById('vote-right-label').textContent = currentEvent.right + ' →';
+  updateVoteBar();
+
+  // Show event banner briefly
+  const banner = document.getElementById('event-banner');
+  document.getElementById('event-banner-text').textContent = '⚠ ' + currentEvent.question;
+  document.getElementById('event-banner-sub').textContent = 'type ' + currentEvent.leftKey.toUpperCase() + ' or ' + currentEvent.rightKey.toUpperCase();
+  banner.classList.add('visible');
+  setTimeout(() => banner.classList.remove('visible'), 1800);
+
+  voteTimerEnd = Date.now() + VOTE_DURATION;
+  startVoteCountdown();
+
+  document.getElementById('vote-panel').classList.add('visible');
+  document.getElementById('timer-bar-wrap').classList.add('visible');
+  document.getElementById('timer-bar').style.transition = 'none';
+  document.getElementById('timer-bar').style.transform = 'scaleX(1)';
+  void document.getElementById('timer-bar').offsetWidth;
+  document.getElementById('timer-bar').style.transition = `transform ${VOTE_DURATION}ms linear`;
+  document.getElementById('timer-bar').style.transform = 'scaleX(0)';
+
+  // Listen for incoming votes
+  window._currentVotedUsers = votedUsers;
+
+  setTimeout(() => resolveVote(), VOTE_DURATION);
+}
+
+function resolveVote() {
+  if (gameState !== 'voting') return;
+  gameState = 'outcome';
+
+  document.getElementById('vote-panel').classList.remove('visible');
+  document.getElementById('timer-bar-wrap').classList.remove('visible');
+
+  const leftWon = voteLeft >= voteRight;
+  const safe = leftWon === currentEvent.safeLeft;
+
+  lastOutcome = safe ? 'safe' : 'crash';
+
+  if (safe) {
+    streak++;
+    document.getElementById('streak-val').textContent = streak;
+    carTargetX = leftWon ? -1 : 1;
+    obstacleVisible = false;
+    showOutcome('SAFE!', 'safe', 'Chat saved the capybara! +' + streak + ' streak');
+    spawnParticles(W / 2, H * 0.6, '#6fe06f', 18);
+  } else {
+    streak = 0;
+    document.getElementById('streak-val').textContent = 0;
+    shakeDecay = 1;
+    obstacleAnim = 1;
+    showOutcome('CRASH!', 'crash', 'Chat drove into the barrier! Streak reset.');
+    spawnParticles(W / 2, H * 0.6, '#e06f6f', 18);
+  }
+
+  setTimeout(() => {
+    document.getElementById('outcome-overlay').classList.remove('visible');
+    obstacleVisible = false;
+    carTargetX = 0;
+    gameState = 'idle';
+    scheduleAutoEvent();
+  }, 3500);
+}
+
+function showOutcome(text, cls, sub) {
+  const el = document.getElementById('outcome-text');
+  el.className = cls;
+  el.textContent = text;
+  document.getElementById('outcome-sub').textContent = sub;
+  document.getElementById('outcome-overlay').classList.add('visible');
+}
+
+// ============================================================
+//  AUTO EVENT TIMER
+// ============================================================
+function scheduleAutoEvent() {
+  if (autoEventTimer) clearTimeout(autoEventTimer);
+  const delay = AUTO_EVENT_MIN + Math.random() * (AUTO_EVENT_MAX - AUTO_EVENT_MIN);
+  const hint = document.getElementById('next-hint');
+  if (hint) hint.textContent = 'next event in ~' + Math.round(delay / 1000) + 's  •  !event to force';
+  autoEventTimer = setTimeout(() => {
+    if (gameState === 'idle') triggerEvent();
+  }, delay);
+}
+
+// ============================================================
+//  PARTICLES
+// ============================================================
+function spawnParticles(x, y, color, count) {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 4 + Math.random() * 8;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 30 + Math.random() * 80;
+    const tx = x + Math.cos(angle) * dist;
+    const ty = y + Math.sin(angle) * dist - 40;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      background:${color};
+      left:${tx}px; top:${ty}px;
+      animation-duration:${0.6 + Math.random() * 0.8}s;
+      animation-delay:${Math.random() * 0.2}s;
+    `;
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+// ============================================================
+//  TWITCH IRC
+// ============================================================
+function connectToChat(channel) {
+  const waiting = document.getElementById('waiting');
+  const channelLabel = document.getElementById('channel-label');
+  channelLabel.textContent = channel;
+
+  if (typeof tmi === 'undefined') {
+    console.error('tmi.js not loaded');
+    return;
+  }
+
+  const client = new tmi.Client({ channels: [channel] });
+  client.connect().then(() => {
+    waiting.classList.add('hidden');
+    scheduleAutoEvent();
+  }).catch(e => {
+    console.error('IRC connect failed', e);
+    document.getElementById('waiting-msg').textContent = 'Could not connect to ' + channel + '. Check the channel name.';
+  });
+
+  client.on('message', (ch, tags, message, self) => {
+    if (self) return;
+    const username = (tags['display-name'] || tags.username || '').toLowerCase();
+    const msg = message.trim().toLowerCase();
+
+    // Streamer commands
+    if (username === channel) {
+      if (msg === '!event' && gameState === 'idle') {
+        if (autoEventTimer) clearTimeout(autoEventTimer);
+        triggerEvent();
+        return;
+      }
+      if (msg === '!reset') {
+        streak = 0;
+        document.getElementById('streak-val').textContent = 0;
+        return;
+      }
+    }
+
+    // Vote handling
+    if (gameState === 'voting' && currentEvent) {
+      if (!window._currentVotedUsers) return;
+      if (window._currentVotedUsers.has(username)) return;
+
+      if (msg === currentEvent.leftKey || msg === 'left' || msg === 'l') {
+        voteLeft++;
+        window._currentVotedUsers.add(username);
+        updateVoteBar();
+      } else if (msg === currentEvent.rightKey || msg === 'right' || msg === 'r') {
+        voteRight++;
+        window._currentVotedUsers.add(username);
+        updateVoteBar();
+      }
+    }
+  });
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+if (CHANNEL) {
+  connectToChat(CHANNEL);
+} else {
+  document.getElementById('waiting').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
