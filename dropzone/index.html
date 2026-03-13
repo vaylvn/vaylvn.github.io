@@ -339,22 +339,30 @@ body {
 #winner-overlay {
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:10px;
-  background:radial-gradient(ellipse at center, rgba(8,12,16,0.92) 40%, rgba(8,12,16,0.98));
   opacity:0; pointer-events:none; transition:opacity 0.6s;
 }
 #winner-overlay.visible { opacity:1; }
+/* Opaque bg variant (default) */
+#winner-overlay.with-bg {
+  background:radial-gradient(ellipse at center, rgba(8,12,16,0.92) 40%, rgba(8,12,16,0.98));
+}
 #winner-label {
   font-family:'Share Tech Mono', monospace; font-size:13px;
-  letter-spacing:0.3em; color:var(--text-dim); text-transform:uppercase;
+  letter-spacing:0.3em; color:rgba(255,255,255,0.5); text-transform:uppercase;
+  text-shadow:0 2px 12px rgba(0,0,0,0.9);
 }
 #winner-name {
   font-size:clamp(44px, 8vw, 96px); font-weight:700;
   letter-spacing:0.08em; text-transform:uppercase; line-height:1;
+  text-shadow:0 0 40px rgba(0,0,0,0.8), 0 4px 0 rgba(0,0,0,0.6), 0 0 80px rgba(0,0,0,0.5);
 }
 #winner-sub {
   font-family:'Share Tech Mono', monospace; font-size:12px;
-  color:var(--text-dim); letter-spacing:0.15em; text-transform:uppercase;
+  color:rgba(255,255,255,0.5); letter-spacing:0.15em; text-transform:uppercase;
+  text-shadow:0 2px 12px rgba(0,0,0,0.9);
 }
+/* Board blur when winner shown on transparent bg */
+#board-wrap.winner-blur { filter:blur(6px); transition:filter 0.5s; }
 
 #status-line {
   position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
@@ -839,18 +847,28 @@ function scheduleNextDrop(queue, idx) {
 
   setTimeout(() => {
     if (phase !== 'game') return;
+
+    let winCheck = false;
     if (occupant) {
       occupant.alive = false;
       occupant.ballEl.classList.add('falling');
       setTimeout(() => occupant.ballEl.remove(), 600);
       const alive = players.filter(p => p.alive !== false);
       document.getElementById('hud-right').innerHTML = '<strong>' + alive.length + '</strong> remaining';
-      if (alive.length === 1) { setTimeout(() => revealWinner(alive[0]), 800); return; }
-      if (alive.length === 0) { setTimeout(startLobby, 3000); return; }
+      if (alive.length <= 1) winCheck = true;
     }
+
+    // Always drop the platform regardless of whether it had an occupant
     cell.classList.remove('warn');
     cell.classList.add('dropping');
     setTimeout(() => cell.classList.add('gone'), 500);
+
+    if (winCheck) {
+      const alive = players.filter(p => p.alive !== false);
+      if (alive.length === 1) { setTimeout(() => revealWinner(alive[0]), 1000); return; }
+      if (alive.length === 0) { setTimeout(startLobby, 3000); return; }
+    }
+
     dropInterval = Math.max(DROP_INTERVAL_MIN, dropInterval - DROP_SPEED_UP);
     dropTimer = setTimeout(() => scheduleNextDrop(queue, idx+1), dropInterval);
   }, occupant ? WARN_DURATION : 200);
@@ -869,6 +887,12 @@ function revealWinner(player) {
 
   const wo = document.getElementById('winner-overlay');
   wo.classList.remove('hidden');
+  // On opaque bg: use the dark overlay. On transparent: blur the board instead.
+  if (!config.bgTransparent) {
+    wo.classList.add('with-bg');
+  } else {
+    document.getElementById('board-wrap').classList.add('winner-blur');
+  }
   requestAnimationFrame(() => wo.classList.add('visible'));
   spawnConfetti(player.color);
 
@@ -877,7 +901,11 @@ function revealWinner(player) {
 
   winnerTimer = setTimeout(() => {
     stopConfetti();
+    const wo2 = document.getElementById('winner-overlay');
+    wo2.classList.remove('with-bg');
     hideEl('winner-overlay');
+    const bw = document.getElementById('board-wrap');
+    bw.classList.remove('winner-blur');
     hideEl('board-wrap');
     document.getElementById('board').innerHTML = '';
     phase = 'idle';
