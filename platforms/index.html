@@ -369,14 +369,17 @@ body::before {
   background: rgba(64,168,224,0.12); padding: 2px 8px;
   border-radius: 4px; color: var(--accent);
 }
-#no-channel.hidden { display: none; }
+.hidden { display: none !important; }
+
+#board-wrap.visible { display: flex !important; }
+#winner-overlay.visible { display: flex !important; opacity: 1; }
 </style>
 </head>
 <body>
 
 <canvas id="confetti-canvas"></canvas>
 
-<div id="no-channel">
+<div id="no-channel" class="hidden">
   <h1>Drop Zone</h1>
   <p>Add <code>?streamer=yourchannel</code> to the URL<br>to connect to Twitch chat.</p>
 </div>
@@ -396,11 +399,11 @@ body::before {
   </div>
 </div>
 
-<div id="board-wrap">
+<div id="board-wrap" class="hidden">
   <div id="board"></div>
 </div>
 
-<div id="winner-overlay">
+<div id="winner-overlay" class="hidden">
   <div id="winner-label">Winner</div>
   <div id="winner-name"></div>
   <div id="winner-sub">next game in 10s  •  !play to rejoin</div>
@@ -413,7 +416,7 @@ body::before {
 
 <div id="status-line" id="status"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/build/tmi.min.js"></script>
+<script src="../chat2/tmi.min.js"></script>
 <script>
 // ============================================================
 //  CONFIG
@@ -496,7 +499,9 @@ function startLobby() {
 
   lobbyEl.classList.remove('hidden');
   boardWrap.classList.remove('visible');
+  boardWrap.classList.add('hidden');
   winnerEl.classList.remove('visible');
+  winnerEl.classList.add('hidden');
 
   hudRight.innerHTML = 'waiting for players';
   statusLine.textContent = '!play to join  •  game starts in ' + (LOBBY_DURATION/1000) + 's';
@@ -726,6 +731,7 @@ function revealWinner(player) {
   winnerName.textContent = player.username;
   winnerName.style.color = player.color;
 
+  winnerEl.classList.remove('hidden');
   winnerEl.classList.add('visible');
   spawnConfetti(player.color);
 
@@ -735,7 +741,9 @@ function revealWinner(player) {
   winnerTimer = setTimeout(() => {
     stopConfetti();
     winnerEl.classList.remove('visible');
+    winnerEl.classList.add('hidden');
     boardWrap.classList.remove('visible');
+    boardWrap.classList.add('hidden');
     boardEl.innerHTML = '';
     phase = 'idle';
     startLobby();
@@ -860,7 +868,9 @@ function connectToChat(channel) {
         clearTimeout(winnerTimer);
         stopConfetti();
         winnerEl.classList.remove('visible');
+        winnerEl.classList.add('hidden');
         boardWrap.classList.remove('visible');
+        boardWrap.classList.add('hidden');
         boardEl.innerHTML = '';
         phase = 'idle';
         statusLine.textContent = '';
