@@ -189,6 +189,8 @@ if (IS_WIDGET) {
 
 function initWidgetMode() {
   document.getElementById("widget-app").classList.remove("hidden");
+  
+  document.documentElement.style.setProperty('--bg', 'transparent');
 
   try {
     const raw = params.get("data");
