@@ -12,6 +12,35 @@
     /* ── Live mode ───────────────────────────────────── */
     body.live { background: transparent; }
 
+    #unlock-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    #unlock-overlay.hidden { display: none; }
+
+    #unlock-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 14px 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    #unlock-btn:hover,
+    #unlock-btn:active { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.4); }
+
     /* ── Config mode ─────────────────────────────────── */
     body.config {
       background: #0a0a0a;
@@ -329,7 +358,9 @@
 
 <!-- ── LIVE SCREEN ────────────────────────────────────────────── -->
 <div id="live-screen" class="hidden">
-  <!-- intentionally empty — purely audio -->
+  <div id="unlock-overlay" class="hidden">
+    <button id="unlock-btn">▶ Tap to enable audio</button>
+  </div>
 </div>
 
 <div id="live-status"></div>
@@ -524,6 +555,37 @@
       .map(u => u.trim().toLowerCase())
       .filter(Boolean);
 
+    // ── Audio unlock gate ──
+    // Mobile browsers block SpeechSynthesis until a user gesture has fired.
+    // OBS Browser Source (CEF) and desktop browsers don't have this restriction,
+    // so we only show the tap overlay when actually running on a mobile browser.
+    const isOBS    = /OBS/.test(navigator.userAgent);
+    const isMobile = !isOBS && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    let audioUnlocked = !isMobile; // desktops and OBS are unlocked immediately
+    const preUnlockBuffer = [];
+
+    const overlay   = document.getElementById('unlock-overlay');
+    const unlockBtn = document.getElementById('unlock-btn');
+
+    if (isMobile) {
+      overlay.classList.remove('hidden');
+
+      unlockBtn.addEventListener('click', () => {
+        // Fire a silent utterance to unlock the audio pipeline
+        const primer = new SpeechSynthesisUtterance(' ');
+        primer.volume = 0;
+        primer.onend = () => {
+          audioUnlocked = true;
+          overlay.classList.add('hidden');
+          // Flush any messages that arrived before the tap
+          preUnlockBuffer.forEach(t => handleMessage(t));
+          preUnlockBuffer.length = 0;
+        };
+        speechSynthesis.speak(primer);
+      }, { once: true });
+    }
+
     // ── TTS engine ──
     let voice = null;
 
@@ -563,6 +625,11 @@
 
     function handleMessage(text) {
       if (!text.trim()) return;
+      // Hold messages until the user has tapped to unlock audio
+      if (!audioUnlocked) {
+        preUnlockBuffer.push(text);
+        return;
+      }
       if (useQueue) {
         queue.push(text);
         if (!isSpeaking) processQueue();
