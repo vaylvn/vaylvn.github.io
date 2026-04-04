@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TTS Widget</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+    /* ── Live mode ───────────────────────────────────── */
+    body.live { background: transparent; }
+
+    /* ── Config mode ─────────────────────────────────── */
+    body.config {
+      background: #0a0a0a;
+      color: #f0f0f0;
+      min-height: 100vh;
+      padding: 48px 24px 80px;
+    }
+
+    .container { max-width: 560px; margin: 0 auto; }
+
+    .header { margin-bottom: 40px; }
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+    .header p {
+      color: #555;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+
+    .section { margin-bottom: 32px; }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #444;
+      margin-bottom: 16px;
+    }
+
+    .field { margin-bottom: 18px; }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 7px;
+    }
+
+    .field .hint {
+      font-size: 0.75rem;
+      color: #444;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      background: #141414;
+      border: 1px solid #222;
+      color: #f0f0f0;
+      padding: 9px 13px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      border-radius: 5px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus { border-color: #444; }
+
+    input::placeholder { color: #333; }
+
+    select option { background: #141414; }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .toggle {
+      position: relative;
+      flex-shrink: 0;
+      width: 42px;
+      height: 23px;
+      cursor: pointer;
+    }
+
+    .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+    .track {
+      position: absolute;
+      inset: 0;
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .thumb {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 15px;
+      height: 15px;
+      background: #444;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .toggle input:checked ~ .track { background: #f0f0f0; border-color: #f0f0f0; }
+    .toggle input:checked ~ .thumb { transform: translateX(19px); background: #0a0a0a; }
+
+    .toggle-label { font-size: 0.9rem; color: #ccc; user-select: none; }
+
+    /* Range */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 2px;
+      background: #222;
+      border-radius: 2px;
+      outline: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .range-row input[type="range"] { flex: 1; }
+
+    .range-val {
+      font-size: 0.85rem;
+      color: #888;
+      min-width: 36px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      margin: 32px 0;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 9px 18px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+
+    button.secondary {
+      background: #141414;
+      border: 1px solid #282828;
+      color: #ccc;
+    }
+
+    button.secondary:hover { background: #1c1c1c; border-color: #333; }
+
+    button.primary {
+      background: #f0f0f0;
+      border: 1px solid #f0f0f0;
+      color: #0a0a0a;
+      font-weight: 600;
+    }
+
+    button.primary:hover { background: #d8d8d8; border-color: #d8d8d8; }
+
+    button.danger {
+      background: transparent;
+      border: 1px solid #333;
+      color: #666;
+    }
+
+    button.danger:hover { border-color: #c0392b; color: #c0392b; }
+
+    .copy-confirm {
+      font-size: 0.8rem;
+      color: #555;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .copy-confirm.visible { opacity: 1; }
+
+    /* Load config row */
+    .input-btn-row { display: flex; gap: 8px; }
+    .input-btn-row input { flex: 1; }
+
+    /* Hidden field */
+    .hidden { display: none !important; }
+
+    /* Status badge in live mode (debug, hidden by default) */
+    #live-status {
+      position: fixed;
+      bottom: 12px;
+      right: 12px;
+      font-size: 0.7rem;
+      color: #333;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── CONFIG SCREEN ──────────────────────────────────────────── -->
+<div id="config-screen" class="container hidden">
+
+  <div class="header">
+    <h1>TTS Widget</h1>
+    <p>Twitch chat text-to-speech — configure your overlay below</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Connection</div>
+
+    <div class="field">
+      <label>Twitch Channel</label>
+      <input type="text" id="cfg-channel" placeholder="channelname" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="field">
+      <label>Ignored Users</label>
+      <input type="text" id="cfg-ignored" placeholder="nightbot, streamelements, moobot">
+      <p class="hint">Comma-separated. Messages from these users will be skipped.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Speech</div>
+
+    <div class="field">
+      <label>Voice</label>
+      <select id="cfg-voice"><option value="">— loading voices —</option></select>
+    </div>
+
+    <div class="field">
+      <label>Message Behaviour</label>
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="cfg-queue">
+          <div class="track"></div>
+          <div class="thumb"></div>
+        </label>
+        <span class="toggle-label" id="queue-label">Interrupt — new messages cut off the current one</span>
+      </div>
+    </div>
+
+    <div class="field" id="delay-field">
+      <label>Pause between messages</label>
+      <div class="range-row">
+        <input type="range" id="cfg-delay" min="0" max="10" step="0.5" value="1">
+        <span class="range-val" id="delay-val">1.0s</span>
+      </div>
+      <p class="hint">Gap inserted after each message finishes before the next begins.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-title">Widget URL</div>
+    <p class="hint" style="margin-bottom: 16px; color: #555;">
+      Copies a ready-to-use URL with all settings baked in.
+      Paste it into OBS as a Browser Source, or share it with others.
+    </p>
+    <div class="btn-row">
+      <button class="primary" id="copy-url-btn">Copy Widget URL</button>
+      <button class="secondary" id="test-btn">Test Voice</button>
+      <span class="copy-confirm" id="copy-confirm">Copied to clipboard</span>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-title">Load Config</div>
+    <p class="hint" style="margin-bottom: 12px; color: #555;">
+      Paste a widget URL to load its settings for editing.
+    </p>
+    <div class="input-btn-row">
+      <input type="text" id="load-input" placeholder="Paste widget URL here…">
+      <button class="secondary" id="load-btn">Load</button>
+    </div>
+    <p class="hint" id="load-error" style="color: #c0392b; margin-top: 8px; display: none;"></p>
+  </div>
+
+</div>
+
+<!-- ── LIVE SCREEN ────────────────────────────────────────────── -->
+<div id="live-screen" class="hidden">
+  <!-- intentionally empty — purely audio -->
+</div>
+
+<div id="live-status"></div>
+
+<script src="tmi.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const params = new URLSearchParams(location.search);
+
+  if (params.get('mode') === 'live') {
+    runLive();
+  } else {
+    runConfig();
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // CONFIG MODE
+  // ────────────────────────────────────────────────────────────
+  function runConfig() {
+    document.body.classList.add('config');
+    show('config-screen');
+
+    // ── Voice list ──
+    const voiceSel = document.getElementById('cfg-voice');
+
+    function populateVoices(preferredName) {
+      const voices = speechSynthesis.getVoices();
+      if (!voices.length) return;
+      const current = preferredName !== undefined ? preferredName : voiceSel.value;
+      voiceSel.innerHTML = '';
+      voices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = v.name + '  (' + v.lang + ')';
+        voiceSel.appendChild(opt);
+      });
+      if (current && [...voiceSel.options].some(o => o.value === current)) {
+        voiceSel.value = current;
+      }
+    }
+
+    populateVoices();
+    speechSynthesis.addEventListener('voiceschanged', () => populateVoices());
+
+    // ── Pre-fill from URL params (editing a shared config) ──
+    const ch      = params.get('channel') || '';
+    const ign     = params.get('ignored') || '';
+    const queue   = params.get('queue') === 'true';
+    const delay   = parseFloat(params.get('delay') ?? '1');
+    const voice   = params.get('voice') || '';
+
+    document.getElementById('cfg-channel').value = ch;
+    document.getElementById('cfg-ignored').value  = ign;
+    document.getElementById('cfg-queue').checked  = queue;
+    document.getElementById('cfg-delay').value    = delay;
+    document.getElementById('delay-val').textContent = delay.toFixed(1) + 's';
+
+    // Set voice after voices may have loaded
+    if (voice) {
+      populateVoices(voice);
+      speechSynthesis.addEventListener('voiceschanged', () => populateVoices(voice), { once: true });
+    }
+
+    updateQueueUI(queue);
+
+    // ── Listeners ──
+    document.getElementById('cfg-queue').addEventListener('change', e => {
+      updateQueueUI(e.target.checked);
+    });
+
+    document.getElementById('cfg-delay').addEventListener('input', e => {
+      document.getElementById('delay-val').textContent =
+        parseFloat(e.target.value).toFixed(1) + 's';
+    });
+
+    document.getElementById('copy-url-btn').addEventListener('click', () => {
+      const url = buildWidgetURL();
+      navigator.clipboard.writeText(url).then(() => {
+        const el = document.getElementById('copy-confirm');
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 2500);
+      }).catch(() => {
+        // Fallback for browsers that block clipboard
+        prompt('Copy this URL:', url);
+      });
+    });
+
+    document.getElementById('test-btn').addEventListener('click', () => {
+      const voice = resolveVoice(voiceSel.value);
+      speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance('This is how messages will sound.');
+      if (voice) utt.voice = voice;
+      speechSynthesis.speak(utt);
+    });
+
+    document.getElementById('load-btn').addEventListener('click', loadConfig);
+    document.getElementById('load-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadConfig();
+    });
+
+    function loadConfig() {
+      const raw = document.getElementById('load-input').value.trim();
+      const errEl = document.getElementById('load-error');
+      if (!raw) return;
+      try {
+        let loadParams;
+        // Accept either a full URL or a raw query string
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+          loadParams = new URL(raw).searchParams;
+        } else if (raw.startsWith('?')) {
+          loadParams = new URLSearchParams(raw.slice(1));
+        } else {
+          loadParams = new URLSearchParams(raw);
+        }
+        // Strip mode=live so we stay in config
+        loadParams.delete('mode');
+        errEl.style.display = 'none';
+        const dest = location.origin + location.pathname + '?' + loadParams.toString();
+        location.href = dest;
+      } catch {
+        errEl.textContent = 'Could not parse that URL.';
+        errEl.style.display = '';
+      }
+    }
+  }
+
+  function updateQueueUI(enabled) {
+    document.getElementById('queue-label').textContent = enabled
+      ? 'Queue — messages read in order'
+      : 'Interrupt — new messages cut off the current one';
+    const df = document.getElementById('delay-field');
+    enabled ? df.classList.remove('hidden') : df.classList.add('hidden');
+  }
+
+  function buildWidgetURL() {
+    const p = new URLSearchParams();
+    p.set('mode', 'live');
+
+    const channel = document.getElementById('cfg-channel').value.trim();
+    if (channel) p.set('channel', channel);
+
+    const ignored = document.getElementById('cfg-ignored').value.trim();
+    if (ignored) p.set('ignored', ignored);
+
+    const queue = document.getElementById('cfg-queue').checked;
+    p.set('queue', queue);
+
+    if (queue) {
+      p.set('delay', document.getElementById('cfg-delay').value);
+    }
+
+    const voice = document.getElementById('cfg-voice').value;
+    if (voice) p.set('voice', voice);
+
+    return location.origin + location.pathname + '?' + p.toString();
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // LIVE MODE
+  // ────────────────────────────────────────────────────────────
+  function runLive() {
+    document.body.classList.add('live');
+    show('live-screen');
+
+    const channel    = (params.get('channel') || '').trim();
+    const ignoredRaw = params.get('ignored') || '';
+    const useQueue   = params.get('queue') === 'true';
+    const delay      = parseFloat(params.get('delay') ?? '1') * 1000;
+    const voiceName  = params.get('voice') || '';
+
+    if (!channel) return;
+
+    const ignoredUsers = ignoredRaw
+      .split(',')
+      .map(u => u.trim().toLowerCase())
+      .filter(Boolean);
+
+    // ── TTS engine ──
+    let voice = null;
+
+    function loadVoice() {
+      voice = resolveVoice(voiceName);
+    }
+
+    loadVoice();
+    speechSynthesis.addEventListener('voiceschanged', loadVoice);
+
+    // Generation counter prevents stale onend callbacks from interfering
+    let generation = 0;
+    let isSpeaking = false;
+    const queue = [];
+
+    function speak(text) {
+      const gen = ++generation;
+      const utt = new SpeechSynthesisUtterance(text);
+      if (voice) utt.voice = voice;
+      isSpeaking = true;
+
+      utt.onend = utt.onerror = () => {
+        if (generation !== gen) return; // stale (was cancelled)
+        isSpeaking = false;
+        if (useQueue && queue.length > 0) {
+          setTimeout(processQueue, delay);
+        }
+      };
+
+      speechSynthesis.speak(utt);
+    }
+
+    function processQueue() {
+      if (isSpeaking || queue.length === 0) return;
+      speak(queue.shift());
+    }
+
+    function handleMessage(text) {
+      if (!text.trim()) return;
+      if (useQueue) {
+        queue.push(text);
+        if (!isSpeaking) processQueue();
+      } else {
+        // Interrupt: cancel everything, speak immediately
+        queue.length = 0;
+        generation++;           // invalidate any pending onend
+        speechSynthesis.cancel();
+        isSpeaking = false;
+        speak(text);
+      }
+    }
+
+    // ── Twitch IRC ──
+    const client = new tmi.Client({ channels: [channel] });
+
+    client.on('message', (_channel, tags, message, self) => {
+      if (self) return;
+      const username = (tags['display-name'] || tags.username || '').toLowerCase();
+      if (ignoredUsers.includes(username)) return;
+      handleMessage(message);
+    });
+
+    client.connect().catch(err => {
+      console.error('[TTS] Failed to connect:', err);
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Helpers
+  // ────────────────────────────────────────────────────────────
+  function resolveVoice(name) {
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length) return null;
+    if (name) {
+      const match = voices.find(v => v.name === name);
+      if (match) return match;
+    }
+    return voices[0] || null;
+  }
+
+  function show(id) {
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+})();
+</script>
+</body>
+</html>
