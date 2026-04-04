@@ -572,19 +572,43 @@
       overlay.classList.remove('hidden');
 
       unlockBtn.addEventListener('click', () => {
-        // Fire a silent utterance to unlock the audio pipeline
-        const primer = new SpeechSynthesisUtterance(' ');
-        primer.volume = 0;
-        primer.onend = () => {
+        overlay.classList.add('hidden');
+        speechSynthesis.cancel();
+
+        // iOS requires an *audible* utterance fired directly inside a user
+        // gesture to properly open the audio pipeline. A volume:0 primer
+        // activates the audio session but leaves the pipeline in a broken
+        // state — hence headphones taking over but no actual sound.
+        // We use volume:0.01 (inaudible in practice) to satisfy iOS.
+        const primer = new SpeechSynthesisUtterance('.');
+        primer.volume = 0.01;
+        primer.rate   = 2;
+
+        let unlocked = false;
+        function doUnlock() {
+          if (unlocked) return;
+          unlocked = true;
           audioUnlocked = true;
-          overlay.classList.add('hidden');
-          // Flush any messages that arrived before the tap
-          preUnlockBuffer.forEach(t => handleMessage(t));
-          preUnlockBuffer.length = 0;
-        };
+          preUnlockBuffer.splice(0).forEach(t => handleMessage(t));
+        }
+
+        primer.onend   = doUnlock;
+        primer.onerror = doUnlock;
+        // Fallback: if onend never fires (another iOS quirk), unlock anyway
+        setTimeout(doUnlock, 1500);
+
         speechSynthesis.speak(primer);
       }, { once: true });
     }
+
+    // iOS pauses speechSynthesis when the browser is backgrounded.
+    // Resume it whenever the page becomes visible again so messages
+    // that arrived while backgrounded still get spoken.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && audioUnlocked) {
+        speechSynthesis.resume();
+      }
+    });
 
     // ── TTS engine ──
     let voice = null;
@@ -603,6 +627,11 @@
 
     function speak(text) {
       const gen = ++generation;
+      // iOS can silently pause speechSynthesis (e.g. after backgrounding).
+      // Resuming before every speak ensures we're never stuck in that state.
+      if (speechSynthesis.paused) speechSynthesis.resume();
+      // Refresh voice if it wasn't available at startup (lazy voice loading on mobile)
+      if (!voice) voice = resolveVoice(voiceName);
       const utt = new SpeechSynthesisUtterance(text);
       if (voice) utt.voice = voice;
       isSpeaking = true;
