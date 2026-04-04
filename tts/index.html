@@ -339,18 +339,43 @@
 (function () {
   'use strict';
 
-  const params = new URLSearchParams(location.search);
+  // ────────────────────────────────────────────────────────────
+  // Base64 encode/decode helpers (URL-safe, UTF-8 safe)
+  // ────────────────────────────────────────────────────────────
+  function encodeConfig(cfg) {
+    const json = JSON.stringify(cfg);
+    const b64  = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g,
+      (_, p) => String.fromCharCode(parseInt(p, 16))));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
 
-  if (params.get('mode') === 'live') {
-    runLive();
+  function decodeConfig(str) {
+    let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const json = decodeURIComponent(
+      atob(b64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+    );
+    return JSON.parse(json);
+  }
+
+  // ── Detect mode from ?c= param ──
+  const rawParam = new URLSearchParams(location.search).get('c');
+  let cfg = null;
+
+  if (rawParam) {
+    try { cfg = decodeConfig(rawParam); } catch { /* fall through to config mode */ }
+  }
+
+  if (cfg && cfg.mode === 'live') {
+    runLive(cfg);
   } else {
-    runConfig();
+    runConfig(cfg); // cfg may be null (fresh load) or a decoded config (editing)
   }
 
   // ────────────────────────────────────────────────────────────
   // CONFIG MODE
   // ────────────────────────────────────────────────────────────
-  function runConfig() {
+  function runConfig(cfg) {
     document.body.classList.add('config');
     show('config-screen');
 
@@ -376,20 +401,19 @@
     populateVoices();
     speechSynthesis.addEventListener('voiceschanged', () => populateVoices());
 
-    // ── Pre-fill from URL params (editing a shared config) ──
-    const ch      = params.get('channel') || '';
-    const ign     = params.get('ignored') || '';
-    const queue   = params.get('queue') === 'true';
-    const delay   = parseFloat(params.get('delay') ?? '1');
-    const voice   = params.get('voice') || '';
+    // ── Pre-fill from decoded config (editing a shared widget URL) ──
+    const ch    = cfg?.channel || '';
+    const ign   = cfg?.ignored || '';
+    const queue = cfg?.queue   || false;
+    const delay = cfg?.delay   ?? 1;
+    const voice = cfg?.voice   || '';
 
     document.getElementById('cfg-channel').value = ch;
     document.getElementById('cfg-ignored').value  = ign;
     document.getElementById('cfg-queue').checked  = queue;
     document.getElementById('cfg-delay').value    = delay;
-    document.getElementById('delay-val').textContent = delay.toFixed(1) + 's';
+    document.getElementById('delay-val').textContent = parseFloat(delay).toFixed(1) + 's';
 
-    // Set voice after voices may have loaded
     if (voice) {
       populateVoices(voice);
       speechSynthesis.addEventListener('voiceschanged', () => populateVoices(voice), { once: true });
@@ -414,7 +438,6 @@
         el.classList.add('visible');
         setTimeout(() => el.classList.remove('visible'), 2500);
       }).catch(() => {
-        // Fallback for browsers that block clipboard
         prompt('Copy this URL:', url);
       });
     });
@@ -437,20 +460,23 @@
       const errEl = document.getElementById('load-error');
       if (!raw) return;
       try {
-        let loadParams;
-        // Accept either a full URL or a raw query string
+        // Extract the ?c= param from whatever was pasted
+        let cValue;
         if (raw.startsWith('http://') || raw.startsWith('https://')) {
-          loadParams = new URL(raw).searchParams;
+          cValue = new URL(raw).searchParams.get('c');
         } else if (raw.startsWith('?')) {
-          loadParams = new URLSearchParams(raw.slice(1));
+          cValue = new URLSearchParams(raw.slice(1)).get('c');
         } else {
-          loadParams = new URLSearchParams(raw);
+          // Maybe they pasted the raw base64 directly
+          cValue = raw;
         }
-        // Strip mode=live so we stay in config
-        loadParams.delete('mode');
+        if (!cValue) throw new Error('No config found');
+
+        // Decode, strip mode so we land in config, re-encode
+        const loaded = decodeConfig(cValue);
+        delete loaded.mode;
         errEl.style.display = 'none';
-        const dest = location.origin + location.pathname + '?' + loadParams.toString();
-        location.href = dest;
+        location.href = location.origin + location.pathname + '?c=' + encodeConfig(loaded);
       } catch {
         errEl.textContent = 'Could not parse that URL.';
         errEl.style.display = '';
@@ -467,40 +493,29 @@
   }
 
   function buildWidgetURL() {
-    const p = new URLSearchParams();
-    p.set('mode', 'live');
-
-    const channel = document.getElementById('cfg-channel').value.trim();
-    if (channel) p.set('channel', channel);
-
-    const ignored = document.getElementById('cfg-ignored').value.trim();
-    if (ignored) p.set('ignored', ignored);
-
-    const queue = document.getElementById('cfg-queue').checked;
-    p.set('queue', queue);
-
-    if (queue) {
-      p.set('delay', document.getElementById('cfg-delay').value);
-    }
-
-    const voice = document.getElementById('cfg-voice').value;
-    if (voice) p.set('voice', voice);
-
-    return location.origin + location.pathname + '?' + p.toString();
+    const config = {
+      mode:    'live',
+      channel: document.getElementById('cfg-channel').value.trim(),
+      ignored: document.getElementById('cfg-ignored').value.trim(),
+      queue:   document.getElementById('cfg-queue').checked,
+      delay:   parseFloat(document.getElementById('cfg-delay').value),
+      voice:   document.getElementById('cfg-voice').value,
+    };
+    return location.origin + location.pathname + '?c=' + encodeConfig(config);
   }
 
   // ────────────────────────────────────────────────────────────
   // LIVE MODE
   // ────────────────────────────────────────────────────────────
-  function runLive() {
+  function runLive(cfg) {
     document.body.classList.add('live');
     show('live-screen');
 
-    const channel    = (params.get('channel') || '').trim();
-    const ignoredRaw = params.get('ignored') || '';
-    const useQueue   = params.get('queue') === 'true';
-    const delay      = parseFloat(params.get('delay') ?? '1') * 1000;
-    const voiceName  = params.get('voice') || '';
+    const channel    = (cfg.channel || '').trim();
+    const ignoredRaw = cfg.ignored  || '';
+    const useQueue   = cfg.queue    || false;
+    const delay      = (cfg.delay   ?? 1) * 1000;
+    const voiceName  = cfg.voice    || '';
 
     if (!channel) return;
 
