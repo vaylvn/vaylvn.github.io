@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>stream</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0b;--surface:#0f0f11;--border:rgba(255,255,255,0.06);
+    --text:#e8e8e4;--muted:#555;--accent:#c8f542;
+    --chat-w:320px;
+  }
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace,sans-serif}
+
+  #app{display:flex;height:100vh;width:100vw}
+
+  /* Video side */
+  #video-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  #player{flex:1;width:100%;border:none;display:block;background:#000}
+
+  /* Chat side */
+  #chat-wrap{width:var(--chat-w);flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid var(--border);background:var(--surface)}
+  #chat{flex:1;border:none;width:100%;display:block}
+
+  /* Titlebar */
+  #bar{height:36px;display:flex;align-items:center;padding:0 12px;gap:10px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+  #bar .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+  #bar .chan{font-size:0.72rem;letter-spacing:0.06em;color:var(--muted);text-transform:lowercase}
+  #bar .chan span{color:var(--text)}
+  #bar .spacer{flex:1}
+  #bar button{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:0.65rem;padding:3px 8px;cursor:pointer;font-family:inherit;letter-spacing:0.04em;transition:all 0.15s}
+  #bar button:hover{border-color:rgba(255,255,255,0.2);color:var(--text)}
+
+  /* Setup screen */
+  #setup{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
+  #setup-box{width:360px;display:flex;flex-direction:column;gap:1.25rem}
+  #setup-box h1{font-size:1rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent)}
+  #setup-box p{font-size:0.7rem;color:var(--muted);line-height:1.65}
+  #setup-box input{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.65rem 0.85rem;color:var(--text);font-family:inherit;font-size:0.8rem;width:100%;outline:none;transition:border-color 0.15s}
+  #setup-box input:focus{border-color:rgba(255,255,255,0.2)}
+  #setup-box input::placeholder{color:var(--muted)}
+  #setup-box button{background:var(--accent);color:#0a0a0b;border:none;border-radius:6px;padding:0.72rem;font-family:inherit;font-size:0.78rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s}
+  #setup-box button:hover{opacity:0.88}
+  #setup-box .hint{font-size:0.62rem;color:var(--muted);line-height:1.6}
+
+  @media(max-width:700px){
+    #app{flex-direction:column}
+    #chat-wrap{width:100%;height:340px;border-left:none;border-top:1px solid var(--border)}
+  }
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <div id="setup-box">
+    <h1>Stream</h1>
+    <p>Enter the Twitch channel name once. It'll be saved locally so you never have to again.</p>
+    <input id="chanInput" type="text" placeholder="channel name (e.g. xqc)" autocomplete="off" spellcheck="false">
+    <button id="saveBtn">Open stream &rarr;</button>
+    <div class="hint">
+      You'll need to log in to Twitch inside the embedded player the first time &mdash; after that it remembers you. Sub perks and no ads once logged in.
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div id="video-wrap">
+    <div id="bar">
+      <div class="dot"></div>
+      <div class="chan">watching <span id="barChan"></span></div>
+      <div class="spacer"></div>
+      <button id="toggleChat">hide chat</button>
+      <button id="changeBtn">change</button>
+    </div>
+    <iframe id="player" allowfullscreen></iframe>
+  </div>
+  <div id="chat-wrap">
+    <iframe id="chat" title="Chat"></iframe>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORE_KEY = 'stream_channel';
+  var saved = localStorage.getItem(STORE_KEY);
+
+  function launch(channel){
+    channel = channel.trim().toLowerCase();
+    if(!channel) return;
+    localStorage.setItem(STORE_KEY, channel);
+
+    // Twitch embeds require a parent= param matching the domain serving the page
+    // For a local file this is 'localhost' — works when opened via file:// too
+    var host = location.hostname || 'localhost';
+
+    document.getElementById('player').src =
+      'https://player.twitch.tv/?channel='+encodeURIComponent(channel)+'&parent='+host+'&autoplay=true';
+
+    document.getElementById('chat').src =
+      'https://www.twitch.tv/embed/'+encodeURIComponent(channel)+'/chat?parent='+host+'&darkpopout';
+
+    document.getElementById('barChan').textContent = channel;
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.title = channel + ' — stream';
+  }
+
+  if(saved){
+    launch(saved);
+  }
+
+  document.getElementById('chanInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter') launch(this.value);
+  });
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    launch(document.getElementById('chanInput').value);
+  });
+
+  document.getElementById('changeBtn').addEventListener('click', function(){
+    document.getElementById('app').style.display='none';
+    document.getElementById('setup').style.display='flex';
+    document.getElementById('chanInput').value = localStorage.getItem(STORE_KEY)||'';
+    document.getElementById('chanInput').focus();
+  });
+
+  var chatVisible = true;
+  document.getElementById('toggleChat').addEventListener('click', function(){
+    chatVisible = !chatVisible;
+    document.getElementById('chat-wrap').style.display = chatVisible ? '' : 'none';
+    this.textContent = chatVisible ? 'hide chat' : 'show chat';
+  });
+})();
+</script>
+</body>
+</html>
