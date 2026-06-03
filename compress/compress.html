@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compress — local video compressor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@300;400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #18181c;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #e8e8e4;
+    --muted: #6b6b6e;
+    --accent: #c8f542;
+    --accent-dim: rgba(200,245,66,0.12);
+    --danger: #ff4d4d;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 640px;
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .wordmark {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .tagline {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  main {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 1px dashed var(--border-hover);
+    border-radius: 12px;
+    padding: 3.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    text-align: center;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .drop-icon {
+    font-size: 2rem;
+    opacity: 0.4;
+  }
+
+  .drop-label {
+    font-size: 0.95rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .drop-label strong {
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .drop-types {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* File info */
+  .file-info {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .file-info.visible { display: flex; }
+
+  .file-thumb {
+    width: 56px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+
+  .file-details { flex: 1; min-width: 0; }
+
+  .file-name {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-size {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .clear-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .clear-btn:hover { color: var(--danger); }
+
+  /* Controls panel */
+  .controls {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .controls.visible { display: flex; }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .control-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .control-value {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--border-hover);
+    border-radius: 1px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+  .preset-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .preset {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .preset:hover, .preset.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .preset span {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .preset.active span { color: var(--accent); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  .format-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .fmt-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.9rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .fmt-btn:hover, .fmt-btn.active {
+    border-color: var(--border-hover);
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  /* Compress button */
+  .compress-btn {
+    background: var(--accent);
+    color: #0a0a0b;
+    border: none;
+    border-radius: 8px;
+    padding: 0.9rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    width: 100%;
+  }
+
+  .compress-btn:hover { opacity: 0.88; }
+  .compress-btn:active { transform: scale(0.99); }
+  .compress-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  /* Progress */
+  .progress-wrap {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .progress-wrap.visible { display: flex; }
+
+  .progress-status {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar-bg {
+    height: 2px;
+    background: var(--border-hover);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .log-lines {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-height: 80px;
+    overflow: hidden;
+  }
+
+  /* Result */
+  .result-wrap {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .result-wrap.visible { display: flex; }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .stat-value.accent { color: var(--accent); }
+
+  .download-btn {
+    background: none;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    color: var(--accent);
+    padding: 0.8rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+  }
+
+  .download-btn:hover { background: var(--accent-dim); }
+
+  .again-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    cursor: pointer;
+    text-align: center;
+    padding: 0.25rem;
+    transition: color 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .again-btn:hover { color: var(--text); }
+
+  .privacy-note {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.7;
+    margin-top: 1rem;
+    opacity: 0.6;
+  }
+
+  .loading-ffmpeg {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 1rem;
+    letter-spacing: 0.04em;
+    display: none;
+  }
+
+  .loading-ffmpeg.visible { display: block; }
+
+  .dot-flash::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0%, 100% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">Compress</div>
+  <div class="tagline">local · no upload · no account</div>
+</header>
+
+<main>
+
+  <div class="loading-ffmpeg" id="ffmpegLoading">
+    <span class="dot-flash">Loading ffmpeg.wasm</span>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="video/*">
+    <div class="drop-icon">▲</div>
+    <div class="drop-label"><strong>Drop a video</strong> or click to browse</div>
+    <div class="drop-types">mp4 · mov · webm · mkv · avi</div>
+  </div>
+
+  <!-- File info bar -->
+  <div class="file-info" id="fileInfo">
+    <video class="file-thumb" id="filethumb" muted></video>
+    <div class="file-details">
+      <div class="file-name" id="fileName">–</div>
+      <div class="file-size" id="fileSize">–</div>
+    </div>
+    <button class="clear-btn" id="clearBtn" title="Remove file">✕</button>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls">
+
+    <div class="control-row">
+      <div class="control-header">
+        <span class="control-label">Quality</span>
+        <span class="control-value" id="qualityLabel">Medium — ~50% smaller</span>
+      </div>
+      <input type="range" id="qualitySlider" min="0" max="4" step="1" value="2">
+      <div class="preset-row">
+        <button class="preset" data-q="0">
+          <span>Max</span>lossless
+        </button>
+        <button class="preset" data-q="1">
+          <span>High</span>~25% less
+        </button>
+        <button class="preset active" data-q="2">
+          <span>Medium</span>~50% less
+        </button>
+        <button class="preset" data-q="3">
+          <span>Low</span>~70% less
+        </button>
+        <button class="preset" data-q="4">
+          <span>Tiny</span>~85% less
+        </button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="control-row">
+      <div class="control-header">
+        <span class="control-label">Output format</span>
+      </div>
+      <div class="format-row">
+        <button class="fmt-btn active" data-fmt="mp4">mp4</button>
+        <button class="fmt-btn" data-fmt="webm">webm</button>
+        <button class="fmt-btn" data-fmt="mkv">mkv</button>
+      </div>
+    </div>
+
+    <button class="compress-btn" id="compressBtn">Compress →</button>
+
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-status">
+      <span id="progressLabel">Processing…</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="log-lines" id="logLines"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-stats">
+      <div class="stat">
+        <div class="stat-label">Original</div>
+        <div class="stat-value" id="origSize">–</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Compressed</div>
+        <div class="stat-value" id="newSize">–</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Saved</div>
+        <div class="stat-value accent" id="savedPct">–</div>
+      </div>
+    </div>
+    <button class="download-btn" id="downloadBtn">Download compressed file</button>
+    <button class="again-btn" id="againBtn">compress another →</button>
+  </div>
+
+  <div class="privacy-note">
+    Everything runs in your browser via ffmpeg.wasm.<br>
+    Your video never leaves your device.
+  </div>
+
+</main>
+
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+<script>
+(function() {
+
+  const { FFmpeg } = FFmpegWASM;
+  const { fetchFile, toBlobURL } = FFmpegUtil;
+
+  let ffmpeg = null;
+  let currentFile = null;
+  let outputBlob = null;
+  let selectedFormat = 'mp4';
+
+  const qualitySettings = [
+    { label: 'Max — lossless copy', crf: null, preset: 'ultrafast', copy: true },
+    { label: 'High — ~25% smaller', crf: 23, preset: 'fast' },
+    { label: 'Medium — ~50% smaller', crf: 28, preset: 'medium' },
+    { label: 'Low — ~70% smaller', crf: 33, preset: 'slow' },
+    { label: 'Tiny — ~85% smaller', crf: 40, preset: 'slower' },
+  ];
+
+  const $ = id => document.getElementById(id);
+
+  const dropZone = $('dropZone');
+  const fileInput = $('fileInput');
+  const fileInfo = $('fileInfo');
+  const controls = $('controls');
+  const progressWrap = $('progressWrap');
+  const resultWrap = $('resultWrap');
+
+  async function loadFFmpeg() {
+    $('ffmpegLoading').classList.add('visible');
+    ffmpeg = new FFmpeg();
+    ffmpeg.on('log', ({ message }) => {
+      const el = $('logLines');
+      el.textContent = message;
+    });
+    ffmpeg.on('progress', ({ progress }) => {
+      const pct = Math.min(100, Math.round(progress * 100));
+      $('progressBar').style.width = pct + '%';
+      $('progressPct').textContent = pct + '%';
+    });
+    try {
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+    } catch(e) {
+      console.error(e);
+      alert('Failed to load ffmpeg.wasm. Check your connection and try again.');
+    }
+    $('ffmpegLoading').classList.remove('visible');
+  }
+
+  loadFFmpeg();
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('video/')) setFile(f);
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  function setFile(f) {
+    currentFile = f;
+    outputBlob = null;
+    $('fileName').textContent = f.name;
+    $('fileSize').textContent = fmtSize(f.size);
+    const url = URL.createObjectURL(f);
+    $('filethumb').src = url;
+    fileInfo.classList.add('visible');
+    controls.classList.add('visible');
+    progressWrap.classList.remove('visible');
+    resultWrap.classList.remove('visible');
+    dropZone.style.display = 'none';
+  }
+
+  $('clearBtn').addEventListener('click', () => {
+    currentFile = null;
+    outputBlob = null;
+    fileInput.value = '';
+    fileInfo.classList.remove('visible');
+    controls.classList.remove('visible');
+    progressWrap.classList.remove('visible');
+    resultWrap.classList.remove('visible');
+    dropZone.style.display = '';
+  });
+
+  // Quality slider
+  const slider = $('qualitySlider');
+  slider.addEventListener('input', () => {
+    const q = parseInt(slider.value);
+    $('qualityLabel').textContent = qualitySettings[q].label;
+    document.querySelectorAll('.preset').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.q) === q);
+    });
+  });
+
+  document.querySelectorAll('.preset').forEach(b => {
+    b.addEventListener('click', () => {
+      slider.value = b.dataset.q;
+      slider.dispatchEvent(new Event('input'));
+    });
+  });
+
+  // Format buttons
+  document.querySelectorAll('.fmt-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.fmt-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      selectedFormat = b.dataset.fmt;
+    });
+  });
+
+  // Compress
+  $('compressBtn').addEventListener('click', async () => {
+    if (!currentFile || !ffmpeg) return;
+    const q = parseInt(slider.value);
+    const settings = qualitySettings[q];
+    const ext = selectedFormat;
+    const inputName = 'input.' + (currentFile.name.split('.').pop() || 'mp4');
+    const outputName = 'output.' + ext;
+
+    $('compressBtn').disabled = true;
+    controls.classList.remove('visible');
+    progressWrap.classList.add('visible');
+    resultWrap.classList.remove('visible');
+    $('progressLabel').textContent = 'Processing…';
+    $('progressBar').style.width = '0%';
+    $('progressPct').textContent = '0%';
+    $('logLines').textContent = '';
+
+    try {
+      await ffmpeg.writeFile(inputName, await fetchFile(currentFile));
+
+      let args;
+      if (settings.copy) {
+        args = ['-i', inputName, '-c', 'copy', outputName];
+      } else if (ext === 'webm') {
+        args = ['-i', inputName, '-c:v', 'libvpx-vp9', '-crf', String(settings.crf), '-b:v', '0', '-c:a', 'libopus', outputName];
+      } else {
+        args = ['-i', inputName, '-c:v', 'libx264', '-crf', String(settings.crf), '-preset', settings.preset, '-c:a', 'aac', '-b:a', '128k', outputName];
+      }
+
+      await ffmpeg.exec(args);
+
+      const data = await ffmpeg.readFile(outputName);
+      const mimeMap = { mp4: 'video/mp4', webm: 'video/webm', mkv: 'video/x-matroska' };
+      outputBlob = new Blob([data.buffer], { type: mimeMap[ext] || 'video/mp4' });
+
+      const origSize = currentFile.size;
+      const newSize = outputBlob.size;
+      const saved = Math.round((1 - newSize / origSize) * 100);
+
+      $('origSize').textContent = fmtSize(origSize);
+      $('newSize').textContent = fmtSize(newSize);
+      $('savedPct').textContent = (saved > 0 ? '-' : '+') + Math.abs(saved) + '%';
+
+      progressWrap.classList.remove('visible');
+      resultWrap.classList.add('visible');
+
+      await ffmpeg.deleteFile(inputName).catch(() => {});
+      await ffmpeg.deleteFile(outputName).catch(() => {});
+    } catch (err) {
+      console.error(err);
+      $('progressLabel').textContent = 'Error: ' + err.message;
+      $('logLines').textContent = 'Something went wrong. Try a different format or quality setting.';
+      $('compressBtn').disabled = false;
+      controls.classList.add('visible');
+    }
+  });
+
+  $('downloadBtn').addEventListener('click', () => {
+    if (!outputBlob) return;
+    const base = currentFile.name.replace(/\.[^.]+$/, '');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outputBlob);
+    a.download = base + '_compressed.' + selectedFormat;
+    a.click();
+  });
+
+  $('againBtn').addEventListener('click', () => {
+    currentFile = null;
+    outputBlob = null;
+    fileInput.value = '';
+    fileInfo.classList.remove('visible');
+    controls.classList.remove('visible');
+    progressWrap.classList.remove('visible');
+    resultWrap.classList.remove('visible');
+    dropZone.style.display = '';
+    $('compressBtn').disabled = false;
+  });
+
+  function fmtSize(bytes) {
+    if (bytes >= 1e9) return (bytes / 1e9).toFixed(2) + ' GB';
+    if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + ' MB';
+    if (bytes >= 1e3) return (bytes / 1e3).toFixed(0) + ' KB';
+    return bytes + ' B';
+  }
+
+})();
+</script>
+</body>
+</html>
