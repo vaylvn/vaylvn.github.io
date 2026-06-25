@@ -37,13 +37,6 @@
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
-
-    /* Widget mode: transparent background so OBS chroma/compositing works */
-    body[data-mode="widget"],
-    body[data-mode="widget"] html {
-      --bg: transparent;
-      background: transparent !important;
-    }
     body { overflow: hidden; }
     .hidden { display: none !important; }
 
@@ -820,7 +813,8 @@
 
     // ─── WIDGET MODE ──────────────────────────────────────────────────────
     if (isLive) {
-      document.body.dataset.mode = 'widget';
+      document.documentElement.style.background = 'transparent';
+      document.body.style.background = 'transparent';
       document.getElementById('widget-app').classList.remove('hidden');
       try {
         config = decodeConfig(params.get('data'));
