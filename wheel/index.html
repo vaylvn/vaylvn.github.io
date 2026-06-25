@@ -813,6 +813,8 @@
 
     // ─── WIDGET MODE ──────────────────────────────────────────────────────
     if (isLive) {
+      document.documentElement.style.background = 'transparent';
+      document.body.style.background = 'transparent';
       document.getElementById('widget-app').classList.remove('hidden');
       try {
         config = decodeConfig(params.get('data'));
