@@ -1,8 +1,3 @@
-
-
-
-
-
 window.addEventListener("DOMContentLoaded", () => {
   const GOOGLE_FONTS = [
     "Roboto","Lato","Poppins","Montserrat","Merriweather",
@@ -38,10 +33,17 @@ window.addEventListener("DOMContentLoaded", () => {
     if(!src){cachedAudio=null;return;}
     try{ cachedAudio=new Audio(src); cachedAudio.load(); }catch{}
   }
+  const MAX_CONCURRENT_TICKS = 3; // cap how many overlapping tick sounds can stack at once
+  let activeTickCount = 0;
   function playSoundOnce(src,vol=0.4){
     try{
+      if (activeTickCount >= MAX_CONCURRENT_TICKS) return; // skip rather than piling another instance on top
       const a=cachedAudio?cachedAudio.cloneNode():new Audio(src);
-      a.volume=vol;a.currentTime=0;a.play().catch(()=>{});
+      a.volume=vol;a.currentTime=0;
+      activeTickCount++;
+      const release=()=>{activeTickCount=Math.max(0,activeTickCount-1);};
+      a.addEventListener("ended",release,{once:true});
+      a.play().catch(release);
     }catch{}
   }
 
