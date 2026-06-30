@@ -1174,28 +1174,28 @@ function createHighlightCssClass(color) {
 
 const ACTIONS = [
 	// OBS Actions
-	{ action: "obs:scene", desc: "Switch to an OBS scene", template: "obs:scene | <scene>"},
-	{ action: "obs:show", desc: "Show an OBS source", template: "obs:show | <source>"},
-	{ action: "obs:hide", desc: "Hide an OBS source", template: "obs:hide | <source>"},
-	{ action: "obs:toggle", desc: "Toggle an OBS source", template: "obs:toggle | <source>"},
-	{ action: "obs:filteron", desc: "Enable an OBS filter", template: "obs:filteron | <source> | <filter>"},
-	{ action: "obs:filteroff", desc: "Disable an OBS filter", template: "obs:filteroff | <source> | <filter>"},
-	{ action: "obs:label", desc: "Modify an OBS label", template: "obs:label | <source> | <text> | <color>"},
+	{ action: "obs:scene", desc: "Switch to an OBS scene", template: "obs:scene | s:<scene>"},
+	{ action: "obs:show", desc: "Show an OBS source", template: "obs:show | s:<source>"},
+	{ action: "obs:hide", desc: "Hide an OBS source", template: "obs:hide | s:<source>"},
+	{ action: "obs:toggle", desc: "Toggle an OBS source", template: "obs:toggle | s:<source>"},
+	{ action: "obs:filteron", desc: "Enable an OBS filter", template: "obs:filteron | s:<source> | f:<filter>"},
+	{ action: "obs:filteroff", desc: "Disable an OBS filter", template: "obs:filteroff | s:<source> | f:<filter>"},
+	{ action: "obs:label", desc: "Modify an OBS label", template: "obs:label | s:<source> | t:<text> | c:<color>"},
 
 	// Chat & Announcements
     { action: "chat:message", desc: "Send a chat message", template: "chat:message | m:<message>"},
-    { action: "announce", desc: "Send a chat announcement", template: "announce | <message>" },
+    { action: "announce", desc: "Send a chat announcement", template: "announce | m:<message>" },
 
 	// TTS Actions
 	{ action: "tts", desc: "Text-to-Speech announcement", template: "tts | v:en-US-AriaNeural | m:<message>" },
 
 	// System Commands
-	{ action: "syscmd", desc: "Execute system command", template: "syscmd | <command>" },
+	{ action: "syscmd", desc: "Execute system command", template: "syscmd | c:<command>" },
 
 	// Playlist Actions
 	{ action: "list:shuffle", desc: "Shuffle the playlist", template: "list:shuffle" },
 	{ action: "list:removeall", desc: "Clear the entire playlist", template: "list:removeall" },
-	{ action: "list:remove", desc: "Remove song from playlist", template: "list:remove | <index>" },
+	{ action: "list:remove", desc: "Remove song from playlist", template: "list:remove | i:<index>" },
 	{ action: "list:az", desc: "Sort playlist A-Z", template: "list:az" },
 	{ action: "list:za", desc: "Sort playlist Z-A", template: "list:za" },
 
@@ -1209,8 +1209,8 @@ const ACTIONS = [
 	{ action: "redeem:disable", desc: "Disable a reward", template: "redeem:disable | n:<name>" },
 	{ action: "redeem:toggle", desc: "Toggle reward on/off", template: "redeem:toggle | n:<name>" },
 	{ action: "redeem:update", desc: "Update reward settings", template: "redeem:update | n:<name> | c:<cost>" },
-	{ action: "redeem:complete", desc: "Complete a redemption", template: "redeem:complete | id:<redemption_id>" },
-	{ action: "redeem:reject", desc: "Reject a redemption", template: "redeem:reject | id:<redemption_id>" },
+	{ action: "redeem:complete", desc: "Complete a redemption", template: "redeem:complete | i:<id>" },
+	{ action: "redeem:reject", desc: "Reject a redemption", template: "redeem:reject | i:<id>" },
 
 	// Variable Actions
 	{ action: "variable", desc: "Set or update a variable", template: "variable | n:<name> | v:<value>" },
@@ -1399,45 +1399,38 @@ function loadGenericTags() {
             </div>
         `;
     });
-
-    // Add Event Tags (all categories combined)
-    list.innerHTML += `<div style="font-size: 11px; opacity: 0.6; margin: 12px 10px 4px; text-transform: uppercase; font-weight: bold;">Event Variables</div>`;
-    for (const [event, tags] of Object.entries(TAGS.events)) {
-        tags.forEach(t => {
-            list.innerHTML += `
-                <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc} (${event})">
-                    ${t.tag}
-                </div>
-            `;
-        });
-    }
 }
 
 function loadEventTags() {
-    const list = document.getElementById("event-tag-section");
-    const inner = document.getElementById("event-tag-list");
+    const list = document.getElementById("tag-float-list");
 
-    inner.innerHTML = "";
-
-    const file = currentFilePath?.split("/").pop();
-    if (!file) return;
-
-    const eventName = file.replace(".yml", "");
-
-    if (!TAGS.events[eventName]) {
-        list.style.display = "none";
-        return;
-    }
-
-    list.style.display = "block";
-
-    TAGS.events[eventName].forEach(t => {
-        inner.innerHTML += `
+    // Load generic tags first
+    list.innerHTML = `<div style="font-size: 11px; opacity: 0.6; margin: 8px 10px 4px; text-transform: uppercase; font-weight: bold;">System & Global</div>`;
+    TAGS.generic.forEach(t => {
+        list.innerHTML += `
             <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc}">
                 ${t.tag}
             </div>
         `;
     });
+
+    // Get event name from current file
+    const file = currentFilePath?.split("/").pop();
+    if (!file) return;
+
+    const eventName = file.replace(".yml", "").replace(".yaml", "");
+
+    // Add event-specific tags if they exist
+    if (TAGS.events[eventName]) {
+        list.innerHTML += `<div style="font-size: 11px; opacity: 0.6; margin: 12px 10px 4px; text-transform: uppercase; font-weight: bold;">${eventName} Event Tags</div>`;
+        TAGS.events[eventName].forEach(t => {
+            list.innerHTML += `
+                <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc}">
+                    ${t.tag}
+                </div>
+            `;
+        });
+    }
 }
 
 
