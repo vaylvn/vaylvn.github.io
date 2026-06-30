@@ -1496,20 +1496,9 @@ function toggleTagPanel() {
 document.getElementById("tag-float-close").onclick = toggleTagPanel;
 
 function refreshTagPanel() {
-    const genericList = document.getElementById("tag-float-list");
-    const eventSection = document.getElementById("event-tag-section");
-
-    // reset both areas
-    genericList.innerHTML = "";
-    eventSection.style.display = "none";
-
-    // load event tags if applicable
-    if (currentFilePath?.startsWith("configuration/event/")) {
-        loadEventTags();
-    }
-
-    // always load generic tags
-    loadGenericTags();
+    // loadEventTags handles both generic + event tags
+    // It checks the current file path automatically
+    loadEventTags();
 }
 
 function filterFloatTagList() {
@@ -1888,6 +1877,9 @@ function selectTreeFile(path) {
     document.querySelectorAll(".tree-file").forEach(el => {
         el.classList.toggle("selected", el.dataset.path === path);
     });
+
+    // Update tags when file is selected
+    refreshTagPanel();
 }
 
 document.getElementById("tree-search").addEventListener("input", () => {

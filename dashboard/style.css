@@ -530,7 +530,10 @@ body {
 #tag-float-list {
     overflow-y: auto;
     max-height: calc(70vh - 100px);
-    padding: 0 8px 8px 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
 .tag-section {
@@ -555,8 +558,13 @@ body {
     cursor: pointer;
     font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 4px;
+    margin: 0 0 6px 0;
     transition: all 0.15s var(--ease-ui);
+    flex-shrink: 0;
+}
+
+.tag-item:last-child {
+    margin-bottom: 0;
 }
 
 .tag-item:hover {
@@ -635,7 +643,10 @@ body {
 #action-float-list {
     overflow-y: auto;
     max-height: calc(70vh - 100px);
-    padding: 0 8px 8px 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
 .action-section {
@@ -660,8 +671,13 @@ body {
     cursor: pointer;
     font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 4px;
+    margin: 0 0 6px 0;
     transition: all 0.15s var(--ease-ui);
+    flex-shrink: 0;
+}
+
+.action-item:last-child {
+    margin-bottom: 0;
 }
 
 .action-item:hover {
