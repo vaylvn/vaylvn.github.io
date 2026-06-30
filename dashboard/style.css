@@ -482,7 +482,6 @@ body {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
 
     z-index: 9000;
 }
@@ -501,6 +500,10 @@ body {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
 }
 
 #tag-float-close {
@@ -561,7 +564,6 @@ body {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
 
     z-index: 9000;
 }
@@ -580,6 +582,10 @@ body {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
 }
 
 #action-float-close {

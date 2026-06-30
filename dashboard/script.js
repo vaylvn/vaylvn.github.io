@@ -1388,9 +1388,10 @@ const TAGS = {
 
 function loadGenericTags() {
     const list = document.getElementById("tag-float-list");
-	list.innerHTML = ""; 
-    /* list.innerHTML += `<div class="tag-section-title">Global</div>`; */
+	list.innerHTML = "";
 
+    // Generic Tags
+    list.innerHTML += `<div style="font-size: 11px; opacity: 0.6; margin: 8px 10px 4px; text-transform: uppercase; font-weight: bold;">System & Global</div>`;
     TAGS.generic.forEach(t => {
         list.innerHTML += `
             <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc}">
@@ -1398,6 +1399,18 @@ function loadGenericTags() {
             </div>
         `;
     });
+
+    // Add Event Tags (all categories combined)
+    list.innerHTML += `<div style="font-size: 11px; opacity: 0.6; margin: 12px 10px 4px; text-transform: uppercase; font-weight: bold;">Event Variables</div>`;
+    for (const [event, tags] of Object.entries(TAGS.events)) {
+        tags.forEach(t => {
+            list.innerHTML += `
+                <div class="tag-item" onclick="insertTag('${t.tag}')" title="${t.desc} (${event})">
+                    ${t.tag}
+                </div>
+            `;
+        });
+    }
 }
 
 function loadEventTags() {
