@@ -8,9 +8,7 @@
 	  <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDK will be loaded via modules below -->
 
   <style>
     :root {
@@ -200,14 +198,22 @@
 	  // ---------- LISTENER ----------
 	  const playlistRef = doc(db, "playlists", user);
 
+	  console.log("📺 Listening to playlist:", user);
+	  console.log("📍 Firestore path: playlists/", user);
+
 	  onSnapshot(playlistRef, (docSnap) => {
+		console.log("📦 Snapshot received for user:", user);
+		console.log("📄 Document exists:", docSnap.exists());
+
 		if (!docSnap.exists()) {
+		  console.warn("⚠️ Document does not exist at playlists/", user);
 		  nowPlayingEl.innerHTML = "<div class='empty'>No active playlist.</div>";
 		  queueEl.innerHTML = "";
 		  return;
 		}
 
 		const data = docSnap.data();
+		console.log("📊 Firestore data received:", data);
 
 		// Now Playing
 		if (data.nowPlaying) {
@@ -243,6 +249,11 @@
 		  `;
 		  queueEl.appendChild(row);
 		});
+	  }, (error) => {
+		console.error("❌ Firestore error:", error);
+		console.error("Error code:", error.code);
+		console.error("Error message:", error.message);
+		nowPlayingEl.innerHTML = "<div class='empty'>Error loading playlist.</div>";
 	  });
 	</script>
 
