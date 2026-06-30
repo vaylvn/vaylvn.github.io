@@ -194,10 +194,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
 		  // Send result to local Flask listener
 		  fetch("http://127.0.0.1:5000/spinresult", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ result })
-		  }).catch(err => console.warn("Failed to send spin result:", err));
+			  method: "POST",
+			  headers: { "Content-Type": "application/json" },
+			  body: JSON.stringify({
+				result,
+				name: config.spinnerName,
+				type: "spinner"
+			  })
+			}).catch(err => console.warn("Failed to send spin result:", err));
 
 		  console.log("Spinner result:", result);
 		  // --- End new code ---
@@ -522,6 +526,10 @@ window.addEventListener("DOMContentLoaded", () => {
 			const data = await r.json();
 			
 			if (data.cmd === "spin") {
+				startSpin(); // <---- your spinner function
+			}
+			
+			if (data.cmd === "trigger") {
 				startSpin(); // <---- your spinner function
 			}
 			
