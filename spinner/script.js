@@ -167,15 +167,19 @@ window.addEventListener("DOMContentLoaded", () => {
 	  const sounds = { click:"sounds/click.mp3", tick:"sounds/tick.mp3", boop:"sounds/boop.mp3", beep:"sounds/beep.mp3", tweet:"sounds/tweet.mp3" };
 	  const chosen = config.customSound || sounds[config.sound];
 	  const totalTicks = config.tickDensity; let lastTick = -1;
+	  const minTickGapMs = duration / totalTicks / 2; // floor on real-time spacing between ticks
+	  let lastTickPlayedAt = -Infinity;
 
 	  requestAnimationFrame(function anim(now) {
 		const p = Math.min((now - startTime) / duration, 1);
 		const eased = 1 - Math.pow(1 - p, 3);
 		drawSpinner(config, startRot + eased * (targetRot - startRot));
-		const tickIndex = Math.floor(eased * totalTicks);
+		// Cap tickIndex below totalTicks so the last regular tick never coincides with the final blip
+		const tickIndex = Math.min(Math.floor(eased * totalTicks), totalTicks - 1);
 
-		if (tickIndex > lastTick) {
+		if (tickIndex > lastTick && p < 1 && (now - lastTickPlayedAt) >= minTickGapMs) {
 		  lastTick = tickIndex;
+		  lastTickPlayedAt = now;
 		  if (config.sound !== "none" && chosen) playSoundOnce(chosen, 0.35);
 		}
 
