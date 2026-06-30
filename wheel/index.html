@@ -776,7 +776,7 @@
             fetch('http://127.0.0.1:5000/spinresult', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ result, name: cfg.name })
+              body: JSON.stringify({ result, name: cfg.name, type: "wheel" })
             }).catch(() => {});
           }
         }
