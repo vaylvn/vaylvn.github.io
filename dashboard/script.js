@@ -207,40 +207,6 @@ function handleWebSocketMessage(msg) {
 
 
 
-function openBotModal() {
-
-    const modal = document.getElementById("addbot-modal");
-    modal.classList.remove("hidden");
-
-	socket.send(JSON.stringify({
-      type: "addbot"
-    }));
-
-}
-
-function closeBotModal() {
-    document.getElementById("addbot-modal").classList.add("hidden");
-}
-
-
-function copyBotAuthUrl() {
-    const input = document.getElementById("bot-auth-url");
-    input.select();
-    input.setSelectionRange(0, 99999); // mobile safety
-
-    navigator.clipboard.writeText(input.value).then(() => {
-        const btn = document.getElementById("copy-auth-btn");
-        const oldText = btn.innerText;
-
-        btn.innerText = "Copied!";
-        setTimeout(() => {
-            btn.innerText = oldText;
-        }, 1200);
-    });
-}
-
-
-
 
 
 function openShareModal() {
@@ -1207,13 +1173,47 @@ function createHighlightCssClass(color) {
 /* ============================================== */
 
 const ACTIONS = [
-	{ action: "obs:scene", desc: "Switch to an OBS scene", template: "obs:scene | <scene>"}, 
-	{ action: "obs:show", desc: "Show an OBS source", template: "obs:show | <source>"}, 
-	{ action: "obs:hide", desc: "Hide an OBS source", template: "obs:hide | <source>"}, 
-	{ action: "obs:toggle", desc: "Toggle an OBS source", template: "obs:toggle | <source>"}, 
-	{ action: "obs:label", desc: "Modify an OBS label", template: "obs:label | <source> | <text> | <color>"}, 
-    { action: "chat", desc: "Send a chat message", template: "chat | <message>"},
+	// OBS Actions
+	{ action: "obs:scene", desc: "Switch to an OBS scene", template: "obs:scene | <scene>"},
+	{ action: "obs:show", desc: "Show an OBS source", template: "obs:show | <source>"},
+	{ action: "obs:hide", desc: "Hide an OBS source", template: "obs:hide | <source>"},
+	{ action: "obs:toggle", desc: "Toggle an OBS source", template: "obs:toggle | <source>"},
+	{ action: "obs:filteron", desc: "Enable an OBS filter", template: "obs:filteron | <source> | <filter>"},
+	{ action: "obs:filteroff", desc: "Disable an OBS filter", template: "obs:filteroff | <source> | <filter>"},
+	{ action: "obs:label", desc: "Modify an OBS label", template: "obs:label | <source> | <text> | <color>"},
+
+	// Chat & Announcements
+    { action: "chat:message", desc: "Send a chat message", template: "chat:message | m:<message>"},
     { action: "announce", desc: "Send a chat announcement", template: "announce | <message>" },
+
+	// TTS Actions
+	{ action: "tts", desc: "Text-to-Speech announcement", template: "tts | v:en-US-AriaNeural | m:<message>" },
+
+	// System Commands
+	{ action: "syscmd", desc: "Execute system command", template: "syscmd | <command>" },
+
+	// Playlist Actions
+	{ action: "list:shuffle", desc: "Shuffle the playlist", template: "list:shuffle" },
+	{ action: "list:removeall", desc: "Clear the entire playlist", template: "list:removeall" },
+	{ action: "list:remove", desc: "Remove song from playlist", template: "list:remove | <index>" },
+	{ action: "list:az", desc: "Sort playlist A-Z", template: "list:az" },
+	{ action: "list:za", desc: "Sort playlist Z-A", template: "list:za" },
+
+	// Currency Actions
+	{ action: "currency:set", desc: "Set user currency balance", template: "currency:set | u:<user> | a:<amount>" },
+	{ action: "currency:modify", desc: "Add/subtract currency", template: "currency:modify | u:<user> | a:<amount>" },
+
+	// Redemption Actions
+	{ action: "redeem:create", desc: "Create a channel points reward", template: "redeem:create | n:<name> | c:<cost>" },
+	{ action: "redeem:enable", desc: "Enable a reward", template: "redeem:enable | n:<name>" },
+	{ action: "redeem:disable", desc: "Disable a reward", template: "redeem:disable | n:<name>" },
+	{ action: "redeem:toggle", desc: "Toggle reward on/off", template: "redeem:toggle | n:<name>" },
+	{ action: "redeem:update", desc: "Update reward settings", template: "redeem:update | n:<name> | c:<cost>" },
+	{ action: "redeem:complete", desc: "Complete a redemption", template: "redeem:complete | id:<redemption_id>" },
+	{ action: "redeem:reject", desc: "Reject a redemption", template: "redeem:reject | id:<redemption_id>" },
+
+	// Variable Actions
+	{ action: "variable", desc: "Set or update a variable", template: "variable | n:<name> | v:<value>" },
 ];
 
 function loadActions() {
@@ -1327,33 +1327,62 @@ document.getElementById("action-float-close").onclick = toggleActionPanel;
 
 const TAGS = {
     generic: [
-        { tag: "[time]", desc: "Current system time" },
-        { tag: "[channel]", desc: "Channel name" },
-		{ tag: "[followers]", desc: "Total follower count" },
-		{ tag: "[rfollower]", desc: "Random follower" },
-		{ tag: "[subscribers]", desc: "Total subscriber count" },
-		{ tag: "[rsubscriber]", desc: "Random subscriber" },
-		{ tag: "[viewers]", desc: "Total viewer count" },
-		{ tag: "[ruser]", desc: "Random viewer username" },
-		{ tag: "[system:dateus]", desc: "Current date (US)" },
-		{ tag: "[system:dateuk]", desc: "Current date (UK)" },
-		{ tag: "[system:time]", desc: "Current time" },
-		{ tag: "[uptime:seconds]", desc: "Total stream uptime" },
-		{ tag: "[rnumber:min-max]", desc: "Random number" },
+        // System Info
+        { tag: "[time]", desc: "Current system time (HH:MM:SS)" },
+        { tag: "[channel]", desc: "Channel name (streamer username)" },
+        { tag: "[system:dateus]", desc: "Current date (MM/DD/YYYY)" },
+        { tag: "[system:dateuk]", desc: "Current date (DD/MM/YYYY)" },
+        { tag: "[system:time]", desc: "Current time with seconds" },
+        { tag: "[uptime:seconds]", desc: "Total stream uptime in seconds" },
+
+        // Chat & Viewers
+        { tag: "[viewers]", desc: "Current viewer count" },
+        { tag: "[followers]", desc: "Total follower count" },
+        { tag: "[subscribers]", desc: "Total subscriber count" },
+        { tag: "[ruser]", desc: "Random viewer username" },
+        { tag: "[rfollower]", desc: "Random follower name" },
+        { tag: "[rsubscriber]", desc: "Random subscriber name" },
+
+        // Randomization
+        { tag: "[rnumber:min-max]", desc: "Random number (e.g. [rnumber:1-100])" },
     ],
 
     events: {
         raid: [
-			{ tag: "[user]", desc: "Name of the user who triggered the event" },
-            { tag: "[viewers]", desc: "Viewer count in the raid" },
+            { tag: "[user]", desc: "Raider username" },
+            { tag: "[viewers]", desc: "Viewer count in raid" },
         ],
         follow: [
-            { tag: "[e:follower]", desc: "Name of the follower" }
+            { tag: "[user]", desc: "Follower username" },
+            { tag: "[e:follower]", desc: "Follower name (alternate)" },
+        ],
+        subscribe: [
+            { tag: "[user]", desc: "Subscriber username" },
+            { tag: "[tier]", desc: "Subscription tier (1, 2, 3, prime)" },
+            { tag: "[cumulative_months]", desc: "Total months subscribed" },
+            { tag: "[is_gift]", desc: "Whether subscription is a gift" },
+        ],
+        cheer: [
+            { tag: "[user]", desc: "Cheerer username" },
+            { tag: "[bits_used]", desc: "Amount of bits cheered" },
+            { tag: "[message]", desc: "Cheer message" },
         ],
         redemption: [
+            { tag: "[user]", desc: "Redemption user" },
             { tag: "[e:reward]", desc: "Reward name" },
-            { tag: "[e:message]", desc: "User message for reward" }
-        ]
+            { tag: "[e:message]", desc: "User message for reward" },
+            { tag: "[reward_id]", desc: "Channel points reward ID" },
+        ],
+        charity: [
+            { tag: "[user]", desc: "Charity donor username" },
+            { tag: "[amount]", desc: "Donation amount" },
+            { tag: "[charity_name]", desc: "Charity organization name" },
+        ],
+        goal: [
+            { tag: "[goal_type]", desc: "Goal type (follower/subscriber)" },
+            { tag: "[current_progress]", desc: "Current goal progress" },
+            { tag: "[target_amount]", desc: "Goal target amount" },
+        ],
     }
 };
 
