@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vayl Timer</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="layout">
+    <aside id="editor">
+      <h2 class="header">
+        <img src="https://vaylvn.github.io/spinner/assets/logo.png" alt="Logo">
+        <span>Timer</span>
+      </h2>
+
+      <section>
+        <h3>Timer Name</h3>
+        <input id="timerNameInput" placeholder="e.g. countdown1">
+      </section>
+
+      <section class="appearance">
+        <h3>Appearance</h3>
+
+        <div class="group">
+          <label class="group-title">Text Color</label>
+          <div class="controls">
+            <input type="color" id="textColor" value="#ffffff">
+          </div>
+        </div>
+
+        <div class="group">
+          <label class="group-title">Background Color</label>
+          <div class="controls">
+            <input type="color" id="backgroundColor" value="#000000">
+          </div>
+        </div>
+
+        <div class="group">
+          <label class="group-title">Font Family</label>
+          <div class="controls">
+            <select id="fontFamily">
+              <option value="monospace">Monospace</option>
+              <option value="Arial">Arial</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Georgia">Georgia</option>
+              <option selected>Inter</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="group">
+          <label class="group-title">Font Size</label>
+          <div class="controls">
+            <input type="range" id="fontSize" min="20" max="200" value="120">
+            <span id="fontSizeVal">120</span>
+            <span class="unit">px</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <label class="group-title">Format</label>
+          <div class="controls">
+            <select id="format">
+              <option value="MM:SS">MM:SS</option>
+              <option value="HH:MM:SS">HH:MM:SS</option>
+              <option value="seconds">Seconds only</option>
+              <option value="text">Text (e.g. "30 seconds")</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3>Export / Import</h3>
+        <input id="shareUrl" readonly>
+        <button id="copyUrl">Copy</button>
+        <input id="urlImport" placeholder="Paste timer URL">
+        <button id="importUrl">Load</button>
+      </section>
+    </aside>
+
+    <main id="timerPanel">
+      <div id="timerDisplay">00:00</div>
+    </main>
+  </div>
+  <p id="version">v1.0</p>
+
+  <script src="script.js"></script>
+</body>
+</html>
