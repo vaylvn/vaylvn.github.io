@@ -524,26 +524,14 @@ window.addEventListener("DOMContentLoaded", () => {
 	// Connect to the SSE stream
 	async function pollSpin() {
 		try {
-			
-			
-			
-			const r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.spinnerName)}`)
+			const r = await fetch(`http://127.0.0.1:5000/polltrigger?type=spinner&name=${encodeURIComponent(config.spinnerName)}`)
 
 			const data = await r.json();
-			
-			if (data.cmd === "spin") {
-				startSpin(); // <---- your spinner function
-			}
-			
+
 			if (data.cmd === "trigger") {
-				startSpin(); // <---- your spinner function
+				startSpin();
 			}
-			
-			if (data.cmd === "populate") {
-			  populateSegmentsFromList(data.entries);
-			}
-			
-			
+
 		} catch (err) {
 			console.warn("pollSpinner error", err);
 		}

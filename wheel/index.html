@@ -828,9 +828,9 @@
         // Poll Flask for commands
         async function poll() {
           try {
-            const r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.name)}`);
+            const r = await fetch(`http://127.0.0.1:5000/polltrigger?type=wheel&name=${encodeURIComponent(config.name)}`);
             const data = await r.json();
-            if (data.cmd === 'spin' && slot) slot.spin();
+            if (data.cmd === 'trigger' && slot) slot.spin();
             if (data.cmd === 'populate' && Array.isArray(data.entries)) {
               config.segments = data.entries.map(e => ({
                 label: typeof e === 'string' ? e : e.label,
