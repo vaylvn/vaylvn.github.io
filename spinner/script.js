@@ -532,6 +532,10 @@ window.addEventListener("DOMContentLoaded", () => {
 				startSpin();
 			}
 
+			if (data.cmd === "populate") {
+				populateSegmentsFromList(data.entries);
+			}
+
 		} catch (err) {
 			console.warn("pollSpinner error", err);
 		}
