@@ -773,7 +773,7 @@
             const result = segAt(currentCenterIndex)?.label || 'Unknown';
             console.log('Wheel result:', result);
 
-            fetch('http://127.0.0.1:5000/spinresult', {
+            fetch('http://127.0.0.1:5000/widget-result', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ result, name: cfg.name, type: "wheel" })

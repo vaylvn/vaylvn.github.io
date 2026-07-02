@@ -199,7 +199,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 		  // Send result to local Flask listener
-		  fetch("http://127.0.0.1:5000/spinresult", {
+		  fetch("http://127.0.0.1:5000/widget-result", {
 			  method: "POST",
 			  headers: { "Content-Type": "application/json" },
 			  body: JSON.stringify({
@@ -207,7 +207,7 @@ window.addEventListener("DOMContentLoaded", () => {
 				name: config.spinnerName,
 				type: "spinner"
 			  })
-			}).catch(err => console.warn("Failed to send spin result:", err));
+			}).catch(err => console.warn("Failed to send widget result:", err));
 
 		  console.log("Spinner result:", result);
 		  // --- End new code ---
