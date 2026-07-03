@@ -773,11 +773,22 @@
             const result = segAt(currentCenterIndex)?.label || 'Unknown';
             console.log('Wheel result:', result);
 
+            // Send result to local Flask listener - try both V3 and V2 paths
+            const resultData = { result, name: cfg.name, type: "wheel" };
+
+            // Try V3 path first
             fetch('http://127.0.0.1:5000/widget-result', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ result, name: cfg.name, type: "wheel" })
-            }).catch(() => {});
+              body: JSON.stringify(resultData)
+            }).catch(() => {
+              // Fall back to V2 path
+              fetch('http://127.0.0.1:5000/spinresult', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(resultData)
+              }).catch(() => {});
+            });
           }
         }
 
@@ -825,18 +836,27 @@
           setTimeout(() => slot.spin(), (config.spinDelay ?? 0) * 1000);
         }
 
-        // Poll Flask for commands
+        // Poll Flask for commands - support both V3 and V2 paths
         async function poll() {
           try {
-            const r = await fetch(`http://127.0.0.1:5000/polltrigger?type=wheel&name=${encodeURIComponent(config.name)}`);
-            const data = await r.json();
-            if (data.cmd === 'trigger' && slot) slot.spin();
-            if (data.cmd === 'populate' && Array.isArray(data.entries)) {
-              config.segments = data.entries.map(e => ({
-                label: typeof e === 'string' ? e : e.label,
-                color: typeof e === 'object' && e.color ? e.color : (config.segments[0]?.color || '#1a1a1a')
-              }));
-              buildSlot(root, config, true);
+            // Try V3 path first
+            let r = await fetch(`http://127.0.0.1:5000/polltrigger?type=wheel&name=${encodeURIComponent(config.name)}`);
+
+            // Fall back to V2 path if V3 fails
+            if (!r.ok) {
+              r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.name)}`);
+            }
+
+            if (r.ok) {
+              const data = await r.json();
+              if (data.cmd === 'trigger' && slot) slot.spin();
+              if (data.cmd === 'populate' && Array.isArray(data.entries)) {
+                config.segments = data.entries.map(e => ({
+                  label: typeof e === 'string' ? e : e.label,
+                  color: typeof e === 'object' && e.color ? e.color : (config.segments[0]?.color || '#1a1a1a')
+                }));
+                buildSlot(root, config, true);
+              }
             }
           } catch {}
           setTimeout(poll, 200);

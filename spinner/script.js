@@ -198,16 +198,26 @@ window.addEventListener("DOMContentLoaded", () => {
 			const result = landedSegment?.label || "Unknown";
 
 
-		  // Send result to local Flask listener
+		  // Send result to local Flask listener - try both V3 and V2 paths
+		  const resultData = {
+			result,
+			name: config.spinnerName,
+			type: "spinner"
+		  };
+
+		  // Try V3 path first
 		  fetch("http://127.0.0.1:5000/widget-result", {
 			  method: "POST",
 			  headers: { "Content-Type": "application/json" },
-			  body: JSON.stringify({
-				result,
-				name: config.spinnerName,
-				type: "spinner"
-			  })
-			}).catch(err => console.warn("Failed to send widget result:", err));
+			  body: JSON.stringify(resultData)
+			}).catch(err => {
+			  // Fall back to V2 path
+			  fetch("http://127.0.0.1:5000/spinresult", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(resultData)
+			  }).catch(e => console.warn("Failed to send widget result:", e));
+			});
 
 		  console.log("Spinner result:", result);
 		  // --- End new code ---
@@ -521,19 +531,27 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   
   
-	// Connect to the SSE stream
+	// Connect to the SSE stream - support both V3 and V2 paths
 	async function pollSpin() {
 		try {
-			const r = await fetch(`http://127.0.0.1:5000/polltrigger?type=spinner&name=${encodeURIComponent(config.spinnerName)}`)
+			// Try V3 path first
+			let r = await fetch(`http://127.0.0.1:5000/polltrigger?type=spinner&name=${encodeURIComponent(config.spinnerName)}`);
 
-			const data = await r.json();
-
-			if (data.cmd === "trigger") {
-				startSpin();
+			// Fall back to V2 path if V3 fails
+			if (!r.ok) {
+				r = await fetch(`http://127.0.0.1:5000/pollspin?name=${encodeURIComponent(config.spinnerName)}`);
 			}
 
-			if (data.cmd === "populate") {
-				populateSegmentsFromList(data.entries);
+			if (r.ok) {
+				const data = await r.json();
+
+				if (data.cmd === "trigger") {
+					startSpin();
+				}
+
+				if (data.cmd === "populate") {
+					populateSegmentsFromList(data.entries);
+				}
 			}
 
 		} catch (err) {
