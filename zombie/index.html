@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOARDE — Twitch Chat Zombie Survival</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="hud-top">
+    <span class="hud-item"><strong>#</strong><span id="hud-channel">—</span></span>
+    <span class="hud-item">state: <span id="hud-state">BOOT</span></span>
+    <span class="hud-item" id="hud-timer-wrap">t+<span id="hud-timer">00:00</span></span>
+  </div>
+
+  <div id="leaderboard">
+    <h2>Survivors</h2>
+    <div id="leaderboard-list"></div>
+  </div>
+
+  <div id="game-area">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div id="final-banner" class="hidden">
+    <div class="final-banner-inner">
+      <h1>Round Over</h1>
+      <p>Final standings frozen above. Refresh to start a new session.</p>
+    </div>
+  </div>
+
+  <div id="config-panel">
+    <h2>Round setup</h2>
+    <p class="hint">Tune these during LOBBY, before <code>!start</code>. Streamer/mod only via chat; anyone can adjust here since it's your screen.</p>
+
+    <div class="cfg-row">
+      <label for="cfg-word-min">Word length min</label>
+      <input type="range" id="cfg-word-min" min="3" max="10" value="3">
+      <span data-cfg-label="wordMin">3</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-word-max">Word length max</label>
+      <input type="range" id="cfg-word-max" min="3" max="10" value="7">
+      <span data-cfg-label="wordMax">7</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-long-chance">Long-word (tank) chance</label>
+      <input type="range" id="cfg-long-chance" min="0" max="30" value="5">
+      <span data-cfg-label="longWordChance">5%</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-base-interval">Base spawn interval (ms)</label>
+      <input type="range" id="cfg-base-interval" min="600" max="3000" step="50" value="1800">
+      <span data-cfg-label="baseSpawnInterval">1800</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-ramp-rate">Spawn ramp (per wave, %)</label>
+      <input type="range" id="cfg-ramp-rate" min="60" max="100" value="87">
+      <span data-cfg-label="spawnRampRate">87%</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-fast-chance">Fast zombie chance</label>
+      <input type="range" id="cfg-fast-chance" min="0" max="40" value="10">
+      <span data-cfg-label="fastChance">10%</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-armored-chance">Armored zombie chance</label>
+      <input type="range" id="cfg-armored-chance" min="0" max="40" value="10">
+      <span data-cfg-label="armoredChance">10%</span>
+    </div>
+    <div class="cfg-row cfg-row-toggle">
+      <label for="cfg-night-mode">Night mode</label>
+      <input type="checkbox" id="cfg-night-mode">
+    </div>
+    <div class="cfg-row cfg-row-toggle">
+      <label for="cfg-fog-enabled">Fog / view range</label>
+      <input type="checkbox" id="cfg-fog-enabled">
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-fog-range">Fog view range (px)</label>
+      <input type="range" id="cfg-fog-range" min="100" max="600" step="20" value="260">
+      <span data-cfg-label="fogViewRange">260</span>
+    </div>
+
+    <div class="cfg-actions">
+      <button type="button" id="start-round-btn">Start round (!start)</button>
+      <button type="button" id="stop-round-btn">Stop round (!stop)</button>
+    </div>
+  </div>
+
+  <div id="boot-overlay">
+    <form id="connect-form" class="boot-card">
+      <h1>HOARDE</h1>
+      <p class="tagline">Twitch chat zombie survival. Type the word above a zombie's head to kill it.</p>
+
+      <label for="channel-input">Twitch channel name</label>
+      <input type="text" id="channel-input" placeholder="yourchannel" autocomplete="off">
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="test-mode-toggle">
+        Test mode (simulate chat locally, no Twitch connection)
+      </label>
+
+      <button type="submit">Connect</button>
+      <p id="boot-error" class="error"></p>
+    </form>
+  </div>
+
+  <div id="test-console" class="hidden">
+    <h3>Test console</h3>
+    <div class="test-quick-buttons">
+      <button type="button" data-test-fill="!join">!join</button>
+      <button type="button" data-test-fill="!start">!start</button>
+      <button type="button" data-test-fill="!stop">!stop</button>
+      <button type="button" data-test-fill="!grenade">!grenade</button>
+    </div>
+    <form id="test-form">
+      <input type="text" id="test-username" placeholder="username" value="tester1" size="10">
+      <label class="checkbox-label small">
+        <input type="checkbox" id="test-broadcaster">
+        broadcaster
+      </label>
+      <input type="text" id="test-message" placeholder="!join, !start, or a zombie's word" autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script src="tmi.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

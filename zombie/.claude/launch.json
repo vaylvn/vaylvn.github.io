@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "zombie-static",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "8743", "--directory", "D:/My files/projects/current/programming/vaylvn.github.io/zombie"],
+      "port": 8743
+    }
+  ]
+}
