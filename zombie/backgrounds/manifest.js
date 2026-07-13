@@ -13,5 +13,8 @@
 export const CUSTOM_BACKGROUNDS = [
   'field.png',
   'parking_lot.png',
-  'snowy_field.png'
+  'snowy_field.png',
+  'soccer.png',
+  'wasteland.png',
+  'ice.png'
 ];
