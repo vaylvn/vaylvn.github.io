@@ -11,9 +11,12 @@ export const ZOMBIE_BODY = {
   tank: '#386641',
 };
 
-export const ARMORED_LABEL_COLOR = '#FF6B35';
+export const ARMORED_LABEL_COLOR = '#FF4757'; // moved off orange - that's the powerup carrier's color now
 export const WORD_LABEL_COLOR = '#F2F2F2';
 export const STROKE_COLOR = '#0A0A0A';
+
+export const POWERUP_BODY_COLOR = '#FF8C1A';
+export const POWERUP_LABEL_COLOR = '#FFD700';
 
 export const BG_COLOR = '#0A0D0A';
 export const NIGHT_BG_COLOR = '#020402';

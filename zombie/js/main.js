@@ -1,6 +1,6 @@
 import { createDefaultConfig, wireConfigPanel } from './config.js';
 import { connectTwitch } from './twitch.js';
-import { resolveMessage, pruneEffects, getPulseStatus } from './combat.js';
+import { resolveMessage, pruneEffects, getPulseStatus, getActivePowerup } from './combat.js';
 import { layoutSemicircle, updatePlayerPositions, updatePlayerAim, resetPlayerColorCycle } from './player.js';
 import { spawnZombie, updateZombies, updatePulse, getSpawnInterval, resetZombieIdCounter } from './zombie.js';
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
@@ -20,6 +20,8 @@ const gameState = {
   pulseVotes: new Set(),
   activePulse: null,
   pulseUsed: false,
+  activePowerup: null,
+  shake: null,
   config: createDefaultConfig(),
   canvasWidth: 0,
   canvasHeight: 0,
@@ -66,6 +68,8 @@ function resetToLobby() {
   gameState.pulseVotes.clear();
   gameState.activePulse = null;
   gameState.pulseUsed = false;
+  gameState.activePowerup = null;
+  gameState.shake = null;
   gameState.arcRadius = 0;
   resetPlayerColorCycle();
   resetZombieIdCounter();
@@ -77,6 +81,7 @@ function resetToLobby() {
   document.getElementById('hud-timer').textContent = '00:00';
   document.getElementById('hud-alive').textContent = '0/0';
   document.getElementById('hud-pulse').textContent = '0/0';
+  document.getElementById('hud-powerup-wrap').classList.add('hidden');
 
   setState('LOBBY');
   resizeCanvas();
@@ -200,6 +205,14 @@ function tick(now) {
 
     const { current, required, used } = getPulseStatus(gameState);
     document.getElementById('hud-pulse').textContent = used ? 'used' : `${current}/${required}`;
+
+    const activePowerup = getActivePowerup(gameState);
+    const powerupWrap = document.getElementById('hud-powerup-wrap');
+    powerupWrap.classList.toggle('hidden', !activePowerup);
+    if (activePowerup) {
+      const secondsLeft = Math.max(0, Math.ceil((activePowerup.expiresAt - now) / 1000));
+      document.getElementById('hud-powerup').textContent = `${activePowerup.type} ${secondsLeft}s`;
+    }
   }
 
   if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING') {

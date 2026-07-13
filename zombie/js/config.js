@@ -8,6 +8,9 @@ export function createDefaultConfig() {
     spawnRampRate: 0.89, // multiplier applied per wave notch (see waveLengthSec - notches speed up with more players)
     fastChance: 0.10,
     armoredChance: 0.10,
+    explosiveChance: 0.08, // orthogonal to type/armored - any zombie can glow
+    powerupChance: 0.04, // exclusive with tank/fast/armored/explosive - its own dedicated carrier
+    powerupDuration: 15, // seconds the sniper/rocket buff lasts once unlocked
     nightMode: false,
     fogEnabled: false,
     fogViewRange: 260, // px beyond the current perimeter radius; only matters if fogEnabled
@@ -21,6 +24,8 @@ export function createDefaultConfig() {
     weaponMilestones: [5, 15, 30, 50],
     leaderboardMaxRows: 8,
     pulseSpeed: 900, // px/sec the pulse ring expands from the braincell
+    explosionRadius: 90, // px; how far an exploding zombie's blast (or a rocket-buff kill) reaches
+    sniperPierceWidth: 24, // px; how close to the shot's line a zombie must be to get pierced
 
     // Player health + semicircle perimeter around the braincell.
     playerMaxHealth: 3,
@@ -64,6 +69,9 @@ export function wireConfigPanel(gameState) {
   bind('cfg-ramp-rate', 'spawnRampRate', v => Number(v) / 100);
   bind('cfg-fast-chance', 'fastChance', v => Number(v) / 100);
   bind('cfg-armored-chance', 'armoredChance', v => Number(v) / 100);
+  bind('cfg-explosive-chance', 'explosiveChance', v => Number(v) / 100);
+  bind('cfg-powerup-chance', 'powerupChance', v => Number(v) / 100);
+  bind('cfg-powerup-duration', 'powerupDuration', Number);
   bind('cfg-fog-range', 'fogViewRange', Number);
   bind('cfg-pulse-ratio', 'pulseVoteRatio', v => Number(v) / 100);
 

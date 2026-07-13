@@ -66,9 +66,15 @@ export function spawnZombie(gameState) {
   const { config, zombies, canvasWidth } = gameState;
   const usedWords = new Set([...zombies.values()].map(z => z.word));
 
-  const isTank = Math.random() < config.longWordChance;
-  const isFast = !isTank && Math.random() < config.fastChance;
-  const isArmored = Math.random() < config.armoredChance;
+  // The powerup carrier is its own dedicated "special" zombie - always normal
+  // speed/word-length, always a 3-4 hit focus-fire target, never also tank/
+  // fast/armored/explosive. That exclusivity keeps its orange tell unambiguous
+  // instead of getting muddied by another type's color/behavior.
+  const isPowerup = Math.random() < config.powerupChance;
+  const isTank = !isPowerup && Math.random() < config.longWordChance;
+  const isFast = !isPowerup && !isTank && Math.random() < config.fastChance;
+  const isArmored = !isPowerup && Math.random() < config.armoredChance;
+  const isExplosive = !isPowerup && Math.random() < config.explosiveChance;
 
   let type = 'normal';
   let minLen = config.wordMin;
@@ -87,7 +93,7 @@ export function spawnZombie(gameState) {
     speed = 85;
   }
 
-  const hp = isArmored ? 2 : 1;
+  const hp = isPowerup ? (3 + Math.floor(Math.random() * 2)) : (isArmored ? 2 : 1);
   const word = pickWord(minLen, maxLen, usedWords);
   const x = Math.random() * canvasWidth;
   const y = -24;
@@ -108,6 +114,8 @@ export function spawnZombie(gameState) {
     maxLen,
     type,
     armored: isArmored,
+    explosive: isExplosive,
+    powerup: isPowerup,
     hitsRemaining: hp,
     maxHits: hp,
     speed,
@@ -157,8 +165,45 @@ export function getSpawnInterval(gameState) {
   return Math.max(config.minSpawnInterval, interval);
 }
 
+/**
+ * Kills every not-yet-dying zombie within explosionRadius of the blast origin
+ * (the origin itself is always excluded by id, regardless of whether the
+ * caller had already flagged it dying). Chains recursively into any other
+ * explosive zombie it catches, but each zombie can only ever be caught once
+ * (guarded by the dying check), so the recursion is always bounded by the
+ * shrinking pool of not-yet-dying zombies - no infinite-loop risk even with
+ * zombies packed shoulder to shoulder.
+ */
+export function triggerExplosion(gameState, zombie) {
+  gameState.effects.push({ type: 'explosion', x: zombie.x, y: zombie.y, startedAt: performance.now() });
+  // Each blast (re)starts the shake - a chain reaction naturally sustains a longer rumble.
+  gameState.shake = { startedAt: performance.now(), magnitude: 8, duration: 300 };
+
+  const caught = [];
+  for (const other of gameState.zombies.values()) {
+    if (other.id === zombie.id || other.dying) continue;
+    const dist = Math.hypot(other.x - zombie.x, other.y - zombie.y);
+    if (dist <= gameState.config.explosionRadius) caught.push(other);
+  }
+
+  for (const other of caught) {
+    other.dying = true;
+    other.diedAt = performance.now();
+    other.claimedBy = 'explosion';
+    stopZombieWalk(other);
+    if (other.explosive) triggerExplosion(gameState, other);
+  }
+}
+
 function handleContact(gameState, zombie, target) {
   stopZombieWalk(zombie); // it just arrived - not shuffling anymore either way
+  if (zombie.explosive) {
+    // Flag dying *before* exploding (even though this zombie is deleted right
+    // after regardless) so a chained blast from another explosive zombie can
+    // never loop back and re-catch this one via the `other.dying` guard.
+    zombie.dying = true;
+    triggerExplosion(gameState, zombie);
+  }
 
   if (zombie.targetType === 'player') {
     damagePlayer(target, 1);
@@ -236,6 +281,7 @@ export function updatePulse(gameState) {
       zombie.diedAt = performance.now();
       zombie.claimedBy = 'pulse';
       stopZombieWalk(zombie);
+      if (zombie.explosive) triggerExplosion(gameState, zombie);
     }
   }
 

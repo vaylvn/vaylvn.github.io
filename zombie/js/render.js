@@ -10,6 +10,8 @@ import {
   HEALTH_RING_LOST_COLOR,
   BRAINCELL_COLOR,
   BRAINCELL_GLOW_COLOR,
+  POWERUP_BODY_COLOR,
+  POWERUP_LABEL_COLOR,
 } from './palette.js';
 
 const TAU = Math.PI * 2;
@@ -50,6 +52,18 @@ function seededRandom(seed) {
     s = (s * 16807) % 2147483647;
     return (s - 1) / 2147483646;
   };
+}
+
+/** Blends two '#rrggbb' colors; t=0 is a, t=1 is b. */
+function lerpColor(hexA, hexB, t) {
+  const a = parseInt(hexA.slice(1), 16);
+  const b = parseInt(hexB.slice(1), 16);
+  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r},${g},${bl})`;
 }
 
 function ensureWobble(entity, seed, points, minR, maxR) {
@@ -209,7 +223,34 @@ function drawZombieBody(ctx, zombie, now) {
     ctx.globalAlpha = 1 - t;
   }
 
-  ctx.fillStyle = flinching ? '#FFFFFF' : ZOMBIE_BODY[zombie.type];
+  if (zombie.explosive) {
+    // Soft pulsing halo behind the body - reads clearly even once the world's pixelated.
+    const glowPulse = (Math.sin(now / 220) + 1) / 2;
+    const glowRadius = baseRadius * (2.2 + glowPulse * 0.7);
+    const gradient = ctx.createRadialGradient(
+      zombie.x, zombie.y, baseRadius * 0.3,
+      zombie.x, zombie.y, glowRadius
+    );
+    gradient.addColorStop(0, `rgba(200,255,190,${0.55 + glowPulse * 0.3})`);
+    gradient.addColorStop(1, 'rgba(200,255,190,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(zombie.x, zombie.y, glowRadius, 0, TAU);
+    ctx.fill();
+  }
+
+  if (flinching) {
+    ctx.fillStyle = '#FFFFFF';
+  } else if (zombie.explosive) {
+    // Pulse the body itself between its normal color and white.
+    const bodyPulse = (Math.sin(now / 220) + 1) / 2;
+    ctx.fillStyle = lerpColor(ZOMBIE_BODY[zombie.type], '#FFFFFF', 0.2 + bodyPulse * 0.5);
+  } else if (zombie.powerup) {
+    // Solid, unmistakable orange - "this one's carrying something."
+    ctx.fillStyle = POWERUP_BODY_COLOR;
+  } else {
+    ctx.fillStyle = ZOMBIE_BODY[zombie.type];
+  }
   ctx.strokeStyle = STROKE_COLOR;
   ctx.lineWidth = 2;
   drawWobblyBlob(ctx, zombie.x, zombie.y, baseRadius, wobble);
@@ -220,14 +261,16 @@ function drawZombieBody(ctx, zombie, now) {
 
 function drawZombieLabel(ctx, zombie, now) {
   const baseRadius = zombie.type === 'tank' ? 19 : 13;
+  const color = zombie.powerup ? POWERUP_LABEL_COLOR : zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR;
+
   if (zombie.dying) {
     const t = Math.min(1, (now - zombie.diedAt) / 260);
     ctx.save();
     ctx.globalAlpha = 1 - t;
-    drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR, 15);
+    drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, color, 15);
     ctx.restore();
   } else {
-    drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR, 15);
+    drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, color, 15);
   }
 }
 
@@ -299,6 +342,49 @@ function drawEffects(ctx, gameState) {
       ctx.arc(effect.x, effect.y, 16 + t * 20, 0, TAU);
       ctx.stroke();
       ctx.restore();
+    } else if (effect.type === 'explosion') {
+      const t = Math.min(1, age / 420);
+      ctx.save();
+      ctx.globalAlpha = (1 - t) * 0.9;
+      ctx.strokeStyle = '#B6FFB6';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 10 + t * 90, 0, TAU);
+      ctx.stroke();
+
+      ctx.globalAlpha = (1 - t) * 0.5;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 6 + t * 40, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    } else if (effect.type === 'pierce') {
+      const t = Math.min(1, age / 260);
+      ctx.save();
+      ctx.globalAlpha = 1 - t;
+      ctx.strokeStyle = '#E6FBFF';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y);
+      ctx.lineTo(effect.endX, effect.endY);
+      ctx.stroke();
+      ctx.restore();
+    } else if (effect.type === 'powerupUnlocked') {
+      const t = Math.min(1, age / 700);
+      ctx.save();
+      ctx.globalAlpha = (1 - t) * 0.9;
+      ctx.strokeStyle = POWERUP_LABEL_COLOR;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 14 + t * 70, 0, TAU);
+      ctx.stroke();
+
+      ctx.globalAlpha = 1 - t;
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = POWERUP_LABEL_COLOR;
+      ctx.fillText(effect.powerupType.toUpperCase(), effect.x, effect.y - 20 - t * 24);
+      ctx.restore();
     } else if (effect.type === 'overrun') {
       const t = Math.min(1, age / 900);
       ctx.save();
@@ -350,10 +436,28 @@ function drawNightOverlay(ctx, gameState) {
   ctx.restore();
 }
 
+/** Decaying random jitter while gameState.shake is active - clears itself once it runs out. */
+function computeShake(gameState, now) {
+  const shake = gameState.shake;
+  if (!shake) return { x: 0, y: 0 };
+  const elapsed = now - shake.startedAt;
+  if (elapsed >= shake.duration) {
+    gameState.shake = null;
+    return { x: 0, y: 0 };
+  }
+  const remaining = 1 - elapsed / shake.duration;
+  const magnitude = shake.magnitude * remaining;
+  return { x: (Math.random() * 2 - 1) * magnitude, y: (Math.random() * 2 - 1) * magnitude };
+}
+
 export function render(ctx, gameState) {
   const now = performance.now();
   const { braincell, config, arcRadius, canvasWidth, canvasHeight } = gameState;
   const fogRadius = config.fogEnabled ? (arcRadius || config.arcMinRadius) + config.fogViewRange : Infinity;
+
+  const shakeOffset = computeShake(gameState, now);
+  ctx.save();
+  ctx.translate(shakeOffset.x, shakeOffset.y);
 
   // --- Pixelated world layer: background, braincell, perimeter, bodies ---
   const pctx = getPixelContext(canvasWidth, canvasHeight);
@@ -395,4 +499,6 @@ export function render(ctx, gameState) {
   drawEffects(ctx, gameState);
   drawPulse(ctx, gameState, now);
   drawNightOverlay(ctx, gameState);
+
+  ctx.restore(); // undo the shake translate
 }

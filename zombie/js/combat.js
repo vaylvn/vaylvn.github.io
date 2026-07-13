@@ -1,7 +1,7 @@
 import { createPlayer, awardKill, aimAt } from './player.js';
-import { triggerPulse } from './zombie.js';
+import { triggerPulse, triggerExplosion } from './zombie.js';
 import { pickWord } from './wordlist.js';
-import { playShoot, stopZombieWalk } from './audio.js';
+import { playShoot, playSniper, playRocket, playNuclear, playPowerup, stopZombieWalk } from './audio.js';
 
 const EFFECT_TTL = {
   kill: 420,
@@ -9,6 +9,9 @@ const EFFECT_TTL = {
   whiff: 380,
   playerHit: 260,
   overrun: 900,
+  explosion: 420,
+  pierce: 260,
+  powerupUnlocked: 700,
 };
 
 function pushEffect(gameState, effect) {
@@ -41,6 +44,59 @@ function joinPlayer(gameState, msg) {
   gameState.players.set(msg.userId, player);
   gameState.layoutSemicircle(gameState);
   return player;
+}
+
+/** Lazily expires the active buff the moment anyone checks it - no separate tick-driven cleanup needed. */
+export function getActivePowerup(gameState) {
+  const active = gameState.activePowerup;
+  if (!active) return null;
+  if (performance.now() >= active.expiresAt) {
+    gameState.activePowerup = null;
+    return null;
+  }
+  return active;
+}
+
+/** Killing a carrier always rerolls the type and refreshes the duration - keep hunting orange zombies to keep it going. */
+function unlockPowerup(gameState) {
+  const type = Math.random() < 0.5 ? 'sniper' : 'rocket';
+  gameState.activePowerup = { type, expiresAt: performance.now() + gameState.config.powerupDuration * 1000 };
+  playPowerup();
+  return type;
+}
+
+/**
+ * Finds every alive, unclaimed zombie within sniperPierceWidth of the ray
+ * continuing straight on from the shooter through the target - simulating a
+ * bullet that doesn't stop at the first thing it hits. Returns them sorted by
+ * distance along that ray, plus a visual endpoint for the tracer effect.
+ */
+function applySniperPierce(gameState, shooterPos, targetPos) {
+  const dx = targetPos.x - shooterPos.x;
+  const dy = targetPos.y - shooterPos.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist === 0) return { pierced: [], endX: targetPos.x, endY: targetPos.y };
+
+  const dirX = dx / dist;
+  const dirY = dy / dist;
+  const hits = [];
+  for (const other of gameState.zombies.values()) {
+    if (other.dying) continue;
+    const ox = other.x - targetPos.x;
+    const oy = other.y - targetPos.y;
+    const along = ox * dirX + oy * dirY; // how far past the target, along the ray
+    if (along <= 0) continue;
+    const perp = Math.abs(ox * dirY - oy * dirX); // distance off the ray's centerline
+    if (perp <= gameState.config.sniperPierceWidth) hits.push({ zombie: other, along });
+  }
+  hits.sort((a, b) => a.along - b.along);
+
+  const reach = hits.length > 0 ? hits[hits.length - 1].along + 20 : 260;
+  return {
+    pierced: hits.map(h => h.zombie),
+    endX: targetPos.x + dirX * reach,
+    endY: targetPos.y + dirY * reach,
+  };
 }
 
 /** Current vote count vs. how many alive survivors are needed - shared with the HUD readout. */
@@ -134,7 +190,11 @@ function resolveWordKill(gameState, text, msg) {
   }
 
   aimAt(player, target.x, target.y);
-  playShoot();
+
+  const activePowerup = getActivePowerup(gameState);
+  if (activePowerup?.type === 'sniper') playSniper();
+  else if (activePowerup?.type === 'rocket') playRocket();
+  else playShoot();
 
   target.hitsRemaining--;
   if (target.hitsRemaining <= 0) {
@@ -143,6 +203,34 @@ function resolveWordKill(gameState, text, msg) {
     target.diedAt = performance.now();
     stopZombieWalk(target);
     awardKill(player, gameState.config);
+
+    if (target.powerup) {
+      const unlockedType = unlockPowerup(gameState);
+      pushEffect(gameState, { type: 'powerupUnlocked', x: target.x, y: target.y, powerupType: unlockedType });
+    }
+
+    // Rocket takes priority over a naturally-explosive target so a single
+    // kill never double-triggers triggerExplosion (and its chain reaction).
+    if (activePowerup?.type === 'rocket') {
+      triggerExplosion(gameState, target);
+    } else if (activePowerup?.type === 'sniper') {
+      const { pierced, endX, endY } = applySniperPierce(gameState, player.position, target);
+      for (const pz of pierced) {
+        pz.dying = true;
+        pz.diedAt = performance.now();
+        pz.claimedBy = 'sniper';
+        stopZombieWalk(pz);
+        if (pz.explosive) {
+          playNuclear();
+          triggerExplosion(gameState, pz);
+        }
+      }
+      pushEffect(gameState, { type: 'pierce', x: target.x, y: target.y, endX, endY });
+    } else if (target.explosive) {
+      playNuclear();
+      triggerExplosion(gameState, target);
+    }
+
     pushEffect(gameState, {
       type: 'kill',
       x: target.x,

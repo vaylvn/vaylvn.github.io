@@ -14,6 +14,7 @@
     <span class="hud-item" id="hud-timer-wrap">t+<span id="hud-timer">00:00</span></span>
     <span class="hud-item">alive: <span id="hud-alive">0/0</span></span>
     <span class="hud-item">!pulse votes: <span id="hud-pulse">0/0</span></span>
+    <span class="hud-item hidden" id="hud-powerup-wrap">powerup: <span id="hud-powerup"></span></span>
   </div>
 
   <div id="leaderboard">
@@ -88,6 +89,21 @@
       <label for="cfg-armored-chance">Armored zombie chance</label>
       <input type="range" id="cfg-armored-chance" min="0" max="40" value="10">
       <span data-cfg-label="armoredChance">10%</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-explosive-chance">Exploding zombie chance</label>
+      <input type="range" id="cfg-explosive-chance" min="0" max="30" value="8">
+      <span data-cfg-label="explosiveChance">8%</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-powerup-chance">Powerup zombie chance</label>
+      <input type="range" id="cfg-powerup-chance" min="0" max="20" value="4">
+      <span data-cfg-label="powerupChance">4%</span>
+    </div>
+    <div class="cfg-row">
+      <label for="cfg-powerup-duration">Powerup duration (sec)</label>
+      <input type="range" id="cfg-powerup-duration" min="5" max="30" value="15">
+      <span data-cfg-label="powerupDuration">15</span>
     </div>
     <div class="cfg-row cfg-row-toggle">
       <label for="cfg-night-mode">Night mode</label>

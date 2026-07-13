@@ -7,6 +7,10 @@ const SOUND_FILES = {
   walk1: 'sounds/walk1.mp3',
   walk2: 'sounds/walk2.mp3',
   walk3: 'sounds/walk3.mp3',
+  nuclear: 'sounds/nuclear.mp3',
+  rocket: 'sounds/rocket.mp3',
+  sniper: 'sounds/sniper.mp3',
+  powerup: 'sounds/powerup.mp3',
 };
 
 const WALK_VARIANTS = ['walk1', 'walk2', 'walk3'];
@@ -62,6 +66,26 @@ export function playHit({ fatal = false } = {}) {
 
 export function playStart() {
   playOneShot('start', 0.9);
+}
+
+/** An exploding zombie's own detonation - whether it died directly or got caught in a chain reaction. */
+export function playNuclear() {
+  playOneShot('nuclear', 0.7);
+}
+
+/** Replaces the normal shoot sound for every hit while the rocket buff is active. */
+export function playRocket() {
+  playOneShot('rocket', 0.6, { rateJitter: 0.1 });
+}
+
+/** Replaces the normal shoot sound for every hit while the sniper buff is active. */
+export function playSniper() {
+  playOneShot('sniper', 0.6, { rateJitter: 0.1 });
+}
+
+/** Fires once when a powerup carrier's final hit lands and the buff unlocks. */
+export function playPowerup() {
+  playOneShot('powerup', 0.9);
 }
 
 // --- Per-zombie shuffling loop: one walk variant, one pitch, for its whole life ---
