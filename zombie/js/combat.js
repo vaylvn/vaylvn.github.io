@@ -1,6 +1,7 @@
 import { createPlayer, awardKill, aimAt } from './player.js';
 import { triggerPulse } from './zombie.js';
 import { pickWord } from './wordlist.js';
+import { playShoot, stopZombieWalk } from './audio.js';
 
 const EFFECT_TTL = {
   kill: 420,
@@ -18,7 +19,12 @@ function isPrivileged(msg) {
   return msg.isBroadcaster || msg.isMod;
 }
 
-/** Returns the player, or null if this chatter already died this round and can't rejoin. */
+/**
+ * Returns the player, or null if this chatter can't join right now: already
+ * died this round (no rejoining), or is a brand-new chatter arriving after
+ * !start while allowMidGameJoin is off. Existing alive players are always
+ * welcome back regardless of that toggle - it only gates *new* arrivals.
+ */
 function joinPlayer(gameState, msg) {
   const existing = gameState.players.get(msg.userId);
   if (existing) {
@@ -26,6 +32,11 @@ function joinPlayer(gameState, msg) {
     existing.name = msg.displayName; // refresh display name in case it changed case
     return existing;
   }
+
+  const canJoinNow = gameState.state === 'LOBBY'
+    || (gameState.state === 'PLAYING' && gameState.config.allowMidGameJoin);
+  if (!canJoinNow) return null;
+
   const player = createPlayer(msg.userId, msg.displayName, gameState.config);
   gameState.players.set(msg.userId, player);
   gameState.layoutSemicircle(gameState);
@@ -37,16 +48,18 @@ export function getPulseStatus(gameState) {
   const aliveCount = [...gameState.players.values()].filter(p => p.alive).length;
   const required = Math.max(1, Math.ceil(aliveCount * gameState.config.pulseVoteRatio));
   const current = [...gameState.pulseVotes].filter(id => gameState.players.get(id)?.alive).length;
-  return { current, required };
+  return { current, required, used: gameState.pulseUsed };
 }
 
-/** A communal panic button: needs pulseVoteRatio of currently-alive survivors to type !pulse before it fires. */
+/** A one-time communal panic button: needs pulseVoteRatio of currently-alive survivors to type !pulse before it fires. */
 function tryPulse(gameState, player) {
+  if (gameState.pulseUsed) return;
   gameState.pulseVotes.add(player.id);
 
   const { current, required } = getPulseStatus(gameState);
   if (current >= required) {
     gameState.pulseVotes.clear();
+    gameState.pulseUsed = true;
     triggerPulse(gameState);
   }
 }
@@ -56,9 +69,7 @@ function resolveCommand(gameState, text, msg) {
 
   switch (cmd) {
     case '!join': {
-      if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING') {
-        joinPlayer(gameState, msg);
-      }
+      joinPlayer(gameState, msg); // no-ops on its own if this isn't a valid time/chatter to join
       return;
     }
     case '!start': {
@@ -115,12 +126,14 @@ function resolveWordKill(gameState, text, msg) {
   }
 
   aimAt(player, target.x, target.y);
+  playShoot();
 
   target.hitsRemaining--;
   if (target.hitsRemaining <= 0) {
     target.claimedBy = player.id;
     target.dying = true;
     target.diedAt = performance.now();
+    stopZombieWalk(target);
     awardKill(player, gameState.config);
     pushEffect(gameState, {
       type: 'kill',

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HOARDE — Twitch Chat Zombie Survival</title>
+<title>Brain Dead — Twitch Chat Zombie Survival</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,6 +27,7 @@
 
   <div id="results-screen" class="hidden">
     <div class="results-card">
+      <img src="logo.png" alt="Brain Dead" class="logo results-logo">
       <h1 id="results-title">Round Over</h1>
       <p id="results-subtitle" class="tagline"></p>
       <p class="results-total">Total time survived: <strong id="results-total-time">00:00</strong></p>
@@ -65,13 +66,13 @@
     </div>
     <div class="cfg-row">
       <label for="cfg-base-interval">Base spawn interval (ms)</label>
-      <input type="range" id="cfg-base-interval" min="600" max="3000" step="50" value="1800">
-      <span data-cfg-label="baseSpawnInterval">1800</span>
+      <input type="range" id="cfg-base-interval" min="600" max="3000" step="50" value="1700">
+      <span data-cfg-label="baseSpawnInterval">1700</span>
     </div>
     <div class="cfg-row">
       <label for="cfg-ramp-rate">Spawn ramp (per wave, %)</label>
-      <input type="range" id="cfg-ramp-rate" min="60" max="100" value="87">
-      <span data-cfg-label="spawnRampRate">87%</span>
+      <input type="range" id="cfg-ramp-rate" min="60" max="100" value="89">
+      <span data-cfg-label="spawnRampRate">89%</span>
     </div>
     <div class="cfg-row">
       <label for="cfg-fast-chance">Fast zombie chance</label>
@@ -91,6 +92,10 @@
       <label for="cfg-fog-enabled">Fog / view range</label>
       <input type="checkbox" id="cfg-fog-enabled">
     </div>
+    <div class="cfg-row cfg-row-toggle">
+      <label for="cfg-allow-midgame-join">Allow joining mid-game</label>
+      <input type="checkbox" id="cfg-allow-midgame-join">
+    </div>
     <div class="cfg-row">
       <label for="cfg-fog-range">Fog view range (px)</label>
       <input type="range" id="cfg-fog-range" min="100" max="600" step="20" value="260">
@@ -106,11 +111,12 @@
       <button type="button" id="start-round-btn">Start round (!start)</button>
       <button type="button" id="stop-round-btn">Stop round (!stop)</button>
     </div>
+    <p id="start-hint" class="hint hidden">Need at least one player to <code>!join</code> first.</p>
   </div>
 
   <div id="boot-overlay">
     <form id="connect-form" class="boot-card">
-      <h1>HOARDE</h1>
+      <img src="logo.png" alt="Brain Dead" class="logo">
       <p class="tagline">Twitch chat zombie survival. Type the word above a zombie's head to kill it.</p>
 
       <label for="channel-input">Twitch channel name</label>

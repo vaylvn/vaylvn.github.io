@@ -14,6 +14,34 @@ import {
 
 const TAU = Math.PI * 2;
 
+// How chunky the "8-bit" look is: the world (background/braincell/bodies) is
+// drawn into an offscreen buffer at 1/PIXEL_SCALE resolution, then blown back
+// up with smoothing off. Text is drawn separately, straight onto the full-res
+// canvas, so words never get soft or blocky - only the game world does.
+const PIXEL_SCALE = 4;
+
+let pixelCanvas = null;
+let pixelCtx = null;
+
+function getPixelContext(canvasWidth, canvasHeight) {
+  const w = Math.max(1, Math.round(canvasWidth / PIXEL_SCALE));
+  const h = Math.max(1, Math.round(canvasHeight / PIXEL_SCALE));
+  if (!pixelCanvas) {
+    pixelCanvas = document.createElement('canvas');
+    pixelCtx = pixelCanvas.getContext('2d');
+  }
+  if (pixelCanvas.width !== w || pixelCanvas.height !== h) {
+    pixelCanvas.width = w;
+    pixelCanvas.height = h;
+  }
+  pixelCtx.setTransform(1, 0, 0, 1, 0, 0);
+  pixelCtx.clearRect(0, 0, w, h);
+  // Draw commands below still use full-resolution coordinates - this scale
+  // maps them down into the small buffer without rewriting any shape math.
+  pixelCtx.scale(1 / PIXEL_SCALE, 1 / PIXEL_SCALE);
+  return pixelCtx;
+}
+
 function seededRandom(seed) {
   // Deterministic per-entity wobble so a "wrong" silhouette doesn't jitter frame to frame.
   let s = seed % 2147483647;
@@ -124,7 +152,8 @@ function drawHealthRing(ctx, player, radius) {
   }
 }
 
-function drawSurvivor(ctx, player, now) {
+/** Body, gun, and health ring only - the "pixelated world" layer. Name label is drawn separately at full res. */
+function drawSurvivorBody(ctx, player, now) {
   const { x, y } = player.position;
   const radius = 14;
   const flashing = player.hitFlashUntil > now;
@@ -159,12 +188,15 @@ function drawSurvivor(ctx, player, now) {
 
   ctx.restore();
 
-  drawLabel(ctx, player.name, x, y - radius - 9, '#F2F2F2', 13);
-
   drawHealthRing(ctx, player, radius + 6);
 }
 
-function drawZombie(ctx, zombie, now) {
+function drawSurvivorLabel(ctx, player) {
+  drawLabel(ctx, player.name, player.position.x, player.position.y - 14 - 9, '#F2F2F2', 13);
+}
+
+/** Wobbly body only - the "pixelated world" layer. Word label is drawn separately at full res. */
+function drawZombieBody(ctx, zombie, now) {
   // Subtler, more even wobble than a survivor's shape - reads as shambling
   // rather than spiky/erratic, especially at fast zombies' speed.
   const wobble = ensureWobble(zombie, zombie.id * 7919 + 13, 7, 0.90, 1.12);
@@ -183,9 +215,20 @@ function drawZombie(ctx, zombie, now) {
   drawWobblyBlob(ctx, zombie.x, zombie.y, baseRadius, wobble);
   ctx.fill();
   ctx.stroke();
-
-  drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR, 15);
   ctx.restore();
+}
+
+function drawZombieLabel(ctx, zombie, now) {
+  const baseRadius = zombie.type === 'tank' ? 19 : 13;
+  if (zombie.dying) {
+    const t = Math.min(1, (now - zombie.diedAt) / 260);
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR, 15);
+    ctx.restore();
+  } else {
+    drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR, 15);
+  }
 }
 
 function drawEffects(ctx, gameState) {
@@ -297,23 +340,44 @@ function drawNightOverlay(ctx, gameState) {
 
 export function render(ctx, gameState) {
   const now = performance.now();
-  const { braincell, config, arcRadius } = gameState;
-
-  drawBackground(ctx, gameState);
-  drawBraincell(ctx, gameState, now);
-  drawPerimeterArc(ctx, gameState);
-
+  const { braincell, config, arcRadius, canvasWidth, canvasHeight } = gameState;
   const fogRadius = config.fogEnabled ? (arcRadius || config.arcMinRadius) + config.fogViewRange : Infinity;
+
+  // --- Pixelated world layer: background, braincell, perimeter, bodies ---
+  const pctx = getPixelContext(canvasWidth, canvasHeight);
+
+  drawBackground(pctx, gameState);
+  drawBraincell(pctx, gameState, now);
+  drawPerimeterArc(pctx, gameState);
 
   for (const zombie of gameState.zombies.values()) {
     const dist = Math.hypot(zombie.x - braincell.x, zombie.y - braincell.y);
     if (dist > fogRadius) continue;
-    drawZombie(ctx, zombie, now);
+    drawZombieBody(pctx, zombie, now);
   }
 
   for (const player of gameState.players.values()) {
     if (!player.alive) continue;
-    drawSurvivor(ctx, player, now);
+    drawSurvivorBody(pctx, player, now);
+  }
+
+  // Blit the low-res buffer up to full size with smoothing off - this is what
+  // actually produces the blocky/8-bit edges on circles and wobbly blobs.
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(pixelCanvas, 0, 0, pixelCanvas.width, pixelCanvas.height, 0, 0, canvasWidth, canvasHeight);
+  ctx.restore();
+
+  // --- Full-resolution layer: every label, plus transient effects, stays crisp ---
+  for (const zombie of gameState.zombies.values()) {
+    const dist = Math.hypot(zombie.x - braincell.x, zombie.y - braincell.y);
+    if (dist > fogRadius) continue;
+    drawZombieLabel(ctx, zombie, now);
+  }
+
+  for (const player of gameState.players.values()) {
+    if (!player.alive) continue;
+    drawSurvivorLabel(ctx, player);
   }
 
   drawEffects(ctx, gameState);

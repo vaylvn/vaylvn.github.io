@@ -1,5 +1,6 @@
 import { pickWord } from './wordlist.js';
 import { damagePlayer } from './player.js';
+import { startZombieWalk, stopZombieWalk, playDeath, playPulse } from './audio.js';
 
 let nextId = 1;
 
@@ -125,32 +126,45 @@ export function spawnZombie(gameState) {
   };
   resolveTarget(gameState, zombie);
   zombies.set(zombie.id, zombie);
+  startZombieWalk(zombie);
   return zombie;
 }
 
 /**
- * Geometric ramp with a hard floor, plus a soft "wave" notch every ~30s for
- * readable pacing beats. baseSpawnInterval/spawnRampRate are tuned assuming
- * spawnReferencePlayers alive at once - solo play stretches the interval out
- * (one typer can't sustain what five can), big lobbies compress it.
+ * Geometric ramp with a hard floor, plus a wave notch for readable pacing
+ * beats. baseSpawnInterval/spawnRampRate/waveLengthSec are tuned assuming
+ * spawnReferencePlayers alive at once:
+ *  - throughput scales both ways: solo play stretches the interval out (one
+ *    typer can't sustain what five can), big lobbies compress it.
+ *  - the ramp itself only speeds up for lobbies bigger than the reference -
+ *    more hands means the whole thing should snowball into chaos sooner, not
+ *    just have more zombies at a flat difficulty. Solo doesn't get an extra
+ *    slowdown here since the throughput scaling above already covers it.
  */
 export function getSpawnInterval(gameState) {
   const { config, playStartedAt } = gameState;
   const elapsedSec = (performance.now() - playStartedAt) / 1000;
-  const waveNumber = Math.floor(elapsedSec / 30);
-  let interval = config.baseSpawnInterval * Math.pow(config.spawnRampRate, waveNumber);
 
   const aliveCount = Math.max(1, [...gameState.players.values()].filter(p => p.alive).length);
-  interval *= config.spawnReferencePlayers / aliveCount;
+  const scalingFactor = aliveCount / config.spawnReferencePlayers;
+
+  const rampScaling = Math.max(1, scalingFactor);
+  const waveNumber = Math.floor((elapsedSec * rampScaling) / config.waveLengthSec);
+  let interval = config.baseSpawnInterval * Math.pow(config.spawnRampRate, waveNumber);
+
+  interval /= scalingFactor;
 
   return Math.max(config.minSpawnInterval, interval);
 }
 
 function handleContact(gameState, zombie, target) {
+  stopZombieWalk(zombie); // it just arrived - not shuffling anymore either way
+
   if (zombie.targetType === 'player') {
     damagePlayer(target, 1);
     gameState.effects.push({ type: 'playerHit', x: target.position.x, y: target.position.y, startedAt: performance.now() });
     if (!target.alive) {
+      playDeath();
       gameState.layoutSemicircle(gameState);
     }
   } else {
@@ -194,6 +208,7 @@ export function updateZombies(gameState, dt) {
 
   for (const zombie of gameState.zombies.values()) {
     if (zombie.dying && now - zombie.diedAt > DEATH_LINGER_MS) {
+      stopZombieWalk(zombie); // safety net - should already be stopped, but never leave one shuffling forever
       gameState.zombies.delete(zombie.id);
     }
   }
@@ -202,6 +217,7 @@ export function updateZombies(gameState, dt) {
 /** Starts a pulse expanding from the braincell - a communal "buy time" wipe, gated behind a chat vote in combat.js. */
 export function triggerPulse(gameState) {
   gameState.activePulse = { startedAt: performance.now() };
+  playPulse();
 }
 
 /** Advances the active pulse ring and kills any zombie its leading edge reaches. No-op if no pulse is active. */
@@ -219,6 +235,7 @@ export function updatePulse(gameState) {
       zombie.dying = true;
       zombie.diedAt = performance.now();
       zombie.claimedBy = 'pulse';
+      stopZombieWalk(zombie);
     }
   }
 

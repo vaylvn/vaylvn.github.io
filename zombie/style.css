@@ -155,6 +155,7 @@ button {
   cursor: pointer;
 }
 button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
 #stop-round-btn { background: var(--danger); color: #fff; }
 
 input[type="text"] {
@@ -187,13 +188,16 @@ input[type="range"] { width: 100%; }
   flex-direction: column;
   gap: 10px;
 }
-.boot-card h1 {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: 0.04em;
-  color: var(--accent);
+.logo {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
 }
-.boot-card .tagline { color: var(--text-dim); margin: 0 0 12px; font-size: 13px; line-height: 1.4; }
+.results-logo { max-width: 260px; margin-bottom: 8px; }
+.boot-card .tagline { color: var(--text-dim); margin: 0 0 12px; font-size: 13px; line-height: 1.4; text-align: center; }
 .boot-card label { font-size: 12px; color: var(--text-dim); }
 .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .checkbox-label.small { font-size: 11px; }

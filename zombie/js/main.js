@@ -6,6 +6,7 @@ import { spawnZombie, updateZombies, updatePulse, getSpawnInterval, resetZombieI
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
 import { showResults, hideResults } from './results.js';
 import { render } from './render.js';
+import { unlockAudio, stopAllZombieWalks } from './audio.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -18,6 +19,7 @@ const gameState = {
   effects: [],
   pulseVotes: new Set(),
   activePulse: null,
+  pulseUsed: false,
   config: createDefaultConfig(),
   canvasWidth: 0,
   canvasHeight: 0,
@@ -38,7 +40,7 @@ function setState(next) {
 }
 
 function startPlaying() {
-  if (gameState.state !== 'LOBBY') return;
+  if (gameState.state !== 'LOBBY' || gameState.players.size === 0) return;
   gameState.playStartedAt = performance.now();
   gameState.lastSpawnAt = gameState.playStartedAt;
   setState('PLAYING');
@@ -48,6 +50,7 @@ function endGame(reason = 'stopped') {
   if (gameState.state !== 'PLAYING') return;
   gameState.endedAt = performance.now();
   setState('ENDED');
+  stopAllZombieWalks(); // the world is frozen for the results screen - nothing should keep shuffling
   showResults(gameState, reason);
 }
 
@@ -57,9 +60,11 @@ function resetToLobby() {
   gameState.effects = [];
   gameState.pulseVotes.clear();
   gameState.activePulse = null;
+  gameState.pulseUsed = false;
   gameState.arcRadius = 0;
   resetPlayerColorCycle();
   resetZombieIdCounter();
+  stopAllZombieWalks();
 
   hideResults();
   initLeaderboard();
@@ -103,6 +108,7 @@ function enterLobby(channelLabel) {
 
 document.getElementById('connect-form').addEventListener('submit', e => {
   e.preventDefault();
+  unlockAudio(); // this click is a real user gesture - primes playback for later async chat-triggered sounds
   const testMode = document.getElementById('test-mode-toggle').checked;
   const channelInput = document.getElementById('channel-input').value.trim();
   const errorEl = document.getElementById('boot-error');
@@ -185,8 +191,8 @@ function tick(now) {
     const ss = String(elapsedSec % 60).padStart(2, '0');
     document.getElementById('hud-timer').textContent = `${mm}:${ss}`;
 
-    const { current, required } = getPulseStatus(gameState);
-    document.getElementById('hud-pulse').textContent = `${current}/${required}`;
+    const { current, required, used } = getPulseStatus(gameState);
+    document.getElementById('hud-pulse').textContent = used ? 'used' : `${current}/${required}`;
   }
 
   if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING') {
@@ -198,6 +204,13 @@ function tick(now) {
 
     const aliveCount = [...gameState.players.values()].filter(p => p.alive).length;
     document.getElementById('hud-alive').textContent = `${aliveCount}/${gameState.players.size}`;
+  }
+
+  if (gameState.state === 'LOBBY') {
+    const startBtn = document.getElementById('start-round-btn');
+    const noPlayers = gameState.players.size === 0;
+    startBtn.disabled = noPlayers;
+    document.getElementById('start-hint').classList.toggle('hidden', !noPlayers);
   }
 
   requestAnimationFrame(tick);

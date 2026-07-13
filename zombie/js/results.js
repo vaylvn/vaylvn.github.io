@@ -14,7 +14,7 @@ function makeCell(text, color) {
 
 const REASON_TEXT = {
   stopped: { title: 'Round Over', subtitle: 'The broadcaster called it.' },
-  overrun: { title: 'Overrun', subtitle: 'The braincell has fallen.' },
+  overrun: { title: 'Brain Dead', subtitle: 'The braincell was lost.' },
 };
 
 export function showResults(gameState, reason) {

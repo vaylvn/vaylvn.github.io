@@ -4,18 +4,20 @@ export function createDefaultConfig() {
     wordMin: 3,
     wordMax: 7,
     longWordChance: 0.05,
-    baseSpawnInterval: 2200, // ms, starting pace
-    spawnRampRate: 0.92, // multiplier applied per ~30s wave notch
+    baseSpawnInterval: 1700, // ms, starting pace
+    spawnRampRate: 0.89, // multiplier applied per wave notch (see waveLengthSec - notches speed up with more players)
     fastChance: 0.10,
     armoredChance: 0.10,
     nightMode: false,
     fogEnabled: false,
     fogViewRange: 260, // px beyond the current perimeter radius; only matters if fogEnabled
-    pulseVoteRatio: 0.5, // fraction of alive survivors who must type !pulse to trigger one
+    pulseVoteRatio: 0.5, // fraction of alive survivors who must type !pulse to trigger the (one-time) pulse
+    allowMidGameJoin: false, // if off, !join only works pre-round; existing players can still play out the round they're in
 
     // Fixed tunables, not exposed in v1's panel (see spec §8 table).
-    minSpawnInterval: 550,
-    spawnReferencePlayers: 4, // baseSpawnInterval/spawnRampRate are tuned assuming this many alive; solo play is slower, big lobbies faster
+    minSpawnInterval: 450,
+    spawnReferencePlayers: 4, // baseSpawnInterval/spawnRampRate are tuned assuming this many alive; solo play is slower
+    waveLengthSec: 30, // wave notch period at spawnReferencePlayers; bigger lobbies get shorter waves (faster ramp), never longer
     weaponMilestones: [5, 15, 30, 50],
     leaderboardMaxRows: 8,
     pulseSpeed: 900, // px/sec the pulse ring expands from the braincell
@@ -70,6 +72,9 @@ export function wireConfigPanel(gameState) {
 
   const fogToggle = document.getElementById('cfg-fog-enabled');
   if (fogToggle) fogToggle.addEventListener('change', () => { cfg.fogEnabled = fogToggle.checked; });
+
+  const midJoinToggle = document.getElementById('cfg-allow-midgame-join');
+  if (midJoinToggle) midJoinToggle.addEventListener('change', () => { cfg.allowMidGameJoin = midJoinToggle.checked; });
 
   function syncLabels() {
     document.querySelectorAll('[data-cfg-label]').forEach(el => {
