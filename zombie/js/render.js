@@ -126,19 +126,22 @@ function drawSurvivor(ctx, player, now) {
   ctx.fill();
   ctx.stroke();
 
-  // Static angled "gun" line.
+  // "Gun" line, rotated to track whatever this player last shot at.
+  const gunLength = radius * 1.836;
+  const tipX = x + Math.cos(player.aimAngle) * gunLength;
+  const tipY = y + Math.sin(player.aimAngle) * gunLength;
   ctx.strokeStyle = STROKE_COLOR;
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(x, y);
-  ctx.lineTo(x + radius * 1.6, y - radius * 0.9);
+  ctx.lineTo(tipX, tipY);
   ctx.stroke();
 
   // Weapon tier: brighter/thicker muzzle accent at the gun tip, scaling with tier.
   if (player.weaponTier > 0) {
     ctx.fillStyle = 'rgba(255, 220, 140, 0.9)';
     ctx.beginPath();
-    ctx.arc(x + radius * 1.6, y - radius * 0.9, 2 + player.weaponTier, 0, TAU);
+    ctx.arc(tipX, tipY, 2 + player.weaponTier, 0, TAU);
     ctx.fill();
   }
 

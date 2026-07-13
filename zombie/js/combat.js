@@ -1,4 +1,4 @@
-import { createPlayer, awardKill, consumeGrenade } from './player.js';
+import { createPlayer, awardKill, consumeGrenade, aimAt } from './player.js';
 import { clearZombiesTargetingPlayer } from './zombie.js';
 import { pickWord } from './wordlist.js';
 
@@ -108,6 +108,8 @@ function resolveWordKill(gameState, text, msg) {
     pushEffect(gameState, { type: 'whiff', x: player.position.x, y: player.position.y, playerId: player.id });
     return;
   }
+
+  aimAt(player, target.x, target.y);
 
   target.hitsRemaining--;
   if (target.hitsRemaining <= 0) {

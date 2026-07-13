@@ -29,6 +29,7 @@ export function createDefaultConfig() {
     arcTopMargin: 70, // keep the top of the arc this far from the canvas top
     braincellBottomMargin: 50,
     positionSmoothing: 6, // higher = snappier lerp when the perimeter recompacts
+    aimSmoothing: 10, // higher = snappier gun turn toward whatever a player just shot
 
     // Zombie wander ("S" path) so approaches aren't a straight beeline.
     wanderAmpMin: 18,

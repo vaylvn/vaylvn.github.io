@@ -1,7 +1,7 @@
 import { createDefaultConfig, wireConfigPanel } from './config.js';
 import { connectTwitch } from './twitch.js';
 import { resolveMessage, pruneEffects } from './combat.js';
-import { layoutSemicircle, updatePlayerPositions } from './player.js';
+import { layoutSemicircle, updatePlayerPositions, updatePlayerAim } from './player.js';
 import { spawnZombie, updateZombies, getSpawnInterval } from './zombie.js';
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
 import { render } from './render.js';
@@ -169,6 +169,7 @@ function tick(now) {
 
   if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING' || gameState.state === 'ENDED') {
     updatePlayerPositions(gameState, dt);
+    updatePlayerAim(gameState, dt);
     pruneEffects(gameState);
     render(ctx, gameState);
     updateLeaderboard(gameState);

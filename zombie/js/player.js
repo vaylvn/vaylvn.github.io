@@ -2,6 +2,9 @@ import { SURVIVOR_PALETTE } from './palette.js';
 
 let joinCounter = 0;
 
+// Matches the old static gun angle so idle players look unchanged before their first shot.
+const DEFAULT_AIM_ANGLE = Math.atan2(-0.9, 1.6);
+
 function generateGrenadeCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -28,6 +31,8 @@ export function createPlayer(id, name, config) {
     hitFlashUntil: 0,
     position: { x: 0, y: 0 }, // rendered position, smoothly lerps toward targetPosition
     targetPosition: { x: 0, y: 0 }, // arc slot assigned by layoutSemicircle
+    aimAngle: DEFAULT_AIM_ANGLE, // rendered gun angle, smoothly turns toward targetAimAngle
+    targetAimAngle: DEFAULT_AIM_ANGLE,
     lastActionAt: 0,
   };
 }
@@ -85,6 +90,24 @@ export function updatePlayerPositions(gameState, dt) {
     if (!player.alive) continue;
     player.position.x += (player.targetPosition.x - player.position.x) * smoothing;
     player.position.y += (player.targetPosition.y - player.position.y) * smoothing;
+  }
+}
+
+/** Points the player's gun at (x, y) - called on every hit, whiff, or grenade so they visibly track what they shot at. */
+export function aimAt(player, x, y) {
+  player.targetAimAngle = Math.atan2(y - player.position.y, x - player.position.x);
+}
+
+function shortestAngleDelta(from, to) {
+  return ((to - from + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+}
+
+export function updatePlayerAim(gameState, dt) {
+  const smoothing = Math.min(1, dt * gameState.config.aimSmoothing);
+  for (const player of gameState.players.values()) {
+    if (!player.alive) continue;
+    const delta = shortestAngleDelta(player.aimAngle, player.targetAimAngle);
+    player.aimAngle += delta * smoothing;
   }
 }
 
