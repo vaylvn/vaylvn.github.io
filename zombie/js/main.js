@@ -30,6 +30,7 @@ const gameState = {
   lastSpawnAt: 0,
   startPlaying,
   endGame,
+  resetToLobby,
   layoutSemicircle, // exposed so zombie.js can recompact the arc right after a death
 };
 
@@ -58,6 +59,7 @@ function endGame(reason = 'stopped') {
 }
 
 function resetToLobby() {
+  if (gameState.state !== 'ENDED') return;
   gameState.players.clear();
   gameState.zombies.clear();
   gameState.effects = [];

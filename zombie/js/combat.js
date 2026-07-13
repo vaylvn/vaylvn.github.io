@@ -85,6 +85,14 @@ function resolveCommand(gameState, text, msg) {
       }
       return;
     }
+    case '!lobby': {
+      // Lets the broadcaster/mod reset for a new round from chat - useful when
+      // they've stepped away from the keyboard after a round ends.
+      if (isPrivileged(msg) && gameState.state === 'ENDED') {
+        gameState.resetToLobby();
+      }
+      return;
+    }
     case '!pulse': {
       if (gameState.state !== 'PLAYING') return;
       const player = gameState.players.get(msg.userId);
