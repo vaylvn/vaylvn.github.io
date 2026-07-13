@@ -6,10 +6,14 @@ import { spawnZombie, updateZombies, updatePulse, getSpawnInterval, resetZombieI
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
 import { showResults, hideResults } from './results.js';
 import { render } from './render.js';
-import { unlockAudio, stopAllZombieWalks } from './audio.js';
+import { unlockAudio, stopAllZombieWalks, playStart, startBackground, stopBackground, updateBackgroundIntensity } from './audio.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
+
+window.__debugGameState = () => gameState;
+window.__debugApi = { spawnZombie, updateZombies, updatePulse, resolveMessage, layoutSemicircle, render, ctx };
+import('./audio.js').then(m => { window.__debugAudio = m; });
 
 const gameState = {
   state: 'BOOT',
@@ -44,6 +48,8 @@ function startPlaying() {
   gameState.playStartedAt = performance.now();
   gameState.lastSpawnAt = gameState.playStartedAt;
   setState('PLAYING');
+  playStart();
+  startBackground();
 }
 
 function endGame(reason = 'stopped') {
@@ -51,6 +57,7 @@ function endGame(reason = 'stopped') {
   gameState.endedAt = performance.now();
   setState('ENDED');
   stopAllZombieWalks(); // the world is frozen for the results screen - nothing should keep shuffling
+  stopBackground();
   showResults(gameState, reason);
 }
 
@@ -65,6 +72,7 @@ function resetToLobby() {
   resetPlayerColorCycle();
   resetZombieIdCounter();
   stopAllZombieWalks();
+  stopBackground();
 
   hideResults();
   initLeaderboard();
@@ -185,6 +193,7 @@ function tick(now) {
     }
     updateZombies(gameState, dt);
     updatePulse(gameState);
+    updateBackgroundIntensity(gameState, dt);
 
     const elapsedSec = Math.floor((now - gameState.playStartedAt) / 1000);
     const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');

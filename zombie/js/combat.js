@@ -153,7 +153,15 @@ function resolveWordKill(gameState, text, msg) {
     usedWords.delete(target.word);
     target.word = pickWord(target.minLen, target.maxLen, usedWords);
     target.flinchUntil = performance.now() + 150;
-    pushEffect(gameState, { type: 'hit', x: target.x, y: target.y });
+    pushEffect(gameState, {
+      type: 'hit',
+      x: target.x,
+      y: target.y,
+      shooterX: player.position.x,
+      shooterY: player.position.y,
+      color: player.color,
+      tier: player.weaponTier,
+    });
   }
 }
 

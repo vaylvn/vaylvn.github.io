@@ -262,6 +262,18 @@ function drawEffects(ctx, gameState) {
       const t = Math.min(1, age / 180);
       ctx.save();
       ctx.globalAlpha = 1 - t;
+
+      // Armored zombies' first hit doesn't kill, but it's still a shot fired -
+      // same tracer line a kill gets, just no death flash/word-scale text.
+      if (effect.shooterX !== undefined) {
+        ctx.strokeStyle = effect.color;
+        ctx.lineWidth = 1.5 + effect.tier;
+        ctx.beginPath();
+        ctx.moveTo(effect.shooterX, effect.shooterY);
+        ctx.lineTo(effect.x, effect.y);
+        ctx.stroke();
+      }
+
       ctx.fillStyle = '#FFFFFF';
       ctx.beginPath();
       ctx.arc(effect.x, effect.y, 3 + t * 8, 0, TAU);

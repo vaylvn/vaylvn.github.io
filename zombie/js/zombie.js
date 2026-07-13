@@ -1,6 +1,6 @@
 import { pickWord } from './wordlist.js';
 import { damagePlayer } from './player.js';
-import { startZombieWalk, stopZombieWalk, playDeath, playPulse } from './audio.js';
+import { startZombieWalk, stopZombieWalk, playHit, playPulse } from './audio.js';
 
 let nextId = 1;
 
@@ -163,8 +163,8 @@ function handleContact(gameState, zombie, target) {
   if (zombie.targetType === 'player') {
     damagePlayer(target, 1);
     gameState.effects.push({ type: 'playerHit', x: target.position.x, y: target.position.y, startedAt: performance.now() });
+    playHit({ fatal: !target.alive });
     if (!target.alive) {
-      playDeath();
       gameState.layoutSemicircle(gameState);
     }
   } else {
