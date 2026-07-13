@@ -55,6 +55,15 @@
     <h2>Round setup</h2>
     <p class="hint">Tune these during LOBBY, before <code>!start</code>. Streamer/mod only via chat; anyone can adjust here since it's your screen.</p>
 
+    <div class="cfg-row cfg-row-picker">
+      <label>Background</label>
+      <div class="bg-picker">
+        <button type="button" id="bg-prev" aria-label="Previous background">◀</button>
+        <span id="bg-label">Default</span>
+        <button type="button" id="bg-next" aria-label="Next background">▶</button>
+      </div>
+    </div>
+
     <div class="cfg-row">
       <label for="cfg-word-min">Word length min</label>
       <input type="range" id="cfg-word-min" min="3" max="10" value="3">

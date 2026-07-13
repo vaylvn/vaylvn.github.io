@@ -7,6 +7,7 @@ import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
 import { showResults, hideResults } from './results.js';
 import { render } from './render.js';
 import { unlockAudio, stopAllZombieWalks, playStart, startBackground, stopBackground, updateBackgroundIntensity } from './audio.js';
+import { BACKGROUND_OPTIONS } from './backgrounds.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -176,6 +177,24 @@ document.querySelectorAll('[data-test-fill]').forEach(btn => {
 
 // --- Config panel ---
 wireConfigPanel(gameState);
+
+// --- Background picker ---
+function updateBackgroundLabel() {
+  const index = BACKGROUND_OPTIONS.findIndex(bg => bg.id === gameState.config.background);
+  const current = BACKGROUND_OPTIONS[index === -1 ? 0 : index];
+  document.getElementById('bg-label').textContent = current.label;
+}
+
+function cycleBackground(delta) {
+  const index = BACKGROUND_OPTIONS.findIndex(bg => bg.id === gameState.config.background);
+  const nextIndex = (((index === -1 ? 0 : index) + delta) % BACKGROUND_OPTIONS.length + BACKGROUND_OPTIONS.length) % BACKGROUND_OPTIONS.length;
+  gameState.config.background = BACKGROUND_OPTIONS[nextIndex].id;
+  updateBackgroundLabel();
+}
+
+document.getElementById('bg-prev').addEventListener('click', () => cycleBackground(-1));
+document.getElementById('bg-next').addEventListener('click', () => cycleBackground(1));
+updateBackgroundLabel();
 
 // On-page convenience buttons mirror !start / !stop for the streamer's own screen.
 document.getElementById('start-round-btn').addEventListener('click', startPlaying);

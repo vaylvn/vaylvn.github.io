@@ -13,6 +13,9 @@ import {
   POWERUP_BODY_COLOR,
   POWERUP_LABEL_COLOR,
 } from './palette.js';
+import { getBackgroundImage } from './backgrounds.js';
+
+const CHROMA_KEY_COLOR = '#0000FF';
 
 const TAU = Math.PI * 2;
 
@@ -105,6 +108,24 @@ function drawWobblyBlob(ctx, cx, cy, baseRadius, wobble) {
 
 function drawBackground(ctx, gameState) {
   const { canvasWidth: w, canvasHeight: h, config } = gameState;
+  const bgId = config.background || 'default';
+
+  if (bgId === 'chromakey') {
+    ctx.fillStyle = CHROMA_KEY_COLOR;
+    ctx.fillRect(0, 0, w, h);
+    return;
+  }
+
+  const image = getBackgroundImage(bgId);
+  if (image) {
+    // Stretched to fill, then pixelated along with everything else by the
+    // usual low-res-buffer upscale - keeps it visually consistent no matter
+    // what resolution the source image actually is.
+    ctx.drawImage(image, 0, 0, w, h);
+    return;
+  }
+
+  // Default, or a custom pick that's still loading / failed to load.
   ctx.fillStyle = config.nightMode ? NIGHT_BG_COLOR : BG_COLOR;
   ctx.fillRect(0, 0, w, h);
 }
@@ -423,6 +444,8 @@ function drawPulse(ctx, gameState, now) {
 
 function drawNightOverlay(ctx, gameState) {
   if (!gameState.config.nightMode) return;
+  // Chroma key needs a clean, uniform color for OBS to key out - never darken it.
+  if (gameState.config.background === 'chromakey') return;
   const { canvasWidth: w, canvasHeight: h, braincell } = gameState;
   const gradient = ctx.createRadialGradient(
     braincell.x, braincell.y, 60,

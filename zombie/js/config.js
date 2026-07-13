@@ -16,6 +16,7 @@ export function createDefaultConfig() {
     fogViewRange: 260, // px beyond the current perimeter radius; only matters if fogEnabled
     pulseVoteRatio: 0.5, // fraction of alive survivors who must type !pulse to trigger the (one-time) pulse
     allowMidGameJoin: false, // if off, !join only works pre-round; existing players can still play out the round they're in
+    background: 'default', // id from js/backgrounds.js's BACKGROUND_OPTIONS
 
     // Fixed tunables, not exposed in v1's panel (see spec §8 table).
     minSpawnInterval: 450,

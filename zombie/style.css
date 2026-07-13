@@ -176,7 +176,11 @@ body[data-game-state="LOBBY"] #config-panel { display: block; }
   margin-bottom: 6px;
 }
 .cfg-row-toggle { grid-template-columns: 1fr auto; }
+.cfg-row-picker { grid-template-columns: 1fr auto; margin-bottom: 12px; }
 .cfg-row label { color: var(--text-dim); }
+.bg-picker { display: flex; align-items: center; gap: 8px; }
+.bg-picker button { padding: 3px 8px; font-size: 11px; }
+.bg-picker span { min-width: 90px; text-align: center; font-size: 12px; }
 .cfg-actions { display: flex; gap: 8px; margin-top: 12px; }
 .cfg-actions button { flex: 1; }
 
