@@ -11,6 +11,7 @@
 // an entry here - this list is only for your own custom images.
 
 export const CUSTOM_BACKGROUNDS = [
-  // 'woods.png',
-  // 'city.png',
+  'field.png',
+  'parking_lot.png',
+  'snowy_field.png'
 ];
