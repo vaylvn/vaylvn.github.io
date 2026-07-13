@@ -1,7 +1,7 @@
 import { createDefaultConfig, wireConfigPanel } from './config.js';
 import { connectTwitch } from './twitch.js';
 import { resolveMessage, pruneEffects } from './combat.js';
-import { layoutPlayers } from './player.js';
+import { layoutSemicircle, updatePlayerPositions } from './player.js';
 import { spawnZombie, updateZombies, getSpawnInterval } from './zombie.js';
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
 import { render } from './render.js';
@@ -18,11 +18,13 @@ const gameState = {
   config: createDefaultConfig(),
   canvasWidth: 0,
   canvasHeight: 0,
-  survivorLineY: 0,
+  braincell: { x: 0, y: 0 },
+  arcRadius: 0,
   playStartedAt: 0,
   lastSpawnAt: 0,
   startPlaying,
   endGame,
+  layoutSemicircle, // exposed so zombie.js can recompact the arc right after a death
 };
 
 function setState(next) {
@@ -38,9 +40,17 @@ function startPlaying() {
   setState('PLAYING');
 }
 
-function endGame() {
+const BANNER_TEXT = {
+  stopped: { title: 'Round Over', body: 'Final standings frozen above. Refresh to start a new session.' },
+  overrun: { title: 'Overrun', body: 'The braincell has fallen. Final standings frozen above. Refresh to start a new session.' },
+};
+
+function endGame(reason = 'stopped') {
   if (gameState.state !== 'PLAYING') return;
   setState('ENDED');
+  const banner = BANNER_TEXT[reason] || BANNER_TEXT.stopped;
+  document.getElementById('final-banner-title').textContent = banner.title;
+  document.getElementById('final-banner-body').textContent = banner.body;
   document.getElementById('final-banner').classList.remove('hidden');
 }
 
@@ -49,7 +59,8 @@ function resizeCanvas() {
   const rect = canvas.parentElement.getBoundingClientRect();
   gameState.canvasWidth = rect.width;
   gameState.canvasHeight = rect.height;
-  gameState.survivorLineY = rect.height - 90;
+  gameState.braincell.x = rect.width / 2;
+  gameState.braincell.y = rect.height - gameState.config.braincellBottomMargin;
 
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
@@ -57,7 +68,7 @@ function resizeCanvas() {
   canvas.style.height = `${rect.height}px`;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  layoutPlayers(gameState.players, gameState.canvasWidth, gameState.survivorLineY);
+  layoutSemicircle(gameState);
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -134,7 +145,7 @@ wireConfigPanel(gameState);
 
 // On-page convenience buttons mirror !start / !stop for the streamer's own screen.
 document.getElementById('start-round-btn').addEventListener('click', startPlaying);
-document.getElementById('stop-round-btn').addEventListener('click', endGame);
+document.getElementById('stop-round-btn').addEventListener('click', () => endGame('stopped'));
 
 // --- Main loop ---
 let lastFrameTime = performance.now();
@@ -148,7 +159,7 @@ function tick(now) {
       spawnZombie(gameState);
       gameState.lastSpawnAt = now;
     }
-    updateZombies(gameState, dt, gameState.survivorLineY);
+    updateZombies(gameState, dt);
 
     const elapsedSec = Math.floor((now - gameState.playStartedAt) / 1000);
     const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
@@ -156,11 +167,14 @@ function tick(now) {
     document.getElementById('hud-timer').textContent = `${mm}:${ss}`;
   }
 
-  pruneEffects(gameState);
-
   if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING' || gameState.state === 'ENDED') {
+    updatePlayerPositions(gameState, dt);
+    pruneEffects(gameState);
     render(ctx, gameState);
     updateLeaderboard(gameState);
+
+    const aliveCount = [...gameState.players.values()].filter(p => p.alive).length;
+    document.getElementById('hud-alive').textContent = `${aliveCount}/${gameState.players.size}`;
   }
 
   requestAnimationFrame(tick);

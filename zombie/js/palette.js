@@ -17,6 +17,11 @@ export const STROKE_COLOR = '#0A0A0A';
 
 export const BG_COLOR = '#0A0D0A';
 export const NIGHT_BG_COLOR = '#020402';
-export const SURVIVOR_LINE_COLOR = 'rgba(255,255,255,0.10)';
+export const PERIMETER_COLOR = 'rgba(255,255,255,0.10)';
 export const KILL_FLASH_COLOR = 'rgba(255,255,255,0.85)';
 export const MUZZLE_COLOR = 'rgba(255,235,180,0.9)';
+
+export const HEALTH_RING_COLOR = '#F2F2F2';
+export const HEALTH_RING_LOST_COLOR = 'rgba(255,255,255,0.14)';
+export const BRAINCELL_COLOR = '#C9A0A6';
+export const BRAINCELL_GLOW_COLOR = 'rgba(201,160,166,0.35)';

@@ -1,11 +1,14 @@
-import { createPlayer, awardKill, consumeGrenade, layoutPlayers } from './player.js';
-import { clearDensestLane } from './zombie.js';
+import { createPlayer, awardKill, consumeGrenade } from './player.js';
+import { clearZombiesTargetingPlayer } from './zombie.js';
+import { pickWord } from './wordlist.js';
 
 const EFFECT_TTL = {
   kill: 420,
   hit: 180,
   whiff: 380,
   grenade: 500,
+  playerHit: 260,
+  overrun: 900,
 };
 
 function pushEffect(gameState, effect) {
@@ -16,22 +19,18 @@ function isPrivileged(msg) {
   return msg.isBroadcaster || msg.isMod;
 }
 
+/** Returns the player, or null if this chatter already died this round and can't rejoin. */
 function joinPlayer(gameState, msg) {
-  let player = gameState.players.get(msg.userId);
-  if (!player) {
-    player = createPlayer(msg.userId, msg.displayName);
-    gameState.players.set(msg.userId, player);
-    layoutPlayers(gameState.players, gameState.canvasWidth, gameState.survivorLineY);
-  } else {
-    player.name = msg.displayName; // refresh display name in case it changed case
+  const existing = gameState.players.get(msg.userId);
+  if (existing) {
+    if (!existing.alive) return null;
+    existing.name = msg.displayName; // refresh display name in case it changed case
+    return existing;
   }
+  const player = createPlayer(msg.userId, msg.displayName, gameState.config);
+  gameState.players.set(msg.userId, player);
+  gameState.layoutSemicircle(gameState);
   return player;
-}
-
-function getOrCreatePlayer(gameState, msg) {
-  // "Anyone in chat kills a zombie by typing its word" - lazily join so a kill
-  // always has a scorer, even if the chatter skipped an explicit !join.
-  return joinPlayer(gameState, msg);
 }
 
 function tryGrenade(gameState, player, codeArg) {
@@ -40,10 +39,10 @@ function tryGrenade(gameState, player, codeArg) {
   const given = (codeArg || '').toLowerCase();
   if (!given || given !== expected) return;
 
-  const lane = clearDensestLane(gameState);
+  const cleared = clearZombiesTargetingPlayer(gameState, player.id);
   consumeGrenade(player);
-  if (lane >= 0) {
-    pushEffect(gameState, { type: 'grenade', lane });
+  if (cleared > 0) {
+    pushEffect(gameState, { type: 'grenade', x: player.position.x, y: player.position.y });
   }
 }
 
@@ -66,14 +65,14 @@ function resolveCommand(gameState, text, msg) {
     case '!stop':
     case '!end': {
       if (isPrivileged(msg) && gameState.state === 'PLAYING') {
-        gameState.endGame();
+        gameState.endGame('stopped');
       }
       return;
     }
     case '!grenade': {
       if (gameState.state !== 'PLAYING') return;
       const player = gameState.players.get(msg.userId);
-      if (!player) return;
+      if (!player || !player.alive) return;
       tryGrenade(gameState, player, arg);
       return;
     }
@@ -88,7 +87,7 @@ function resolveWordKill(gameState, text, msg) {
 
   // Dying zombies stay searchable for one tick: a message landing on a word
   // whose zombie was *just* killed by an earlier message should whiff, not
-  // silently vanish as "no target" (see resolveWordKill's claimedBy check below).
+  // silently vanish as "no target" (see the claimedBy check below).
   let target = null;
   for (const zombie of gameState.zombies.values()) {
     if (zombie.word === text) {
@@ -98,7 +97,11 @@ function resolveWordKill(gameState, text, msg) {
   }
   if (!target) return; // no matching zombie: no penalty, no effect
 
-  const player = getOrCreatePlayer(gameState, msg);
+  // "Anyone in chat kills a zombie by typing its word" - lazily join so a kill
+  // always has a scorer, even if the chatter skipped an explicit !join. A
+  // chatter who already died this round is out for good: no join, no kills.
+  const player = joinPlayer(gameState, msg);
+  if (!player) return;
 
   if (target.claimedBy) {
     // Someone else's message already resolved this exact zombie a hair earlier.
@@ -123,6 +126,12 @@ function resolveWordKill(gameState, text, msg) {
       tier: player.weaponTier,
     });
   } else {
+    // Armored, first hit: a *different* word for hit 2, not a retype of the
+    // same one - keeps the "coordinate a takedown" moment without the
+    // annoyance of typing an identical string twice.
+    const usedWords = new Set([...gameState.zombies.values()].map(z => z.word));
+    usedWords.delete(target.word);
+    target.word = pickWord(target.minLen, target.maxLen, usedWords);
     target.flinchUntil = performance.now() + 150;
     pushEffect(gameState, { type: 'hit', x: target.x, y: target.y });
   }

@@ -5,13 +5,17 @@ import {
   STROKE_COLOR,
   BG_COLOR,
   NIGHT_BG_COLOR,
-  SURVIVOR_LINE_COLOR,
+  PERIMETER_COLOR,
+  HEALTH_RING_COLOR,
+  HEALTH_RING_LOST_COLOR,
+  BRAINCELL_COLOR,
+  BRAINCELL_GLOW_COLOR,
 } from './palette.js';
 
 const TAU = Math.PI * 2;
 
 function seededRandom(seed) {
-  // Deterministic per-zombie wobble so the "wrong" silhouette doesn't jitter frame to frame.
+  // Deterministic per-entity wobble so a "wrong" silhouette doesn't jitter frame to frame.
   let s = seed % 2147483647;
   if (s <= 0) s += 2147483646;
   return () => {
@@ -20,16 +24,29 @@ function seededRandom(seed) {
   };
 }
 
-function ensureWobble(zombie) {
-  if (zombie.wobble) return zombie.wobble;
-  const rand = seededRandom(zombie.id * 7919 + 13);
-  const points = 9;
+function ensureWobble(entity, seed, points, minR, maxR) {
+  if (entity.wobble) return entity.wobble;
+  const rand = seededRandom(seed);
   const wobble = [];
   for (let i = 0; i < points; i++) {
-    wobble.push(0.82 + rand() * 0.36);
+    wobble.push(minR + rand() * (maxR - minR));
   }
-  zombie.wobble = wobble;
+  entity.wobble = wobble;
   return wobble;
+}
+
+function drawWobblyBlob(ctx, cx, cy, baseRadius, wobble) {
+  ctx.beginPath();
+  const points = wobble.length;
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * TAU;
+    const r = baseRadius * wobble[i % points];
+    const px = cx + Math.cos(angle) * r;
+    const py = cy + Math.sin(angle) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
 }
 
 function drawBackground(ctx, gameState) {
@@ -38,22 +55,70 @@ function drawBackground(ctx, gameState) {
   ctx.fillRect(0, 0, w, h);
 }
 
-function drawSurvivorLine(ctx, gameState) {
-  const { canvasWidth: w, survivorLineY } = gameState;
-  ctx.strokeStyle = SURVIVOR_LINE_COLOR;
+function drawPerimeterArc(ctx, gameState) {
+  const { braincell, arcRadius, config } = gameState;
+  const hasDefenders = [...gameState.players.values()].some(p => p.alive);
+  if (!arcRadius || !hasDefenders) return;
+  const centerAngle = Math.PI * 1.5;
+  const startAngle = centerAngle - config.arcSpan / 2;
+  const endAngle = centerAngle + config.arcSpan / 2;
+  ctx.save();
+  ctx.strokeStyle = PERIMETER_COLOR;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(0, survivorLineY + 22);
-  ctx.lineTo(w, survivorLineY + 22);
+  ctx.arc(braincell.x, braincell.y, arcRadius, startAngle, endAngle);
   ctx.stroke();
+  ctx.restore();
 }
 
-function drawSurvivor(ctx, player) {
-  const { x, y } = player.position;
-  const radius = 14;
+function drawBraincell(ctx, gameState, now) {
+  const { braincell } = gameState;
+  const wobble = ensureWobble(braincell, 424242, 14, 0.7, 1.35);
+  const pulse = 1 + Math.sin(now / 900) * 0.05;
+  const baseRadius = 26 * pulse;
 
   ctx.save();
-  ctx.fillStyle = player.color;
+  const glowRadius = baseRadius * 2.4;
+  const gradient = ctx.createRadialGradient(braincell.x, braincell.y, baseRadius * 0.4, braincell.x, braincell.y, glowRadius);
+  gradient.addColorStop(0, BRAINCELL_GLOW_COLOR);
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(braincell.x, braincell.y, glowRadius, 0, TAU);
+  ctx.fill();
+
+  ctx.fillStyle = BRAINCELL_COLOR;
+  ctx.strokeStyle = STROKE_COLOR;
+  ctx.lineWidth = 2;
+  drawWobblyBlob(ctx, braincell.x, braincell.y, baseRadius, wobble);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHealthRing(ctx, player, radius) {
+  const segments = player.maxHealth;
+  const gap = 0.18; // radians of gap between segments
+  const segmentAngle = TAU / segments;
+
+  for (let i = 0; i < segments; i++) {
+    const start = -Math.PI / 2 + i * segmentAngle + gap / 2;
+    const end = start + segmentAngle - gap;
+    ctx.strokeStyle = i < player.health ? HEALTH_RING_COLOR : HEALTH_RING_LOST_COLOR;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.position.x, player.position.y, radius, start, end);
+    ctx.stroke();
+  }
+}
+
+function drawSurvivor(ctx, player, now) {
+  const { x, y } = player.position;
+  const radius = 14;
+  const flashing = player.hitFlashUntil > now;
+
+  ctx.save();
+  ctx.fillStyle = flashing ? '#FFFFFF' : player.color;
   ctx.strokeStyle = STROKE_COLOR;
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -88,10 +153,12 @@ function drawSurvivor(ctx, player) {
     ctx.fillText(`!grenade ${player.grenadeCode}`, x, y - radius - 20);
   }
   ctx.restore();
+
+  drawHealthRing(ctx, player, radius + 6);
 }
 
 function drawZombie(ctx, zombie, now) {
-  const wobble = ensureWobble(zombie);
+  const wobble = ensureWobble(zombie, zombie.id * 7919 + 13, 9, 0.82, 1.18);
   const baseRadius = zombie.type === 'tank' ? 19 : 13;
   const flinching = zombie.flinchUntil > now;
 
@@ -104,17 +171,7 @@ function drawZombie(ctx, zombie, now) {
   ctx.fillStyle = flinching ? '#FFFFFF' : ZOMBIE_BODY[zombie.type];
   ctx.strokeStyle = STROKE_COLOR;
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  const points = wobble.length;
-  for (let i = 0; i <= points; i++) {
-    const angle = (i / points) * TAU;
-    const r = baseRadius * wobble[i % points];
-    const px = zombie.x + Math.cos(angle) * r;
-    const py = zombie.y + Math.sin(angle) * r;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
+  drawWobblyBlob(ctx, zombie.x, zombie.y, baseRadius, wobble);
   ctx.fill();
   ctx.stroke();
 
@@ -173,12 +230,33 @@ function drawEffects(ctx, gameState) {
       ctx.restore();
     } else if (effect.type === 'grenade') {
       const t = Math.min(1, age / 500);
-      const { canvasWidth, canvasHeight, config } = gameState;
-      const laneWidth = canvasWidth / config.laneCount;
       ctx.save();
-      ctx.globalAlpha = (1 - t) * 0.55;
-      ctx.fillStyle = '#FFB347';
-      ctx.fillRect(effect.lane * laneWidth, 0, laneWidth, canvasHeight);
+      ctx.globalAlpha = (1 - t) * 0.7;
+      ctx.strokeStyle = '#FFB347';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 20 + t * 140, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    } else if (effect.type === 'playerHit') {
+      const t = Math.min(1, age / 260);
+      ctx.save();
+      ctx.globalAlpha = (1 - t) * 0.85;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 16 + t * 20, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    } else if (effect.type === 'overrun') {
+      const t = Math.min(1, age / 900);
+      ctx.save();
+      ctx.globalAlpha = (1 - t) * 0.9;
+      ctx.strokeStyle = '#FF3B3B';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, 20 + t * 400, 0, TAU);
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -186,10 +264,10 @@ function drawEffects(ctx, gameState) {
 
 function drawNightOverlay(ctx, gameState) {
   if (!gameState.config.nightMode) return;
-  const { canvasWidth: w, canvasHeight: h, survivorLineY } = gameState;
+  const { canvasWidth: w, canvasHeight: h, braincell } = gameState;
   const gradient = ctx.createRadialGradient(
-    w / 2, survivorLineY, 60,
-    w / 2, survivorLineY, Math.max(w, h) * 0.7
+    braincell.x, braincell.y, 60,
+    braincell.x, braincell.y, Math.max(w, h) * 0.7
   );
   gradient.addColorStop(0, 'rgba(0,0,0,0)');
   gradient.addColorStop(1, 'rgba(0,0,0,0.82)');
@@ -201,20 +279,23 @@ function drawNightOverlay(ctx, gameState) {
 
 export function render(ctx, gameState) {
   const now = performance.now();
-  drawBackground(ctx, gameState);
-  drawSurvivorLine(ctx, gameState);
+  const { braincell, config, arcRadius } = gameState;
 
-  const fogTop = gameState.config.fogEnabled
-    ? gameState.survivorLineY - gameState.config.fogViewRange
-    : -Infinity;
+  drawBackground(ctx, gameState);
+  drawBraincell(ctx, gameState, now);
+  drawPerimeterArc(ctx, gameState);
+
+  const fogRadius = config.fogEnabled ? (arcRadius || config.arcMinRadius) + config.fogViewRange : Infinity;
 
   for (const zombie of gameState.zombies.values()) {
-    if (zombie.y < fogTop) continue;
+    const dist = Math.hypot(zombie.x - braincell.x, zombie.y - braincell.y);
+    if (dist > fogRadius) continue;
     drawZombie(ctx, zombie, now);
   }
 
   for (const player of gameState.players.values()) {
-    drawSurvivor(ctx, player);
+    if (!player.alive) continue;
+    drawSurvivor(ctx, player, now);
   }
 
   drawEffects(ctx, gameState);

@@ -35,7 +35,8 @@ export function updateLeaderboard(gameState) {
     }
 
     row.el.style.top = `${rank * ROW_HEIGHT}px`;
-    row.nameEl.textContent = player.name;
+    row.el.classList.toggle('lb-dead', !player.alive);
+    row.nameEl.textContent = player.alive ? player.name : `☠ ${player.name}`;
     row.killsEl.textContent = String(player.kills);
 
     if (player.kills !== row.lastKills) {

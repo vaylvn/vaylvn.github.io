@@ -107,6 +107,8 @@ body[data-game-state="ENDED"] #leaderboard {
   0% { transform: scale(1.6); color: #fff; }
   100% { transform: scale(1); }
 }
+.lb-row.lb-dead { opacity: 0.45; border-left-color: transparent !important; }
+.lb-row.lb-dead .lb-kills { color: var(--text-dim); }
 .lb-overflow {
   position: absolute;
   left: 0; right: 0;

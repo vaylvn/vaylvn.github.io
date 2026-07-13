@@ -10,15 +10,32 @@ export function createDefaultConfig() {
     armoredChance: 0.10,
     nightMode: false,
     fogEnabled: false,
-    fogViewRange: 260, // px from the survivor line; only matters if fogEnabled
+    fogViewRange: 260, // px beyond the current perimeter radius; only matters if fogEnabled
 
     // Fixed tunables, not exposed in v1's panel (see spec §8 table).
     minSpawnInterval: 400,
-    laneCount: 12,
     weaponMilestones: [5, 15, 30, 50],
     grenadeMilestone: 20,
     grenadeCap: 2,
     leaderboardMaxRows: 8,
+
+    // Player health + semicircle perimeter around the braincell.
+    playerMaxHealth: 3,
+    contactRadius: 22, // px; how close a zombie must get to its target to land a hit
+    arcSpan: Math.PI, // radians swept by the defensive semicircle (180deg, opening upward)
+    arcSpacing: 50, // desired px of arc-length per alive player; drives radius growth
+    arcMinRadius: 90,
+    arcMargin: 40, // keep the arc's outer edges this far from the canvas sides
+    arcTopMargin: 70, // keep the top of the arc this far from the canvas top
+    braincellBottomMargin: 50,
+    positionSmoothing: 6, // higher = snappier lerp when the perimeter recompacts
+
+    // Zombie wander ("S" path) so approaches aren't a straight beeline.
+    wanderAmpMin: 18,
+    wanderAmpMax: 46,
+    wanderFreqMin: 0.6,
+    wanderFreqMax: 1.5,
+    wanderDampDistance: 70, // wander fades out within this distance of the target
   };
 }
 
