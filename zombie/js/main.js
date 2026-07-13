@@ -1,9 +1,10 @@
 import { createDefaultConfig, wireConfigPanel } from './config.js';
 import { connectTwitch } from './twitch.js';
-import { resolveMessage, pruneEffects } from './combat.js';
-import { layoutSemicircle, updatePlayerPositions, updatePlayerAim } from './player.js';
-import { spawnZombie, updateZombies, getSpawnInterval } from './zombie.js';
+import { resolveMessage, pruneEffects, getPulseStatus } from './combat.js';
+import { layoutSemicircle, updatePlayerPositions, updatePlayerAim, resetPlayerColorCycle } from './player.js';
+import { spawnZombie, updateZombies, updatePulse, getSpawnInterval, resetZombieIdCounter } from './zombie.js';
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
+import { showResults, hideResults } from './results.js';
 import { render } from './render.js';
 
 const canvas = document.getElementById('game-canvas');
@@ -15,12 +16,15 @@ const gameState = {
   players: new Map(),
   zombies: new Map(),
   effects: [],
+  pulseVotes: new Set(),
+  activePulse: null,
   config: createDefaultConfig(),
   canvasWidth: 0,
   canvasHeight: 0,
   braincell: { x: 0, y: 0 },
   arcRadius: 0,
   playStartedAt: 0,
+  endedAt: 0,
   lastSpawnAt: 0,
   startPlaying,
   endGame,
@@ -40,18 +44,31 @@ function startPlaying() {
   setState('PLAYING');
 }
 
-const BANNER_TEXT = {
-  stopped: { title: 'Round Over', body: 'Final standings frozen above. Refresh to start a new session.' },
-  overrun: { title: 'Overrun', body: 'The braincell has fallen. Final standings frozen above. Refresh to start a new session.' },
-};
-
 function endGame(reason = 'stopped') {
   if (gameState.state !== 'PLAYING') return;
+  gameState.endedAt = performance.now();
   setState('ENDED');
-  const banner = BANNER_TEXT[reason] || BANNER_TEXT.stopped;
-  document.getElementById('final-banner-title').textContent = banner.title;
-  document.getElementById('final-banner-body').textContent = banner.body;
-  document.getElementById('final-banner').classList.remove('hidden');
+  showResults(gameState, reason);
+}
+
+function resetToLobby() {
+  gameState.players.clear();
+  gameState.zombies.clear();
+  gameState.effects = [];
+  gameState.pulseVotes.clear();
+  gameState.activePulse = null;
+  gameState.arcRadius = 0;
+  resetPlayerColorCycle();
+  resetZombieIdCounter();
+
+  hideResults();
+  initLeaderboard();
+  document.getElementById('hud-timer').textContent = '00:00';
+  document.getElementById('hud-alive').textContent = '0/0';
+  document.getElementById('hud-pulse').textContent = '0/0';
+
+  setState('LOBBY');
+  resizeCanvas();
 }
 
 function resizeCanvas() {
@@ -146,6 +163,7 @@ wireConfigPanel(gameState);
 // On-page convenience buttons mirror !start / !stop for the streamer's own screen.
 document.getElementById('start-round-btn').addEventListener('click', startPlaying);
 document.getElementById('stop-round-btn').addEventListener('click', () => endGame('stopped'));
+document.getElementById('back-to-lobby-btn').addEventListener('click', resetToLobby);
 
 // --- Main loop ---
 let lastFrameTime = performance.now();
@@ -160,14 +178,18 @@ function tick(now) {
       gameState.lastSpawnAt = now;
     }
     updateZombies(gameState, dt);
+    updatePulse(gameState);
 
     const elapsedSec = Math.floor((now - gameState.playStartedAt) / 1000);
     const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
     const ss = String(elapsedSec % 60).padStart(2, '0');
     document.getElementById('hud-timer').textContent = `${mm}:${ss}`;
+
+    const { current, required } = getPulseStatus(gameState);
+    document.getElementById('hud-pulse').textContent = `${current}/${required}`;
   }
 
-  if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING' || gameState.state === 'ENDED') {
+  if (gameState.state === 'LOBBY' || gameState.state === 'PLAYING') {
     updatePlayerPositions(gameState, dt);
     updatePlayerAim(gameState, dt);
     pruneEffects(gameState);

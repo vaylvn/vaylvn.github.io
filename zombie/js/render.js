@@ -35,6 +35,18 @@ function ensureWobble(entity, seed, points, minR, maxR) {
   return wobble;
 }
 
+/** Bold fill over a dark stroke outline so labels stay legible over any body color or background. */
+function drawLabel(ctx, text, x, y, color, size) {
+  ctx.font = `bold ${size}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+  ctx.lineWidth = 3;
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+}
+
 function drawWobblyBlob(ctx, cx, cy, baseRadius, wobble) {
   ctx.beginPath();
   const points = wobble.length;
@@ -145,23 +157,17 @@ function drawSurvivor(ctx, player, now) {
     ctx.fill();
   }
 
-  ctx.fillStyle = '#F2F2F2';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(player.name, x, y - radius - 8);
-
-  if (player.grenades > 0) {
-    ctx.fillStyle = '#FFD23F';
-    ctx.font = '10px monospace';
-    ctx.fillText(`!grenade ${player.grenadeCode}`, x, y - radius - 20);
-  }
   ctx.restore();
+
+  drawLabel(ctx, player.name, x, y - radius - 9, '#F2F2F2', 13);
 
   drawHealthRing(ctx, player, radius + 6);
 }
 
 function drawZombie(ctx, zombie, now) {
-  const wobble = ensureWobble(zombie, zombie.id * 7919 + 13, 9, 0.82, 1.18);
+  // Subtler, more even wobble than a survivor's shape - reads as shambling
+  // rather than spiky/erratic, especially at fast zombies' speed.
+  const wobble = ensureWobble(zombie, zombie.id * 7919 + 13, 7, 0.90, 1.12);
   const baseRadius = zombie.type === 'tank' ? 19 : 13;
   const flinching = zombie.flinchUntil > now;
 
@@ -178,10 +184,7 @@ function drawZombie(ctx, zombie, now) {
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR;
-  ctx.font = zombie.type === 'tank' ? 'bold 12px monospace' : '12px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(zombie.word, zombie.x, zombie.y - baseRadius - 6);
+  drawLabel(ctx, zombie.word, zombie.x, zombie.y - baseRadius - 7, zombie.armored ? ARMORED_LABEL_COLOR : WORD_LABEL_COLOR, 15);
   ctx.restore();
 }
 
@@ -231,16 +234,6 @@ function drawEffects(ctx, gameState) {
       ctx.arc(effect.x, effect.y - 10 - t * 14, 5 + t * 6, 0, TAU);
       ctx.stroke();
       ctx.restore();
-    } else if (effect.type === 'grenade') {
-      const t = Math.min(1, age / 500);
-      ctx.save();
-      ctx.globalAlpha = (1 - t) * 0.7;
-      ctx.strokeStyle = '#FFB347';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(effect.x, effect.y, 20 + t * 140, 0, TAU);
-      ctx.stroke();
-      ctx.restore();
     } else if (effect.type === 'playerHit') {
       const t = Math.min(1, age / 260);
       ctx.save();
@@ -263,6 +256,28 @@ function drawEffects(ctx, gameState) {
       ctx.restore();
     }
   }
+}
+
+function drawPulse(ctx, gameState, now) {
+  const pulse = gameState.activePulse;
+  if (!pulse) return;
+  const radius = ((now - pulse.startedAt) / 1000) * gameState.config.pulseSpeed;
+  const { braincell } = gameState;
+
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = '#BFEFFF';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(braincell.x, braincell.y, Math.max(0, radius), 0, TAU);
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.15;
+  ctx.lineWidth = 26;
+  ctx.beginPath();
+  ctx.arc(braincell.x, braincell.y, Math.max(0, radius - 10), 0, TAU);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawNightOverlay(ctx, gameState) {
@@ -302,5 +317,6 @@ export function render(ctx, gameState) {
   }
 
   drawEffects(ctx, gameState);
+  drawPulse(ctx, gameState, now);
   drawNightOverlay(ctx, gameState);
 }

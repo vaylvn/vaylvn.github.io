@@ -13,6 +13,7 @@
     <span class="hud-item">state: <span id="hud-state">BOOT</span></span>
     <span class="hud-item" id="hud-timer-wrap">t+<span id="hud-timer">00:00</span></span>
     <span class="hud-item">alive: <span id="hud-alive">0/0</span></span>
+    <span class="hud-item">!pulse votes: <span id="hud-pulse">0/0</span></span>
   </div>
 
   <div id="leaderboard">
@@ -24,10 +25,22 @@
     <canvas id="game-canvas"></canvas>
   </div>
 
-  <div id="final-banner" class="hidden">
-    <div class="final-banner-inner">
-      <h1 id="final-banner-title">Round Over</h1>
-      <p id="final-banner-body">Final standings frozen above. Refresh to start a new session.</p>
+  <div id="results-screen" class="hidden">
+    <div class="results-card">
+      <h1 id="results-title">Round Over</h1>
+      <p id="results-subtitle" class="tagline"></p>
+      <p class="results-total">Total time survived: <strong id="results-total-time">00:00</strong></p>
+
+      <div class="results-table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr><th>#</th><th>Survivor</th><th>Kills</th><th>Survived</th></tr>
+          </thead>
+          <tbody id="results-table-body"></tbody>
+        </table>
+      </div>
+
+      <button type="button" id="back-to-lobby-btn">Back to lobby</button>
     </div>
   </div>
 
@@ -83,6 +96,11 @@
       <input type="range" id="cfg-fog-range" min="100" max="600" step="20" value="260">
       <span data-cfg-label="fogViewRange">260</span>
     </div>
+    <div class="cfg-row">
+      <label for="cfg-pulse-ratio">!pulse vote threshold</label>
+      <input type="range" id="cfg-pulse-ratio" min="20" max="100" step="5" value="50">
+      <span data-cfg-label="pulseVoteRatio">50%</span>
+    </div>
 
     <div class="cfg-actions">
       <button type="button" id="start-round-btn">Start round (!start)</button>
@@ -114,7 +132,7 @@
       <button type="button" data-test-fill="!join">!join</button>
       <button type="button" data-test-fill="!start">!start</button>
       <button type="button" data-test-fill="!stop">!stop</button>
-      <button type="button" data-test-fill="!grenade">!grenade</button>
+      <button type="button" data-test-fill="!pulse">!pulse</button>
     </div>
     <form id="test-form">
       <input type="text" id="test-username" placeholder="username" value="tester1" size="10">

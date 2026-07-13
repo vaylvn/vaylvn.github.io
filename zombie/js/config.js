@@ -4,20 +4,21 @@ export function createDefaultConfig() {
     wordMin: 3,
     wordMax: 7,
     longWordChance: 0.05,
-    baseSpawnInterval: 1800, // ms, starting pace
-    spawnRampRate: 0.87, // multiplier applied per ~30s wave notch
+    baseSpawnInterval: 2200, // ms, starting pace
+    spawnRampRate: 0.92, // multiplier applied per ~30s wave notch
     fastChance: 0.10,
     armoredChance: 0.10,
     nightMode: false,
     fogEnabled: false,
     fogViewRange: 260, // px beyond the current perimeter radius; only matters if fogEnabled
+    pulseVoteRatio: 0.5, // fraction of alive survivors who must type !pulse to trigger one
 
     // Fixed tunables, not exposed in v1's panel (see spec §8 table).
-    minSpawnInterval: 400,
+    minSpawnInterval: 550,
+    spawnReferencePlayers: 4, // baseSpawnInterval/spawnRampRate are tuned assuming this many alive; solo play is slower, big lobbies faster
     weaponMilestones: [5, 15, 30, 50],
-    grenadeMilestone: 20,
-    grenadeCap: 2,
     leaderboardMaxRows: 8,
+    pulseSpeed: 900, // px/sec the pulse ring expands from the braincell
 
     // Player health + semicircle perimeter around the braincell.
     playerMaxHealth: 3,
@@ -62,6 +63,7 @@ export function wireConfigPanel(gameState) {
   bind('cfg-fast-chance', 'fastChance', v => Number(v) / 100);
   bind('cfg-armored-chance', 'armoredChance', v => Number(v) / 100);
   bind('cfg-fog-range', 'fogViewRange', Number);
+  bind('cfg-pulse-ratio', 'pulseVoteRatio', v => Number(v) / 100);
 
   const nightToggle = document.getElementById('cfg-night-mode');
   if (nightToggle) nightToggle.addEventListener('change', () => { cfg.nightMode = nightToggle.checked; });

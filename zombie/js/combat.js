@@ -1,12 +1,11 @@
-import { createPlayer, awardKill, consumeGrenade, aimAt } from './player.js';
-import { clearZombiesTargetingPlayer } from './zombie.js';
+import { createPlayer, awardKill, aimAt } from './player.js';
+import { triggerPulse } from './zombie.js';
 import { pickWord } from './wordlist.js';
 
 const EFFECT_TTL = {
   kill: 420,
   hit: 180,
   whiff: 380,
-  grenade: 500,
   playerHit: 260,
   overrun: 900,
 };
@@ -33,21 +32,27 @@ function joinPlayer(gameState, msg) {
   return player;
 }
 
-function tryGrenade(gameState, player, codeArg) {
-  if (player.grenades <= 0) return;
-  const expected = (player.grenadeCode || '').toLowerCase();
-  const given = (codeArg || '').toLowerCase();
-  if (!given || given !== expected) return;
+/** Current vote count vs. how many alive survivors are needed - shared with the HUD readout. */
+export function getPulseStatus(gameState) {
+  const aliveCount = [...gameState.players.values()].filter(p => p.alive).length;
+  const required = Math.max(1, Math.ceil(aliveCount * gameState.config.pulseVoteRatio));
+  const current = [...gameState.pulseVotes].filter(id => gameState.players.get(id)?.alive).length;
+  return { current, required };
+}
 
-  const cleared = clearZombiesTargetingPlayer(gameState, player.id);
-  consumeGrenade(player);
-  if (cleared > 0) {
-    pushEffect(gameState, { type: 'grenade', x: player.position.x, y: player.position.y });
+/** A communal panic button: needs pulseVoteRatio of currently-alive survivors to type !pulse before it fires. */
+function tryPulse(gameState, player) {
+  gameState.pulseVotes.add(player.id);
+
+  const { current, required } = getPulseStatus(gameState);
+  if (current >= required) {
+    gameState.pulseVotes.clear();
+    triggerPulse(gameState);
   }
 }
 
 function resolveCommand(gameState, text, msg) {
-  const [cmd, arg] = text.split(/\s+/, 2);
+  const [cmd] = text.split(/\s+/, 2);
 
   switch (cmd) {
     case '!join': {
@@ -69,11 +74,11 @@ function resolveCommand(gameState, text, msg) {
       }
       return;
     }
-    case '!grenade': {
+    case '!pulse': {
       if (gameState.state !== 'PLAYING') return;
       const player = gameState.players.get(msg.userId);
       if (!player || !player.alive) return;
-      tryGrenade(gameState, player, arg);
+      tryPulse(gameState, player);
       return;
     }
     default:

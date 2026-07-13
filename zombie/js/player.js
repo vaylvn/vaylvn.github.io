@@ -5,13 +5,6 @@ let joinCounter = 0;
 // Matches the old static gun angle so idle players look unchanged before their first shot.
 const DEFAULT_AIM_ANGLE = Math.atan2(-0.9, 1.6);
 
-function generateGrenadeCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 3; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
 export function createPlayer(id, name, config) {
   const color = SURVIVOR_PALETTE[joinCounter % SURVIVOR_PALETTE.length];
   joinCounter++;
@@ -21,8 +14,6 @@ export function createPlayer(id, name, config) {
     color,
     kills: 0,
     weaponTier: 0,
-    grenades: 0,
-    grenadeCode: null,
     joinOrder: joinCounter,
     health: config.playerMaxHealth,
     maxHealth: config.playerMaxHealth,
@@ -93,7 +84,7 @@ export function updatePlayerPositions(gameState, dt) {
   }
 }
 
-/** Points the player's gun at (x, y) - called on every hit, whiff, or grenade so they visibly track what they shot at. */
+/** Points the player's gun at (x, y) - called on every hit so they visibly track what they shot at. */
 export function aimAt(player, x, y) {
   player.targetAimAngle = Math.atan2(y - player.position.y, x - player.position.x);
 }
@@ -117,14 +108,4 @@ export function awardKill(player, config) {
 
   const milestonesHit = config.weaponMilestones.filter(m => player.kills >= m).length;
   player.weaponTier = Math.min(milestonesHit, config.weaponMilestones.length);
-
-  if (player.kills % config.grenadeMilestone === 0 && player.grenades < config.grenadeCap) {
-    player.grenades++;
-    player.grenadeCode = generateGrenadeCode();
-  }
-}
-
-export function consumeGrenade(player) {
-  player.grenades = Math.max(0, player.grenades - 1);
-  player.grenadeCode = player.grenades > 0 ? generateGrenadeCode() : null;
 }

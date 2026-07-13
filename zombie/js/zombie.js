@@ -10,6 +10,10 @@ export function resetZombieIdCounter() {
 /** How long a killed zombie's death animation plays before it's removed from the pool. */
 const DEATH_LINGER_MS = 260;
 
+// Fast zombies got unreadable at full wander amplitude - tighter wander keeps
+// their path legible despite the raw speed. Normal/tank use config's wander range.
+const FAST_WANDER = { ampMin: 8, ampMax: 16, freqMin: 0.8, freqMax: 1.3 };
+
 function seededRandom(seed) {
   let s = seed % 2147483647;
   if (s <= 0) s += 2147483646;
@@ -79,7 +83,7 @@ export function spawnZombie(gameState) {
     type = 'fast';
     minLen = 3;
     maxLen = 4;
-    speed = 125;
+    speed = 85;
   }
 
   const hp = isArmored ? 2 : 1;
@@ -87,9 +91,13 @@ export function spawnZombie(gameState) {
   const x = Math.random() * canvasWidth;
   const y = -24;
 
+  const wanderRange = type === 'fast' ? FAST_WANDER : {
+    ampMin: config.wanderAmpMin, ampMax: config.wanderAmpMax,
+    freqMin: config.wanderFreqMin, freqMax: config.wanderFreqMax,
+  };
   const rand = seededRandom(nextId * 7919 + 13);
-  const wanderAmp = config.wanderAmpMin + rand() * (config.wanderAmpMax - config.wanderAmpMin);
-  const wanderFreq = config.wanderFreqMin + rand() * (config.wanderFreqMax - config.wanderFreqMin);
+  const wanderAmp = wanderRange.ampMin + rand() * (wanderRange.ampMax - wanderRange.ampMin);
+  const wanderFreq = wanderRange.freqMin + rand() * (wanderRange.freqMax - wanderRange.freqMin);
   const wanderPhase = rand() * Math.PI * 2;
 
   const zombie = {
@@ -120,12 +128,21 @@ export function spawnZombie(gameState) {
   return zombie;
 }
 
-/** Geometric ramp with a hard floor, plus a soft "wave" notch every ~30s for readable pacing beats. */
+/**
+ * Geometric ramp with a hard floor, plus a soft "wave" notch every ~30s for
+ * readable pacing beats. baseSpawnInterval/spawnRampRate are tuned assuming
+ * spawnReferencePlayers alive at once - solo play stretches the interval out
+ * (one typer can't sustain what five can), big lobbies compress it.
+ */
 export function getSpawnInterval(gameState) {
   const { config, playStartedAt } = gameState;
   const elapsedSec = (performance.now() - playStartedAt) / 1000;
   const waveNumber = Math.floor(elapsedSec / 30);
-  const interval = config.baseSpawnInterval * Math.pow(config.spawnRampRate, waveNumber);
+  let interval = config.baseSpawnInterval * Math.pow(config.spawnRampRate, waveNumber);
+
+  const aliveCount = Math.max(1, [...gameState.players.values()].filter(p => p.alive).length);
+  interval *= config.spawnReferencePlayers / aliveCount;
+
   return Math.max(config.minSpawnInterval, interval);
 }
 
@@ -182,15 +199,31 @@ export function updateZombies(gameState, dt) {
   }
 }
 
-/** Clears every alive zombie currently targeting the given player - a personal panic button, not a screen-wipe. */
-export function clearZombiesTargetingPlayer(gameState, playerId) {
-  let cleared = 0;
+/** Starts a pulse expanding from the braincell - a communal "buy time" wipe, gated behind a chat vote in combat.js. */
+export function triggerPulse(gameState) {
+  gameState.activePulse = { startedAt: performance.now() };
+}
+
+/** Advances the active pulse ring and kills any zombie its leading edge reaches. No-op if no pulse is active. */
+export function updatePulse(gameState) {
+  const pulse = gameState.activePulse;
+  if (!pulse) return;
+
+  const { braincell, config } = gameState;
+  const radius = ((performance.now() - pulse.startedAt) / 1000) * config.pulseSpeed;
+
   for (const zombie of gameState.zombies.values()) {
     if (zombie.dying) continue;
-    if (zombie.targetType === 'player' && zombie.targetId === playerId) {
-      gameState.zombies.delete(zombie.id);
-      cleared++;
+    const dist = Math.hypot(zombie.x - braincell.x, zombie.y - braincell.y);
+    if (dist <= radius) {
+      zombie.dying = true;
+      zombie.diedAt = performance.now();
+      zombie.claimedBy = 'pulse';
     }
   }
-  return cleared;
+
+  const maxRadius = Math.hypot(gameState.canvasWidth, gameState.canvasHeight) + 100;
+  if (radius > maxRadius) {
+    gameState.activePulse = null;
+  }
 }
