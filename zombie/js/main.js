@@ -11,10 +11,6 @@ import { unlockAudio, stopAllZombieWalks, playStart, startBackground, stopBackgr
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-window.__debugGameState = () => gameState;
-window.__debugApi = { spawnZombie, updateZombies, updatePulse, resolveMessage, layoutSemicircle, render, ctx };
-import('./audio.js').then(m => { window.__debugAudio = m; });
-
 const gameState = {
   state: 'BOOT',
   channel: '',

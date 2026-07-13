@@ -137,11 +137,3 @@ export function updateBackgroundIntensity(gameState, dt) {
   backgroundRate += (targetRate - backgroundRate) * Math.min(1, dt * RATE_SMOOTHING);
   backgroundAudio.playbackRate = backgroundRate;
 }
-
-export function _debugBackgroundState() {
-  if (!backgroundAudio) return null;
-  return {
-    paused: backgroundAudio.paused, loop: backgroundAudio.loop, volume: backgroundAudio.volume,
-    playbackRate: backgroundAudio.playbackRate, preservesPitch: backgroundAudio.preservesPitch,
-  };
-}
