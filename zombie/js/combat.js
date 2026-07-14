@@ -209,11 +209,20 @@ function resolveWordKill(gameState, text, msg) {
       pushEffect(gameState, { type: 'powerupUnlocked', x: target.x, y: target.y, powerupType: unlockedType });
     }
 
-    // Rocket takes priority over a naturally-explosive target so a single
-    // kill never double-triggers triggerExplosion (and its chain reaction).
+    // Being naturally explosive always plays the nuclear cue and detonates,
+    // independent of whatever buff mechanic also applies - these are
+    // orthogonal (a glowing zombie doesn't stop being glowing just because
+    // a buff is active). The buff branches below only decide whether there's
+    // an *additional* rocket/pierce effect on top of that; each calls
+    // triggerExplosion at most once per zombie either way, so a naturally-
+    // explosive target killed by a rocket shot doesn't double up.
+    if (target.explosive) playNuclear();
+
     if (activePowerup?.type === 'rocket') {
-      triggerExplosion(gameState, target);
+      triggerExplosion(gameState, target); // covers the target's own explosive nature too, if any
     } else if (activePowerup?.type === 'sniper') {
+      if (target.explosive) triggerExplosion(gameState, target);
+
       const { pierced, endX, endY } = applySniperPierce(gameState, player.position, target);
       for (const pz of pierced) {
         pz.dying = true;
@@ -227,7 +236,6 @@ function resolveWordKill(gameState, text, msg) {
       }
       pushEffect(gameState, { type: 'pierce', x: target.x, y: target.y, endX, endY });
     } else if (target.explosive) {
-      playNuclear();
       triggerExplosion(gameState, target);
     }
 
