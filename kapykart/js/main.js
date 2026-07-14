@@ -1,8 +1,10 @@
 import { connectTwitch } from './twitch.js';
-import { buildTrack, TRACK_DEF } from './track.js';
+import { buildTrack, loadTrackDef } from './track.js';
 import { createKart, updateKart, resetKartColorCycle } from './kart.js';
 import { applyTrackEvents, createChaosState, updateChaosEvent } from './events.js';
-import { render } from './render.js';
+import { render, setAssets } from './render.js';
+import { loadAssets } from './assets.js';
+import { KART_PALETTE } from './palette.js';
 import { wireCameraUI, updateCameraUI } from './ui.js';
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
 import { unlockAudio, playJoin, playRaceStart, playBoost, playHazard, playChaosHit, playFinish } from './audio.js';
@@ -16,14 +18,14 @@ const layers = { floorCanvas, floorCtx, spriteCanvas, spriteCtx };
 const gameState = {
   state: 'BOOT',
   channel: '',
-  track: buildTrack(TRACK_DEF),
+  track: null, // set once loadTrackDef()/buildTrack() resolve, see boot() below
   karts: new Map(),
   chaos: createChaosState(0),
   chaosEnabled: true,
-  camera: { mode: 'topdown', followedId: null, zoomFactor: 1.2 },
+  camera: { mode: 'overview', followedId: null, zoomFactor: 1.2 },
   canvasWidth: 0,
   canvasHeight: 0,
-  topdownHitboxes: [],
+  overviewHitboxes: [],
   raceStartedAt: 0,
   raceEndedAt: 0,
 };
@@ -79,7 +81,7 @@ function startRace() {
   gameState.chaosEnabled = document.getElementById('cfg-chaos-toggle').checked;
   gameState.chaos = createChaosState(performance.now());
   gameState.raceStartedAt = performance.now();
-  gameState.camera.mode = 'topdown';
+  gameState.camera.mode = 'overview';
   gameState.camera.followedId = null;
   setState('PLAYING');
   playRaceStart();
@@ -96,7 +98,7 @@ function resetToLobby() {
   if (gameState.state !== 'ENDED') return;
   gameState.karts.clear();
   resetKartColorCycle();
-  gameState.camera.mode = 'topdown';
+  gameState.camera.mode = 'overview';
   gameState.camera.followedId = null;
   document.getElementById('results-screen').classList.add('hidden');
   initLeaderboard();
@@ -139,6 +141,25 @@ function enterLobby(channelLabel) {
   setState('LOBBY');
   resizeCanvases();
 }
+
+// --- Load track + custom art before the boot form is usable ---
+// (guards against !join/Connect racing ahead of gameState.track being ready)
+
+const connectSubmitBtn = document.getElementById('connect-submit-btn');
+const bootLoadingHint = document.getElementById('boot-loading-hint');
+
+async function boot() {
+  const [trackDef, assets] = await Promise.all([
+    loadTrackDef(),
+    loadAssets(KART_PALETTE),
+  ]);
+  gameState.track = buildTrack(trackDef);
+  setAssets(assets);
+  connectSubmitBtn.disabled = false;
+  bootLoadingHint.classList.add('hidden');
+}
+
+boot();
 
 document.getElementById('connect-form').addEventListener('submit', e => {
   e.preventDefault();

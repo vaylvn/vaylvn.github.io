@@ -152,3 +152,25 @@ export function crossedProgress(prev, curr, at) {
   if (curr >= prev) return prev < at && at <= curr;
   return at > prev || at <= curr;
 }
+
+function isValidTrackDef(def) {
+  return def && Array.isArray(def.waypoints) && def.waypoints.length >= 3
+    && typeof def.width === 'number' && typeof def.laps === 'number';
+}
+
+/**
+ * Loads a custom track authored in track-editor.html (see js/editor.js) if
+ * track.json is present next to index.html, falling back to the built-in
+ * TRACK_DEF otherwise. No code changes needed to swap tracks - just drop
+ * the exported file in.
+ */
+export async function loadTrackDef() {
+  try {
+    const res = await fetch('track.json', { cache: 'no-store' });
+    if (!res.ok) return TRACK_DEF;
+    const def = await res.json();
+    return isValidTrackDef(def) ? def : TRACK_DEF;
+  } catch {
+    return TRACK_DEF;
+  }
+}

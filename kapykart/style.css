@@ -23,6 +23,8 @@ html, body {
 }
 
 .hidden { display: none !important; }
+.hint { color: var(--text-dim); font-size: 12px; line-height: 1.4; }
+a { color: var(--accent); }
 
 /* --- HUD --- */
 #hud-top {
@@ -186,8 +188,7 @@ body[data-game-state="PLAYING"] #camera-controls {
   color: var(--text);
   font-size: 12px;
 }
-#camera-controls #cam-topdown-btn.active,
-#camera-controls #cam-topdown-btn {
+#camera-controls #cam-overview-btn.active {
   background: var(--accent);
   color: #04120d;
 }
@@ -200,7 +201,6 @@ body[data-game-state="PLAYING"] #camera-controls {
   font-size: 12px;
   color: var(--text-dim);
 }
-#camera-controls .cam-row.dimmed { opacity: 0.4; }
 #camera-controls .hint {
   margin: 4px 0 0;
   font-size: 11px;
@@ -291,6 +291,8 @@ input[type="range"] { width: 100%; }
 .boot-card label { font-size: 12px; color: var(--text-dim); }
 .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .error { color: var(--danger); min-height: 16px; font-size: 12px; margin: 0; }
+#boot-loading-hint { margin: 0; text-align: center; }
+.boot-editor-link { margin: 0; text-align: center; }
 
 /* --- Test console --- */
 #test-console {

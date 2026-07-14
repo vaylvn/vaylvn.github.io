@@ -33,26 +33,26 @@ function cycleFollowed(gameState, delta) {
 }
 
 export function wireCameraUI(gameState, spriteCanvas) {
-  const topdownBtn = document.getElementById('cam-topdown-btn');
+  const overviewBtn = document.getElementById('cam-overview-btn');
   const prevBtn = document.getElementById('cam-prev-btn');
   const nextBtn = document.getElementById('cam-next-btn');
   const zoomSlider = document.getElementById('cam-zoom-slider');
 
-  topdownBtn.addEventListener('click', () => {
-    if (gameState.camera.mode === 'topdown') {
+  overviewBtn.addEventListener('click', () => {
+    if (gameState.camera.mode === 'overview') {
       setFollowedKart(gameState, gameState.camera.followedId || pickLeaderId(gameState));
     } else {
-      gameState.camera.mode = 'topdown';
+      gameState.camera.mode = 'overview';
     }
   });
 
   prevBtn.addEventListener('click', () => {
-    if (gameState.camera.mode === 'topdown') setFollowedKart(gameState, pickLeaderId(gameState));
+    if (gameState.camera.mode === 'overview') setFollowedKart(gameState, pickLeaderId(gameState));
     else cycleFollowed(gameState, -1);
   });
 
   nextBtn.addEventListener('click', () => {
-    if (gameState.camera.mode === 'topdown') setFollowedKart(gameState, pickLeaderId(gameState));
+    if (gameState.camera.mode === 'overview') setFollowedKart(gameState, pickLeaderId(gameState));
     else cycleFollowed(gameState, 1);
   });
 
@@ -61,11 +61,11 @@ export function wireCameraUI(gameState, spriteCanvas) {
   });
 
   spriteCanvas.addEventListener('click', e => {
-    if (gameState.camera.mode !== 'topdown') return;
+    if (gameState.camera.mode !== 'overview') return;
     const rect = spriteCanvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    for (const box of gameState.topdownHitboxes || []) {
+    for (const box of gameState.overviewHitboxes || []) {
       const hitRadius = Math.max(box.r, 14);
       if (Math.hypot(clickX - box.x, clickY - box.y) <= hitRadius) {
         setFollowedKart(gameState, box.id);
@@ -77,13 +77,9 @@ export function wireCameraUI(gameState, spriteCanvas) {
 
 /** Call once per frame (or on state changes) to keep button/slider state in sync. */
 export function updateCameraUI(gameState) {
-  const topdownBtn = document.getElementById('cam-topdown-btn');
-  const zoomSlider = document.getElementById('cam-zoom-slider');
-  const zoomRow = document.getElementById('cam-zoom-row');
-  const isTopdown = gameState.camera.mode === 'topdown';
+  const overviewBtn = document.getElementById('cam-overview-btn');
+  const isOverview = gameState.camera.mode === 'overview';
 
-  topdownBtn.classList.toggle('active', isTopdown);
-  topdownBtn.textContent = isTopdown ? 'Topdown ✓' : 'Topdown view';
-  zoomSlider.disabled = isTopdown;
-  zoomRow.classList.toggle('dimmed', isTopdown);
+  overviewBtn.classList.toggle('active', isOverview);
+  overviewBtn.textContent = isOverview ? 'Overview ✓' : 'Overview';
 }

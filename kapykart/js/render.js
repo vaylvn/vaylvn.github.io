@@ -1,8 +1,9 @@
 import { sampleTrack } from './track.js';
 import {
-  computeTopdownScale, topdownProject,
+  buildOverviewCamera, overviewFloorProject, overviewSpriteProject, overviewPerspectiveCss,
   followFloorProject, followSpriteProject, followPerspectiveCss,
 } from './camera.js';
+import { pickFrameIndex } from './assets.js';
 import {
   CAPYBARA_COLOR, CAPYBARA_EAR_COLOR, STROKE_COLOR, GROUND_COLOR, ROAD_COLOR,
   ROAD_EDGE_COLOR, CHECKER_A, CHECKER_B, BOOST_COLOR, HAZARD_COLOR, ACCENT_COLOR,
@@ -11,14 +12,44 @@ import {
 
 const ROAD_SAMPLES = 240; // resolution for the drawn track ribbon
 const KART_BASE_SIZE = 24; // px at scale 1
+const PIXEL_SCALE = 3; // how chunky the 8-bit look is - same offscreen-buffer trick as BrainDead (zombie/js/render.js)
 
-// --- Road edge geometry: expensive-ish to build, so cache per track ---
+// --- Custom art (see assets.js). Null until/unless loadAssets() resolves with real files. ---
+
+let assets = null;
+
+export function setAssets(loadedAssets) {
+  assets = loadedAssets;
+}
+
+/** Draws `img` centered at the origin, fit inside a `boxW`x`boxH` box (preserving aspect ratio). */
+function drawFitted(ctx, img, boxW, boxH) {
+  const imgAspect = img.naturalWidth ? img.naturalWidth / img.naturalHeight : img.width / img.height;
+  const boxAspect = boxW / boxH;
+  let w = boxW;
+  let h = boxH;
+  if (imgAspect > boxAspect) h = boxW / imgAspect; else w = boxH * imgAspect;
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+}
+
+// --- Road edge geometry + overview camera: expensive-ish to build, cache per track ---
 
 let cachedTrack = null;
 let cachedEdges = null;
+let cachedOverviewCamera = null;
 
 function getRoadEdges(track) {
-  if (cachedTrack === track) return cachedEdges;
+  ensureTrackCache(track);
+  return cachedEdges;
+}
+
+function getOverviewCamera(track) {
+  ensureTrackCache(track);
+  return cachedOverviewCamera;
+}
+
+function ensureTrackCache(track) {
+  if (cachedTrack === track) return;
   const halfWidth = track.def.width / 2;
   const left = [];
   const right = [];
@@ -31,7 +62,42 @@ function getRoadEdges(track) {
   }
   cachedTrack = track;
   cachedEdges = { left, right };
-  return cachedEdges;
+  cachedOverviewCamera = buildOverviewCamera(track);
+}
+
+// --- Pixelation: draw the "world" (floor + karts) at low res, upscale with
+// smoothing off. Same technique as zombie/js/render.js's getPixelContext -
+// keeps name labels crisp by drawing them separately at full res afterward. ---
+
+const pixelCanvases = new WeakMap(); // real canvas element -> { canvas, ctx } low-res buffer
+
+function getPixelContext(targetCanvas, canvasWidth, canvasHeight) {
+  const w = Math.max(1, Math.round(canvasWidth / PIXEL_SCALE));
+  const h = Math.max(1, Math.round(canvasHeight / PIXEL_SCALE));
+  let entry = pixelCanvases.get(targetCanvas);
+  if (!entry) {
+    const canvas = document.createElement('canvas');
+    entry = { canvas, ctx: canvas.getContext('2d') };
+    pixelCanvases.set(targetCanvas, entry);
+  }
+  if (entry.canvas.width !== w || entry.canvas.height !== h) {
+    entry.canvas.width = w;
+    entry.canvas.height = h;
+  }
+  entry.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  entry.ctx.clearRect(0, 0, w, h);
+  entry.ctx.scale(1 / PIXEL_SCALE, 1 / PIXEL_SCALE);
+  return entry.ctx;
+}
+
+/** Blits a low-res pixel buffer up to the real canvas at full size, smoothing off. */
+function blitPixelBuffer(realCtx, targetCanvas, canvasWidth, canvasHeight) {
+  const entry = pixelCanvases.get(targetCanvas);
+  if (!entry) return;
+  realCtx.save();
+  realCtx.imageSmoothingEnabled = false;
+  realCtx.drawImage(entry.canvas, 0, 0, entry.canvas.width, entry.canvas.height, 0, 0, canvasWidth, canvasHeight);
+  realCtx.restore();
 }
 
 function drawRoad(ctx, track, project) {
@@ -146,31 +212,56 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawKartSprite(ctx, kart, x, y, scale, { highlighted = false, chaosWarning = false } = {}) {
+function drawKartBody(ctx, kart, size, spriteAngle) {
+  const sheet = assets && assets.kartSheet;
+  const sheetFrames = sheet && sheet.frames.get(kart.color);
+  if (sheetFrames) {
+    const frame = sheetFrames[pickFrameIndex(spriteAngle, sheet.frameCount)];
+    drawFitted(ctx, frame, size, size);
+    return;
+  }
+
+  const kartTint = assets && assets.kartTints.get(kart.color);
+  if (kartTint) {
+    drawFitted(ctx, kartTint, size, size * 0.6);
+  } else {
+    ctx.fillStyle = kart.color;
+    ctx.strokeStyle = STROKE_COLOR;
+    ctx.lineWidth = Math.max(1, 1.5);
+    roundRect(ctx, -size / 2, -size * 0.22, size, size * 0.5, size * 0.16);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  if (assets && assets.capybaraImg) {
+    ctx.save();
+    ctx.translate(0, -size * 0.3);
+    drawFitted(ctx, assets.capybaraImg, size * 0.75, size * 0.6);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = CAPYBARA_EAR_COLOR;
+    ctx.beginPath();
+    ctx.ellipse(-size * 0.2, -size * 0.56, size * 0.09, size * 0.11, 0, 0, Math.PI * 2);
+    ctx.ellipse(size * 0.2, -size * 0.56, size * 0.09, size * 0.11, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = CAPYBARA_COLOR;
+    ctx.strokeStyle = STROKE_COLOR;
+    ctx.lineWidth = Math.max(0.75, 1);
+    ctx.beginPath();
+    ctx.ellipse(0, -size * 0.38, size * 0.32, size * 0.24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+/** Body + status effects only - the pixelated layer. Name label is drawn separately at full res, see drawKartLabel. */
+function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle, { highlighted = false, chaosWarning = false } = {}) {
   const size = KART_BASE_SIZE * scale;
   ctx.save();
   ctx.translate(x, y);
 
-  ctx.fillStyle = kart.color;
-  ctx.strokeStyle = STROKE_COLOR;
-  ctx.lineWidth = Math.max(1, 1.5 * scale);
-  roundRect(ctx, -size / 2, -size * 0.22, size, size * 0.5, size * 0.16);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = CAPYBARA_EAR_COLOR;
-  ctx.beginPath();
-  ctx.ellipse(-size * 0.2, -size * 0.56, size * 0.09, size * 0.11, 0, 0, Math.PI * 2);
-  ctx.ellipse(size * 0.2, -size * 0.56, size * 0.09, size * 0.11, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = CAPYBARA_COLOR;
-  ctx.strokeStyle = STROKE_COLOR;
-  ctx.lineWidth = Math.max(0.75, 1 * scale);
-  ctx.beginPath();
-  ctx.ellipse(0, -size * 0.38, size * 0.32, size * 0.24, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+  drawKartBody(ctx, kart, size, spriteAngle);
 
   if (kart.spinTimer > 0) {
     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
@@ -210,7 +301,11 @@ function drawKartSprite(ctx, kart, x, y, scale, { highlighted = false, chaosWarn
   }
 
   ctx.restore();
+}
 
+/** Full-res pass, drawn after the pixel buffer is blitted up - keeps names crisp instead of blocky. */
+function drawKartLabel(ctx, kart, x, y, scale) {
+  const size = KART_BASE_SIZE * scale;
   const labelScale = Math.max(0.6, Math.min(1, scale));
   ctx.save();
   ctx.font = `${11 * labelScale}px Consolas, monospace`;
@@ -224,31 +319,68 @@ function drawKartSprite(ctx, kart, x, y, scale, { highlighted = false, chaosWarn
   ctx.restore();
 }
 
-export function renderTopdown(gameState, layers) {
-  layers.floorCanvas.style.display = 'none';
-  layers.floorCanvas.style.transform = '';
+/** Draws the road + markers into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
+function drawPixelatedFloor(realCtx, canvas, track, canvasWidth, canvasHeight, project) {
+  const pctx = getPixelContext(canvas, canvasWidth, canvasHeight);
+  pctx.fillStyle = GROUND_COLOR;
+  pctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  drawRoad(pctx, track, project);
+  drawMarkers(pctx, track, project);
+  blitPixelBuffer(realCtx, canvas, canvasWidth, canvasHeight);
+}
 
-  const ctx = layers.spriteCtx;
+/**
+ * Shared by both camera modes: draws the floor (CSS-tilted, pixelated) and
+ * the sprites (depth-projected, pixelated bodies + crisp labels on top).
+ * `projectFloor`/`projectSprite` differ only in which anchor they recenter
+ * on - a followed kart, or the fixed overview anchor (see camera.js).
+ */
+function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssTransform, hitboxSink }) {
   const { track, karts, canvasWidth, canvasHeight } = gameState;
 
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  ctx.fillStyle = GROUND_COLOR;
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  layers.floorCanvas.style.display = 'block';
+  layers.floorCanvas.style.transform = cssTransform;
+  drawPixelatedFloor(layers.floorCtx, layers.floorCanvas, track, canvasWidth, canvasHeight, projectFloor);
 
-  const scale = computeTopdownScale(track, canvasWidth, canvasHeight);
-  const project = (x, y) => topdownProject(track, scale, canvasWidth, canvasHeight, x, y);
-
-  drawRoad(ctx, track, project);
-  drawMarkers(ctx, track, project);
+  const spritePixelCtx = getPixelContext(layers.spriteCanvas, canvasWidth, canvasHeight);
 
   const chaosTargetId = gameState.chaos.pending ? gameState.chaos.pending.targetId : null;
-  gameState.topdownHitboxes = [];
-
+  const projected = [];
   for (const kart of karts.values()) {
-    const p = project(kart.worldPos.x, kart.worldPos.y);
-    drawKartSprite(ctx, kart, p.x, p.y, 1, { chaosWarning: kart.id === chaosTargetId });
-    gameState.topdownHitboxes.push({ id: kart.id, x: p.x, y: p.y, r: KART_BASE_SIZE * 0.6 });
+    const p = projectSprite(kart);
+    if (p.visible === false) continue;
+    projected.push({ kart, p });
   }
+  projected.sort((a, b) => a.p.scale - b.p.scale); // draw far-to-near so nearer karts occlude correctly
+
+  if (hitboxSink) {
+    hitboxSink.length = 0;
+    for (const { kart, p } of projected) hitboxSink.push({ id: kart.id, x: p.x, y: p.y, r: KART_BASE_SIZE * 0.6 * p.scale });
+  }
+
+  for (const { kart, p } of projected) {
+    drawKartBodyAndEffects(spritePixelCtx, kart, p.x, p.y, p.scale, p.angle, {
+      highlighted: hitboxSink ? false : kart.id === gameState.camera.followedId,
+      chaosWarning: kart.id === chaosTargetId,
+    });
+  }
+  blitPixelBuffer(layers.spriteCtx, layers.spriteCanvas, canvasWidth, canvasHeight);
+
+  for (const { kart, p } of projected) drawKartLabel(layers.spriteCtx, kart, p.x, p.y, p.scale);
+}
+
+export function renderOverview(gameState, layers) {
+  const { track, canvasWidth, canvasHeight, camera } = gameState;
+  const overviewCamera = getOverviewCamera(track);
+
+  renderCameraView(gameState, layers, {
+    projectFloor: (x, y) => overviewFloorProject(overviewCamera, canvasWidth, canvasHeight, x, y, camera.zoomFactor),
+    projectSprite: kart => overviewSpriteProject(
+      overviewCamera, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, camera.zoomFactor, kart.angle,
+    ),
+    cssTransform: overviewPerspectiveCss(camera.zoomFactor),
+    hitboxSink: gameState.overviewHitboxes,
+  });
 }
 
 export function renderFollow(gameState, layers) {
@@ -256,41 +388,19 @@ export function renderFollow(gameState, layers) {
   const followedKart = karts.get(camera.followedId);
   if (!followedKart) return;
 
-  layers.floorCanvas.style.display = 'block';
-  layers.floorCanvas.style.transform = followPerspectiveCss(camera.zoomFactor);
-
-  const floorCtx = layers.floorCtx;
-  floorCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-  floorCtx.fillStyle = GROUND_COLOR;
-  floorCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-  const floorProject = (x, y) => followFloorProject(followedKart, canvasWidth, canvasHeight, x, y, camera.zoomFactor);
-  drawRoad(floorCtx, track, floorProject);
-  drawMarkers(floorCtx, track, floorProject);
-
-  const spriteCtx = layers.spriteCtx;
-  spriteCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-  const chaosTargetId = gameState.chaos.pending ? gameState.chaos.pending.targetId : null;
-  const projected = [];
-  for (const kart of karts.values()) {
-    const p = followSpriteProject(followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, camera.zoomFactor);
-    if (!p.visible) continue;
-    projected.push({ kart, p });
-  }
-  projected.sort((a, b) => a.p.scale - b.p.scale); // draw far-to-near so nearer karts occlude correctly
-
-  for (const { kart, p } of projected) {
-    drawKartSprite(spriteCtx, kart, p.x, p.y, p.scale, {
-      highlighted: kart.id === followedKart.id,
-      chaosWarning: kart.id === chaosTargetId,
-    });
-  }
+  renderCameraView(gameState, layers, {
+    projectFloor: (x, y) => followFloorProject(followedKart, canvasWidth, canvasHeight, x, y, camera.zoomFactor),
+    projectSprite: kart => followSpriteProject(
+      followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, camera.zoomFactor, kart.angle,
+    ),
+    cssTransform: followPerspectiveCss(camera.zoomFactor),
+    hitboxSink: null,
+  });
 }
 
 export function render(gameState, layers) {
-  if (gameState.camera.mode === 'topdown') {
-    renderTopdown(gameState, layers);
+  if (gameState.camera.mode === 'overview') {
+    renderOverview(gameState, layers);
   } else {
     renderFollow(gameState, layers);
   }

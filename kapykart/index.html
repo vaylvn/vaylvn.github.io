@@ -30,14 +30,14 @@
   </div>
 
   <div id="camera-controls">
-    <button type="button" id="cam-topdown-btn">Topdown view</button>
+    <button type="button" id="cam-overview-btn">Overview</button>
     <button type="button" id="cam-prev-btn" title="Follow previous racer">◀ Prev</button>
     <button type="button" id="cam-next-btn" title="Follow next racer">Next ▶</button>
     <div class="cam-row" id="cam-zoom-row">
       <label for="cam-zoom-slider">Zoom</label>
       <input type="range" id="cam-zoom-slider" min="60" max="220" value="120">
     </div>
-    <p class="hint">Click a kart in topdown view to ride along with it.</p>
+    <p class="hint">Click a kart in overview mode to ride along with it.</p>
   </div>
 
   <div id="results-screen" class="hidden">
@@ -91,8 +91,10 @@
         Test mode (simulate chat locally, no Twitch connection)
       </label>
 
-      <button type="submit">Connect</button>
+      <button type="submit" id="connect-submit-btn" disabled>Connect</button>
+      <p id="boot-loading-hint" class="hint">Loading track and assets…</p>
       <p id="boot-error" class="error"></p>
+      <p class="hint boot-editor-link"><a href="track-editor.html">Design a custom track →</a></p>
     </form>
   </div>
 
