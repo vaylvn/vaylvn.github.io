@@ -41,10 +41,10 @@ const KART_SHEET_ROWS = 2;
 // oncoming), frame 4 is the "facing away" rear view (relativeAngle = 0,
 // the common case - a kart driving the same direction the camera looks).
 // KART_SHEET_CLOCKWISE picks which way frames advance between those two
-// fixed points and was not distinguishable from static frames alone -
-// flip it if karts appear to turn the wrong way once this is live.
+// fixed points - confirmed false against the real sheet (front/back poses
+// were right, but left/right turns showed the mirrored frame).
 const KART_SHEET_FRAME0_OFFSET = Math.PI; // radians added before frame lookup
-const KART_SHEET_CLOCKWISE = true; // does frame index increase clockwise as heading rotates?
+const KART_SHEET_CLOCKWISE = false; // does frame index increase clockwise as heading rotates?
 
 // Tuned by sampling the actual sheet's red kart-body panel (clustered
 // around hue 5-15deg, sat 0.55-0.9, lightness 0.2-0.5) versus the

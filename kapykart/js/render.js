@@ -90,10 +90,17 @@ function getPixelContext(targetCanvas, canvasWidth, canvasHeight) {
   return entry.ctx;
 }
 
-/** Blits a low-res pixel buffer up to the real canvas at full size, smoothing off. */
+/**
+ * Blits a low-res pixel buffer up to the real canvas at full size, smoothing
+ * off. Clears the real canvas first - the buffer is mostly transparent
+ * (only kart silhouettes are opaque), so without this, drawImage would only
+ * paint over the new kart positions and leave every previous frame's karts
+ * standing forever, smearing a trail around the whole track.
+ */
 function blitPixelBuffer(realCtx, targetCanvas, canvasWidth, canvasHeight) {
   const entry = pixelCanvases.get(targetCanvas);
   if (!entry) return;
+  realCtx.clearRect(0, 0, canvasWidth, canvasHeight);
   realCtx.save();
   realCtx.imageSmoothingEnabled = false;
   realCtx.drawImage(entry.canvas, 0, 0, entry.canvas.width, entry.canvas.height, 0, 0, canvasWidth, canvasHeight);
