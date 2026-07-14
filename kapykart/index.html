@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KapyKart — Twitch Chat Racing Game</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="hud-top">
+    <span class="hud-item"><strong>#</strong><span id="hud-channel">—</span></span>
+    <span class="hud-item">state: <span id="hud-state">BOOT</span></span>
+    <span class="hud-item" id="hud-timer-wrap">t+<span id="hud-timer">00:00</span></span>
+    <span class="hud-item">racers: <span id="hud-racers">0</span></span>
+  </div>
+
+  <div id="leaderboard">
+    <h2>Standings</h2>
+    <div id="leaderboard-list"></div>
+  </div>
+
+  <div id="game-area">
+    <canvas id="floor-canvas"></canvas>
+    <canvas id="sprite-canvas"></canvas>
+  </div>
+
+  <div id="lobby-prompt">
+    <p>Type <code>!join</code> in chat to grab a kart!</p>
+  </div>
+
+  <div id="camera-controls">
+    <button type="button" id="cam-topdown-btn">Topdown view</button>
+    <button type="button" id="cam-prev-btn" title="Follow previous racer">◀ Prev</button>
+    <button type="button" id="cam-next-btn" title="Follow next racer">Next ▶</button>
+    <div class="cam-row" id="cam-zoom-row">
+      <label for="cam-zoom-slider">Zoom</label>
+      <input type="range" id="cam-zoom-slider" min="60" max="220" value="120">
+    </div>
+    <p class="hint">Click a kart in topdown view to ride along with it.</p>
+  </div>
+
+  <div id="results-screen" class="hidden">
+    <div class="results-card">
+      <h1>Race Over</h1>
+      <p class="tagline">Final standings</p>
+
+      <div class="results-table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr><th>#</th><th>Racer</th><th>Result</th></tr>
+          </thead>
+          <tbody id="results-table-body"></tbody>
+        </table>
+      </div>
+
+      <button type="button" id="back-to-lobby-btn">Back to lobby</button>
+    </div>
+  </div>
+
+  <div id="config-panel">
+    <h2>Round setup</h2>
+    <p class="hint">Tune before starting. Anyone can adjust here since it's your screen.</p>
+
+    <div class="cfg-row">
+      <label for="cfg-laps">Laps</label>
+      <input type="range" id="cfg-laps" min="1" max="6" value="3">
+      <span id="cfg-laps-label">3</span>
+    </div>
+    <div class="cfg-row cfg-row-toggle">
+      <label for="cfg-chaos-toggle">Chaos event (blue-shell moment)</label>
+      <input type="checkbox" id="cfg-chaos-toggle" checked>
+    </div>
+
+    <div class="cfg-actions">
+      <button type="button" id="start-round-btn">Start race</button>
+    </div>
+    <p id="start-hint" class="hint hidden">Need at least one racer to <code>!join</code> first.</p>
+  </div>
+
+  <div id="boot-overlay">
+    <form id="connect-form" class="boot-card">
+      <h1 class="logo-text">KapyKart</h1>
+      <p class="tagline">Pixelated capybaras in karts, racing a fixed track. Chat joins with <code>!join</code> — no further input needed, so stream latency never disadvantages anyone.</p>
+
+      <label for="channel-input">Twitch channel name</label>
+      <input type="text" id="channel-input" placeholder="yourchannel" autocomplete="off">
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="test-mode-toggle">
+        Test mode (simulate chat locally, no Twitch connection)
+      </label>
+
+      <button type="submit">Connect</button>
+      <p id="boot-error" class="error"></p>
+    </form>
+  </div>
+
+  <div id="test-console" class="hidden">
+    <h3>Test console</h3>
+    <div class="test-quick-buttons">
+      <button type="button" data-test-fill="!join">!join</button>
+      <button type="button" id="test-join-batch">+5 racers</button>
+    </div>
+    <form id="test-form">
+      <input type="text" id="test-username" placeholder="username" value="tester1" size="10">
+      <input type="text" id="test-message" placeholder="!join" autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script src="tmi.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
