@@ -5,13 +5,25 @@ let joinCounter = 0;
 
 const LAP_SECONDS = 22; // roughly how long a lap takes at base speed - tune the whole race's pace from here
 const SPEED_VARIANCE = 0.12; // +/- fraction of base speed, randomized per kart
-// Drift strength scales with maxOffset (not a fixed constant) so the weave
-// stays visible regardless of track width. Picked so a kart's lateral target
-// typically reaches close to the lane bound within ~10-15s (half a lap or
-// so) rather than a fixed number that only weaved a few px out of ~26 max.
-const DRIFT_STRENGTH_FACTOR = 8; // world units/sec^2 per world unit of maxOffset
 const LATERAL_SMOOTHING = 1.2; // per-second ease rate toward lateralTarget
 const LANE_BOUND_FRACTION = 0.6; // how much of the half-track-width the weave is allowed to use
+
+// The weave is a per-kart sine wave (own period/phase/amplitude, randomized
+// once at spawn) plus a small residual random wobble on top - not a plain
+// random walk. A plain walk sounds like it should decorrelate between karts
+// on its own, but in practice it spends most of its time pinned near
+// whichever lane-bound edge it last wandered into (nothing pulls it back
+// toward center), so a pack of karts ends up hugging the same edge together
+// and reads as "everyone taking the same path". A sine wave guarantees each
+// kart's path is a distinct, continuously-varying curve that keeps crossing
+// back toward center, and randomizing period/phase/amplitude per kart
+// guarantees no two karts trace the same curve.
+const WEAVE_PERIOD_MIN = 9; // seconds per full left-right-left cycle
+const WEAVE_PERIOD_MAX = 17;
+const WEAVE_AMPLITUDE_MIN = 0.55; // fraction of maxOffset
+const WEAVE_AMPLITUDE_MAX = 1.0;
+const WEAVE_JITTER_FACTOR = 3; // world units/sec^2 of small extra wobble per world unit of maxOffset
+const WEAVE_JITTER_BOUND_FRACTION = 0.3; // the wobble alone can't exceed this fraction of maxOffset
 
 const GRID_LANES = 9; // evenly spaced starting slots across the track width; wraps (with jitter) past this
 
@@ -43,6 +55,10 @@ export function createKart(id, name, track) {
     totalProgress: 0,
     lateralOffset,
     lateralTarget: lateralOffset,
+    weavePeriod: WEAVE_PERIOD_MIN + Math.random() * (WEAVE_PERIOD_MAX - WEAVE_PERIOD_MIN),
+    weavePhase: Math.random() * Math.PI * 2,
+    weaveAmplitude: WEAVE_AMPLITUDE_MIN + Math.random() * (WEAVE_AMPLITUDE_MAX - WEAVE_AMPLITUDE_MIN),
+    weaveJitter: 0, // small residual random wobble layered on the sine, see updateKart
     speedBase: baseSpeed * (1 + (Math.random() * 2 - 1) * SPEED_VARIANCE),
     speedCurrent: 0,
     boostTimer: 0,
@@ -102,9 +118,12 @@ export function updateKart(kart, track, dt, now) {
   kart.totalProgress = kart.lap + kart.lapProgress;
 
   const maxOffset = track.def.width * 0.5 * LANE_BOUND_FRACTION;
-  const driftStrength = maxOffset * DRIFT_STRENGTH_FACTOR;
-  kart.lateralTarget += (Math.random() - 0.5) * driftStrength * dt;
-  kart.lateralTarget = Math.max(-maxOffset, Math.min(maxOffset, kart.lateralTarget));
+  const jitterBound = maxOffset * WEAVE_JITTER_BOUND_FRACTION;
+  kart.weaveJitter += (Math.random() - 0.5) * maxOffset * WEAVE_JITTER_FACTOR * dt;
+  kart.weaveJitter = Math.max(-jitterBound, Math.min(jitterBound, kart.weaveJitter));
+
+  const wave = Math.sin((now / 1000) * (Math.PI * 2 / kart.weavePeriod) + kart.weavePhase) * maxOffset * kart.weaveAmplitude;
+  kart.lateralTarget = Math.max(-maxOffset, Math.min(maxOffset, wave + kart.weaveJitter));
   kart.lateralOffset += (kart.lateralTarget - kart.lateralOffset) * Math.min(1, LATERAL_SMOOTHING * dt);
 
   const center = sampleTrack(track, kart.lapProgress);
