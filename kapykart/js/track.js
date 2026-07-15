@@ -160,7 +160,8 @@ function isValidTrackDef(def) {
  * Loads a custom track authored in track-editor.html (see js/editor.js) if
  * track.json is present next to index.html, falling back to the built-in
  * TRACK_DEF otherwise. No code changes needed to swap tracks - just drop
- * the exported file in.
+ * the exported file in. Used as the single-track legacy path when no
+ * tracks/manifest.json exists - see loadTrackList().
  */
 export async function loadTrackDef() {
   try {
@@ -171,6 +172,56 @@ export async function loadTrackDef() {
   } catch {
     return TRACK_DEF;
   }
+}
+
+/**
+ * Loads one track JSON file from tracks/<file> (as referenced by a
+ * tracks/manifest.json entry - see loadTrackList()). Returns null on any
+ * failure so the caller can skip a bad entry instead of the whole list
+ * failing.
+ */
+async function loadTrackFile(file) {
+  try {
+    const res = await fetch(`tracks/${file}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const def = await res.json();
+    return isValidTrackDef(def) ? def : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Loads every available track as a list of { label, def }, for the
+ * streamer to cycle through in the lobby (see ui.js/main.js).
+ *
+ * If tracks/manifest.json exists - an array of { file, label } entries,
+ * each file relative to tracks/ - every valid entry becomes one track in
+ * the list. Otherwise falls back to the original single-track flow
+ * (track.json next to index.html, or the built-in TRACK_DEF), so an
+ * existing setup with just one track.json keeps working with zero changes.
+ */
+export async function loadTrackList() {
+  try {
+    const res = await fetch('tracks/manifest.json', { cache: 'no-store' });
+    if (res.ok) {
+      const manifest = await res.json();
+      if (Array.isArray(manifest) && manifest.length > 0) {
+        const entries = [];
+        for (const item of manifest) {
+          if (!item || typeof item.file !== 'string') continue;
+          const def = await loadTrackFile(item.file);
+          if (def) entries.push({ label: item.label || def.id || item.file, def });
+        }
+        if (entries.length > 0) return entries;
+      }
+    }
+  } catch {
+    // fall through to the legacy single-track path below
+  }
+
+  const def = await loadTrackDef();
+  return [{ label: def.id || 'Track', def }];
 }
 
 /**

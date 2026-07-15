@@ -27,14 +27,8 @@ const WEAVE_JITTER_BOUND_FRACTION = 0.3; // the wobble alone can't exceed this f
 
 const GRID_LANES = 9; // evenly spaced starting slots across the track width; wraps (with jitter) past this
 
-export function createKart(id, name, track) {
-  const gridSlot = joinCounter;
-  const color = KART_PALETTE[joinCounter % KART_PALETTE.length];
-  joinCounter++;
-  const baseSpeed = track.length / LAP_SECONDS;
-
-  // Line karts up side-by-side on the starting grid rather than stacked at (0,0).
-  // Slots wrap around after GRID_LANES with a small jitter so repeats don't land pixel-identical.
+/** Starting-grid lateral position + world pos/angle for a given slot on `track`. */
+function computeGridSpawn(track, gridSlot) {
   const maxOffset = track.def.width * 0.5 * LANE_BOUND_FRACTION;
   const laneIndex = gridSlot % GRID_LANES;
   const wrapPass = Math.floor(gridSlot / GRID_LANES);
@@ -45,35 +39,62 @@ export function createKart(id, name, track) {
   const startCenter = sampleTrack(track, 0);
   const perpX = -Math.sin(startCenter.angle);
   const perpY = Math.cos(startCenter.angle);
-
   return {
-    id,
-    name,
-    color,
-    lap: 0,
-    lapProgress: 0,
-    totalProgress: 0,
     lateralOffset,
-    lateralTarget: lateralOffset,
-    weavePeriod: WEAVE_PERIOD_MIN + Math.random() * (WEAVE_PERIOD_MAX - WEAVE_PERIOD_MIN),
-    weavePhase: Math.random() * Math.PI * 2,
-    weaveAmplitude: WEAVE_AMPLITUDE_MIN + Math.random() * (WEAVE_AMPLITUDE_MAX - WEAVE_AMPLITUDE_MIN),
-    weaveJitter: 0, // small residual random wobble layered on the sine, see updateKart
-    speedBase: baseSpeed * (1 + (Math.random() * 2 - 1) * SPEED_VARIANCE),
-    speedCurrent: 0,
-    boostTimer: 0,
-    boostMultiplier: 1,
-    spinTimer: 0,
-    finished: false,
-    finishTime: null,
-    insideBoostIds: new Set(), // marker indices currently inside - see events.js's enter/exit edge detection
-    insideHazardIds: new Set(),
-    worldPos: {
-      x: startCenter.x + perpX * lateralOffset,
-      y: startCenter.y + perpY * lateralOffset,
-    },
+    worldPos: { x: startCenter.x + perpX * lateralOffset, y: startCenter.y + perpY * lateralOffset },
     angle: startCenter.angle,
   };
+}
+
+/**
+ * Resets every race-state field on `kart` to a fresh starting-grid spawn on
+ * `track` - shared by createKart (a brand new joiner) and resetKartToStart
+ * (an already-joined kart, when the streamer switches tracks in the lobby).
+ * Leaves identity (id/name/color) untouched.
+ */
+function applyStartingState(kart, track, gridSlot) {
+  const spawn = computeGridSpawn(track, gridSlot);
+  kart.gridSlot = gridSlot;
+  kart.lap = 0;
+  kart.lapProgress = 0;
+  kart.totalProgress = 0;
+  kart.lateralOffset = spawn.lateralOffset;
+  kart.lateralTarget = spawn.lateralOffset;
+  kart.weavePeriod = WEAVE_PERIOD_MIN + Math.random() * (WEAVE_PERIOD_MAX - WEAVE_PERIOD_MIN);
+  kart.weavePhase = Math.random() * Math.PI * 2;
+  kart.weaveAmplitude = WEAVE_AMPLITUDE_MIN + Math.random() * (WEAVE_AMPLITUDE_MAX - WEAVE_AMPLITUDE_MIN);
+  kart.weaveJitter = 0;
+  kart.speedBase = (track.length / LAP_SECONDS) * (1 + (Math.random() * 2 - 1) * SPEED_VARIANCE);
+  kart.speedCurrent = 0;
+  kart.boostTimer = 0;
+  kart.boostMultiplier = 1;
+  kart.spinTimer = 0;
+  kart.finished = false;
+  kart.finishTime = null;
+  kart.insideBoostIds = kart.insideBoostIds || new Set(); // marker indices currently inside - see events.js's enter/exit edge detection
+  kart.insideHazardIds = kart.insideHazardIds || new Set();
+  kart.insideBoostIds.clear();
+  kart.insideHazardIds.clear();
+  kart.worldPos = spawn.worldPos;
+  kart.angle = spawn.angle;
+}
+
+export function createKart(id, name, track) {
+  const gridSlot = joinCounter;
+  const color = KART_PALETTE[joinCounter % KART_PALETTE.length];
+  joinCounter++;
+  const kart = { id, name, color };
+  applyStartingState(kart, track, gridSlot);
+  return kart;
+}
+
+/**
+ * Repositions an already-joined kart back to the starting grid on a
+ * (possibly different) track - used when the streamer switches tracks
+ * while chatters are already sitting in the lobby. Keeps id/name/color.
+ */
+export function resetKartToStart(kart, track, gridSlot) {
+  applyStartingState(kart, track, gridSlot);
 }
 
 export function resetKartColorCycle() {

@@ -1,6 +1,6 @@
 import { connectTwitch } from './twitch.js';
-import { buildTrack, loadTrackDef, loadTrackBackground } from './track.js';
-import { createKart, updateKart, resetKartColorCycle } from './kart.js';
+import { buildTrack, loadTrackList, loadTrackBackground } from './track.js';
+import { createKart, updateKart, resetKartColorCycle, resetKartToStart } from './kart.js';
 import { applyTrackEvents, createChaosState, updateChaosEvent } from './events.js';
 import { render, setAssets } from './render.js';
 import { loadAssets } from './assets.js';
@@ -18,7 +18,9 @@ const layers = { floorCanvas, floorCtx, spriteCanvas, spriteCtx };
 const gameState = {
   state: 'BOOT',
   channel: '',
-  track: null, // set once loadTrackDef()/buildTrack() resolve, see boot() below
+  track: null, // set once activateTrack() resolves, see boot() below
+  trackList: [], // [{ label, def }], see track.js's loadTrackList()
+  trackIndex: 0,
   karts: new Map(),
   chaos: createChaosState(0),
   chaosEnabled: true,
@@ -131,6 +133,36 @@ function showResults() {
   document.getElementById('results-screen').classList.remove('hidden');
 }
 
+// --- Track selection (lobby-only cycling, see ui wiring below) ---
+
+async function activateTrack(index) {
+  const entry = gameState.trackList[index];
+  const built = buildTrack(entry.def);
+  built.backgroundImage = await loadTrackBackground(entry.def);
+  gameState.trackIndex = index;
+  gameState.track = built;
+
+  // Chatters may already be sitting in the lobby from the previous track -
+  // put them back on the new track's starting grid rather than leaving them
+  // at stale positions computed against a spline that no longer applies.
+  let slot = 0;
+  for (const kart of gameState.karts.values()) {
+    resetKartToStart(kart, built, slot);
+    slot++;
+  }
+
+  document.getElementById('track-label').textContent = entry.label;
+  const lapsInput = document.getElementById('cfg-laps');
+  lapsInput.value = built.def.laps;
+  document.getElementById('cfg-laps-label').textContent = built.def.laps;
+}
+
+function switchTrack(delta) {
+  if (gameState.state !== 'LOBBY' || gameState.trackList.length <= 1) return;
+  const next = ((gameState.trackIndex + delta) % gameState.trackList.length + gameState.trackList.length) % gameState.trackList.length;
+  activateTrack(next);
+}
+
 // --- Boot: real Twitch connection or local test mode ---
 
 function enterLobby(channelLabel) {
@@ -149,14 +181,14 @@ const connectSubmitBtn = document.getElementById('connect-submit-btn');
 const bootLoadingHint = document.getElementById('boot-loading-hint');
 
 async function boot() {
-  const trackDef = await loadTrackDef();
-  const [assets, backgroundImage] = await Promise.all([
+  const [trackList, assets] = await Promise.all([
+    loadTrackList(),
     loadAssets(KART_PALETTE),
-    loadTrackBackground(trackDef),
   ]);
-  gameState.track = buildTrack(trackDef);
-  gameState.track.backgroundImage = backgroundImage;
+  gameState.trackList = trackList;
+  await activateTrack(0);
   setAssets(assets);
+  document.getElementById('track-nav').classList.toggle('hidden', trackList.length <= 1);
   connectSubmitBtn.disabled = false;
   bootLoadingHint.classList.add('hidden');
 }
@@ -232,6 +264,9 @@ document.getElementById('back-to-lobby-btn').addEventListener('click', resetToLo
 const lapsInput = document.getElementById('cfg-laps');
 const lapsLabel = document.getElementById('cfg-laps-label');
 lapsInput.addEventListener('input', () => { lapsLabel.textContent = lapsInput.value; });
+
+document.getElementById('track-prev-btn').addEventListener('click', () => switchTrack(-1));
+document.getElementById('track-next-btn').addEventListener('click', () => switchTrack(1));
 
 wireCameraUI(gameState, spriteCanvas);
 

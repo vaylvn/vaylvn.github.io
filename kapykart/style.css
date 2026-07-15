@@ -232,6 +232,14 @@ body[data-game-state="LOBBY"] #config-panel { display: block; }
   margin-bottom: 6px;
 }
 .cfg-row-toggle { grid-template-columns: 1fr auto; }
+.cfg-row-nav {
+  grid-template-columns: 32px 1fr 32px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.cfg-row-nav button { padding: 4px 0; font-size: 12px; }
+#track-label { text-align: center; font-size: 13px; }
 .cfg-row label { color: var(--text-dim); }
 .cfg-actions { display: flex; gap: 8px; margin-top: 12px; }
 .cfg-actions button { flex: 1; }
