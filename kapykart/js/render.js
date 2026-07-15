@@ -170,13 +170,14 @@ function drawCheckerLine(ctx, track, project) {
   }
 }
 
+// Only drawn in the no-background-image fallback (see renderCameraView) -
+// once a background PNG is in play, these zones are meant to be invisible,
+// aligned with whatever art (puddles, speed pads) is already baked into it.
 function drawMarkers(ctx, track, project) {
   for (const pad of track.def.boostPads) {
-    const p = sampleTrack(track, pad.atProgress);
-    const s = project(p.x, p.y);
+    const s = project(pad.x, pad.y);
     ctx.save();
     ctx.translate(s.x, s.y);
-    ctx.rotate(-p.angle + Math.PI / 2);
     ctx.fillStyle = BOOST_COLOR;
     ctx.beginPath();
     ctx.moveTo(0, -14);
@@ -192,8 +193,7 @@ function drawMarkers(ctx, track, project) {
   }
 
   for (const hazard of track.def.hazards) {
-    const p = sampleTrack(track, hazard.atProgress);
-    const s = project(p.x, p.y);
+    const s = project(hazard.x, hazard.y);
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.fillStyle = HAZARD_COLOR;
@@ -326,13 +326,40 @@ function drawKartLabel(ctx, kart, x, y, scale) {
   ctx.restore();
 }
 
-/** Draws the road + markers into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
+/**
+ * Draws `img` (spanning world-space rect [0,0]-[imgW,imgH]) through the same
+ * flat `project` function used for the road/markers. The floor projection
+ * is pure rotate+scale+translate (no depth term), so instead of re-deriving
+ * that rotation matrix by hand, it's read off 3 already-correct projected
+ * points and composed onto the context's existing transform (`ctx.transform`,
+ * not `setTransform` - the pixel buffer already has its own PIXEL_SCALE
+ * scale applied, which must stay in effect underneath this one).
+ */
+function drawImageWorldRect(ctx, project, img, imgW, imgH) {
+  const p00 = project(0, 0);
+  const p10 = project(imgW, 0);
+  const p01 = project(0, imgH);
+  ctx.save();
+  ctx.transform(
+    (p10.x - p00.x) / imgW, (p10.y - p00.y) / imgW,
+    (p01.x - p00.x) / imgH, (p01.y - p00.y) / imgH,
+    p00.x, p00.y,
+  );
+  ctx.drawImage(img, 0, 0, imgW, imgH);
+  ctx.restore();
+}
+
+/** Draws the floor into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
 function drawPixelatedFloor(realCtx, canvas, track, canvasWidth, canvasHeight, project) {
   const pctx = getPixelContext(canvas, canvasWidth, canvasHeight);
   pctx.fillStyle = GROUND_COLOR;
   pctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  drawRoad(pctx, track, project);
-  drawMarkers(pctx, track, project);
+  if (track.backgroundImage) {
+    drawImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
+  } else {
+    drawRoad(pctx, track, project);
+    drawMarkers(pctx, track, project);
+  }
   blitPixelBuffer(realCtx, canvas, canvasWidth, canvasHeight);
 }
 

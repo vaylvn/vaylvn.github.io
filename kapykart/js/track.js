@@ -23,13 +23,17 @@ export const TRACK_DEF = {
   ],
   width: 150,
   laps: 3,
+  // Boost pads / hazards are world-position + radius, not track-progress -
+  // they're meant to line up with features drawn into a background image
+  // (see track-editor.html), so they need to live in the same coordinate
+  // space a human places them in, not an abstract 0-1 path position.
   boostPads: [
-    { atProgress: 0.06, strength: 1.6, duration: 1.4 },
-    { atProgress: 0.52, strength: 1.5, duration: 1.3 },
+    { x: 132, y: 197, radius: 70, strength: 1.6, duration: 1.4 },
+    { x: 860, y: 335, radius: 70, strength: 1.5, duration: 1.3 },
   ],
   hazards: [
-    { atProgress: 0.28, type: 'banana', width: 0.03, spinDuration: 1.5 },
-    { atProgress: 0.78, type: 'banana', width: 0.03, spinDuration: 1.5 },
+    { x: 531, y: 52, radius: 55, type: 'banana', spinDuration: 1.5 },
+    { x: 434, y: 547, radius: 55, type: 'banana', spinDuration: 1.5 },
   ],
 };
 
@@ -147,12 +151,6 @@ export function sampleTrack(track, progress) {
   return { x, y, angle };
 }
 
-/** Did progress cross `at` while moving from prev to curr this tick, accounting for lap wrap? */
-export function crossedProgress(prev, curr, at) {
-  if (curr >= prev) return prev < at && at <= curr;
-  return at > prev || at <= curr;
-}
-
 function isValidTrackDef(def) {
   return def && Array.isArray(def.waypoints) && def.waypoints.length >= 3
     && typeof def.width === 'number' && typeof def.laps === 'number';
@@ -173,4 +171,20 @@ export async function loadTrackDef() {
   } catch {
     return TRACK_DEF;
   }
+}
+
+/**
+ * Loads a track's optional background image (def.backgroundImage - a path
+ * relative to index.html, authored via track-editor.html's upload flow).
+ * Resolves to null if the field is absent or the file fails to load, in
+ * which case render.js falls back to drawing the road procedurally.
+ */
+export function loadTrackBackground(def) {
+  if (!def.backgroundImage) return Promise.resolve(null);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = def.backgroundImage;
+  });
 }

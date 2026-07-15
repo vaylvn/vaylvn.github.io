@@ -1,32 +1,34 @@
-import { crossedProgress } from './track.js';
-
 /**
- * Boost pads and hazards: check whether a kart's lapProgress crossed a
- * fixed track position this tick (accounting for lap wrap), and apply the
- * matching timer. A kart that's currently frozen by spinTimer didn't move
- * this tick, so it can't cross anything new.
+ * Boost pads and hazards: world-position + radius zones (see track.js -
+ * they're meant to line up with features drawn into a background image,
+ * not an abstract path position). Triggers on the rising edge (entering the
+ * zone), tracked per kart via insideBoostIds/insideHazardIds, so parking
+ * inside one doesn't re-trigger every tick.
  */
 export function applyTrackEvents(kart, track) {
   const result = { boosted: false, hazarded: false };
-  if (kart.finished || kart.spinTimer > 0) return result;
+  if (kart.finished) return result;
 
-  const prev = kart.prevLapProgress;
-  const curr = kart.lapProgress;
-  if (prev === curr) return result;
-
-  for (const pad of track.def.boostPads) {
-    if (crossedProgress(prev, curr, pad.atProgress)) {
+  const { boostPads, hazards } = track.def;
+  for (let i = 0; i < boostPads.length; i++) {
+    const pad = boostPads[i];
+    const inside = Math.hypot(kart.worldPos.x - pad.x, kart.worldPos.y - pad.y) <= pad.radius;
+    if (inside && !kart.insideBoostIds.has(i)) {
       kart.boostTimer = pad.duration;
       kart.boostMultiplier = pad.strength;
       result.boosted = true;
     }
+    if (inside) kart.insideBoostIds.add(i); else kart.insideBoostIds.delete(i);
   }
-  for (const hazard of track.def.hazards) {
-    if (crossedProgress(prev, curr, hazard.atProgress)) {
+  for (let i = 0; i < hazards.length; i++) {
+    const hazard = hazards[i];
+    const inside = Math.hypot(kart.worldPos.x - hazard.x, kart.worldPos.y - hazard.y) <= hazard.radius;
+    if (inside && !kart.insideHazardIds.has(i)) {
       kart.spinTimer = hazard.spinDuration || 1.5;
       kart.speedCurrent = 0;
       result.hazarded = true;
     }
+    if (inside) kart.insideHazardIds.add(i); else kart.insideHazardIds.delete(i);
   }
   return result;
 }

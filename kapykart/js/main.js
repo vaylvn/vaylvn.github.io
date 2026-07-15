@@ -1,5 +1,5 @@
 import { connectTwitch } from './twitch.js';
-import { buildTrack, loadTrackDef } from './track.js';
+import { buildTrack, loadTrackDef, loadTrackBackground } from './track.js';
 import { createKart, updateKart, resetKartColorCycle } from './kart.js';
 import { applyTrackEvents, createChaosState, updateChaosEvent } from './events.js';
 import { render, setAssets } from './render.js';
@@ -149,11 +149,13 @@ const connectSubmitBtn = document.getElementById('connect-submit-btn');
 const bootLoadingHint = document.getElementById('boot-loading-hint');
 
 async function boot() {
-  const [trackDef, assets] = await Promise.all([
-    loadTrackDef(),
+  const trackDef = await loadTrackDef();
+  const [assets, backgroundImage] = await Promise.all([
     loadAssets(KART_PALETTE),
+    loadTrackBackground(trackDef),
   ]);
   gameState.track = buildTrack(trackDef);
+  gameState.track.backgroundImage = backgroundImage;
   setAssets(assets);
   connectSubmitBtn.disabled = false;
   bootLoadingHint.classList.add('hidden');

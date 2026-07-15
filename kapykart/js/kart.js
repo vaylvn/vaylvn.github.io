@@ -5,9 +5,13 @@ let joinCounter = 0;
 
 const LAP_SECONDS = 22; // roughly how long a lap takes at base speed - tune the whole race's pace from here
 const SPEED_VARIANCE = 0.12; // +/- fraction of base speed, randomized per kart
-const DRIFT_STRENGTH = 26; // world units/sec^2 of random-walk push on the lateral target
-const LATERAL_SMOOTHING = 1.6; // per-second ease rate toward lateralTarget
-const LANE_BOUND_FRACTION = 0.35; // per spec's "not all dead-center" ask: +/-35% of half the track width
+// Drift strength scales with maxOffset (not a fixed constant) so the weave
+// stays visible regardless of track width. Picked so a kart's lateral target
+// typically reaches close to the lane bound within ~10-15s (half a lap or
+// so) rather than a fixed number that only weaved a few px out of ~26 max.
+const DRIFT_STRENGTH_FACTOR = 8; // world units/sec^2 per world unit of maxOffset
+const LATERAL_SMOOTHING = 1.2; // per-second ease rate toward lateralTarget
+const LANE_BOUND_FRACTION = 0.6; // how much of the half-track-width the weave is allowed to use
 
 const GRID_LANES = 9; // evenly spaced starting slots across the track width; wraps (with jitter) past this
 
@@ -36,7 +40,6 @@ export function createKart(id, name, track) {
     color,
     lap: 0,
     lapProgress: 0,
-    prevLapProgress: 0,
     totalProgress: 0,
     lateralOffset,
     lateralTarget: lateralOffset,
@@ -47,6 +50,8 @@ export function createKart(id, name, track) {
     spinTimer: 0,
     finished: false,
     finishTime: null,
+    insideBoostIds: new Set(), // marker indices currently inside - see events.js's enter/exit edge detection
+    insideHazardIds: new Set(),
     worldPos: {
       x: startCenter.x + perpX * lateralOffset,
       y: startCenter.y + perpY * lateralOffset,
@@ -75,8 +80,6 @@ export function updateKart(kart, track, dt, now) {
     kart.boostTimer = Math.max(0, kart.boostTimer - dt);
   }
 
-  kart.prevLapProgress = kart.lapProgress;
-
   if (kart.spinTimer > 0) {
     kart.spinTimer = Math.max(0, kart.spinTimer - dt);
     kart.speedCurrent = 0;
@@ -99,7 +102,8 @@ export function updateKart(kart, track, dt, now) {
   kart.totalProgress = kart.lap + kart.lapProgress;
 
   const maxOffset = track.def.width * 0.5 * LANE_BOUND_FRACTION;
-  kart.lateralTarget += (Math.random() - 0.5) * DRIFT_STRENGTH * dt;
+  const driftStrength = maxOffset * DRIFT_STRENGTH_FACTOR;
+  kart.lateralTarget += (Math.random() - 0.5) * driftStrength * dt;
   kart.lateralTarget = Math.max(-maxOffset, Math.min(maxOffset, kart.lateralTarget));
   kart.lateralOffset += (kart.lateralTarget - kart.lateralOffset) * Math.min(1, LATERAL_SMOOTHING * dt);
 

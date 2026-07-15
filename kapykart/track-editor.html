@@ -13,22 +13,39 @@
       <div id="editor-toolbar">
         <div class="mode-group">
           <button type="button" id="mode-waypoints-btn" class="mode-btn active">Waypoints</button>
-          <button type="button" id="mode-boost-btn" class="mode-btn">+ Boost pad</button>
+          <button type="button" id="mode-boost-btn" class="mode-btn">+ Boost</button>
           <button type="button" id="mode-hazard-btn" class="mode-btn">+ Hazard</button>
         </div>
-        <p class="mode-hint" id="mode-hint">Click empty space to add a waypoint. Drag a point to move it. Select a point and press Delete to remove it.</p>
+        <p class="mode-hint" id="mode-hint">Click to add a waypoint. Drag to move. Select + Delete to remove.</p>
       </div>
-      <canvas id="editor-canvas" width="1100" height="720"></canvas>
+      <div id="canvas-scroll">
+        <canvas id="editor-canvas" width="1000" height="700"></canvas>
+      </div>
     </div>
 
     <div id="editor-sidebar">
       <h1>Track editor</h1>
-      <p class="hint">Design a closed-loop track for KapyKart. Export when you're happy, drop the file in as <code>kapykart/track.json</code> - no code changes needed.</p>
+
+      <section>
+        <h2>Background image</h2>
+        <div class="ed-actions">
+          <label class="file-btn">
+            Upload PNG
+            <input type="file" id="bg-image-input" accept="image/png,image/jpeg" hidden>
+          </label>
+          <button type="button" id="bg-image-clear-btn">Clear</button>
+        </div>
+        <div class="ed-field">
+          <label for="ed-bg-path">Path</label>
+          <input type="text" id="ed-bg-path" placeholder="assets/track_bg.png">
+        </div>
+        <p class="hint">Draw the centerline and place invisible boost/hazard zones directly on top. Upload for reference only - export tells you where to save the file.</p>
+      </section>
 
       <section>
         <h2>Track settings</h2>
         <div class="ed-field">
-          <label for="ed-id">Track ID</label>
+          <label for="ed-id">ID</label>
           <input type="text" id="ed-id">
         </div>
         <div class="ed-field">
@@ -40,7 +57,7 @@
           <input type="number" id="ed-laps" min="1" max="10">
         </div>
         <div class="ed-actions">
-          <button type="button" id="load-default-btn">Load built-in oval</button>
+          <button type="button" id="load-default-btn">Load default oval</button>
           <button type="button" id="clear-all-btn">Clear all</button>
         </div>
       </section>
@@ -64,10 +81,10 @@
         <h2>Import / export</h2>
         <div class="ed-actions">
           <label class="file-btn">
-            Load from file
+            Load JSON
             <input type="file" id="load-file-input" accept="application/json,.json" hidden>
           </label>
-          <button type="button" id="copy-json-btn">Copy JSON</button>
+          <button type="button" id="copy-json-btn">Copy</button>
           <button type="button" id="download-json-btn">Download track.json</button>
         </div>
         <textarea id="json-output" readonly spellcheck="false"></textarea>
