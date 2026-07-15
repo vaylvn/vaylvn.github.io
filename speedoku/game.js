@@ -19,6 +19,7 @@ const Game = {
   opponents: {},         // player_id → { username, filledCount, miniBoard, givenSet }
   myFilledCount: 0,
   active: false,
+  lockedCells: {},       // "r,c" → timestamp when lockout expires
 
   /** Called when the server sends us the puzzle. */
   init(puzzle, givenCells, lives) {
@@ -34,11 +35,18 @@ const Game = {
     this.active = false;
     this.myFilledCount = puzzle.flat().filter(v => v !== 0).length;
     this.opponents = {};
+    this.lockedCells = {};
 
     _renderBoard();
     _updateLives();
+    _updateNumpad();
     _resetTimer();
     document.getElementById("btn-notes").classList.remove("active");
+    // Re-enable all numpad buttons from any previous game
+    document.querySelectorAll(".num-btn[data-num]").forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove("num-complete");
+    });
   },
 
   /** Called when game_start countdown begins. */
@@ -63,24 +71,38 @@ const Game = {
   },
 
   /** Handle move_result from server. */
-  onMoveResult(row, col, valid, complete) {
-    const key = `${row},${col}`;
+  onMoveResult(row, col, valid, complete, lockedUntil) {
     const cellEl = _cellEl(row, col);
     if (valid) {
-      // Board was already visually updated optimistically; confirm it
+      // Optimistic update already shown — just update numpad state
+      _updateNumpad();
       if (complete) {
         this.stop();
       }
     } else {
       // Revert the cell visually
-      const prev = this.puzzle[row][col] !== 0 ? this.puzzle[row][col] : 0;
-      this.board[row][col] = prev;
+      this.board[row][col] = 0;
+      this.myFilledCount = Math.max(0, this.myFilledCount - 1);
       _renderCell(row, col);
+      _applyHighlights(row, col);
       if (cellEl) {
         cellEl.classList.remove("invalid");
-        void cellEl.offsetWidth; // reflow for animation restart
+        void cellEl.offsetWidth;
         cellEl.classList.add("invalid");
-        setTimeout(() => cellEl.classList.remove("invalid"), 500);
+        setTimeout(() => cellEl.classList.remove("invalid"), 600);
+      }
+      // Apply lockout if server sent one
+      if (lockedUntil) {
+        const key = `${row},${col}`;
+        this.lockedCells[key] = lockedUntil * 1000; // convert to ms
+        if (cellEl) {
+          cellEl.classList.add("locked");
+          const msLeft = lockedUntil * 1000 - Date.now();
+          setTimeout(() => {
+            cellEl.classList.remove("locked");
+            delete this.lockedCells[key];
+          }, Math.max(0, msLeft));
+        }
       }
     }
   },
@@ -194,24 +216,14 @@ function _cellEl(row, col) {
 
 function _selectCell(row, col) {
   if (!Game.active || Game.eliminated) return;
-
-  // Deselect previous
-  if (Game.selectedCell) {
-    _clearHighlights();
-  }
-
-  const key = `${row},${col}`;
-  if (Game.givenCells && Game.givenCells.has(key)) {
-    Game.selectedCell = [row, col];
-    _applyHighlights(row, col);
-    return;
-  }
-
+  _clearHighlights();
   Game.selectedCell = [row, col];
   _applyHighlights(row, col);
 }
 
 function _applyHighlights(selRow, selCol) {
+  const selValue = Game.board[selRow][selCol]; // 0 if empty
+
   document.querySelectorAll(".cell").forEach(el => {
     const r = +el.dataset.row;
     const c = +el.dataset.col;
@@ -220,15 +232,18 @@ function _applyHighlights(selRow, selCol) {
     const sameBox = Math.floor(r / 3) === Math.floor(selRow / 3) &&
                     Math.floor(c / 3) === Math.floor(selCol / 3);
     const isSelected = r === selRow && c === selCol;
+    // Highlight matching numbers (but not the selected cell itself, and only when cell has a value)
+    const sameNum = selValue !== 0 && !isSelected && Game.board[r][c] === selValue;
 
     el.classList.toggle("selected", isSelected);
-    el.classList.toggle("highlight", !isSelected && (sameRow || sameCol || sameBox));
+    el.classList.toggle("same-number", sameNum);
+    el.classList.toggle("highlight", !isSelected && !sameNum && (sameRow || sameCol || sameBox));
   });
 }
 
 function _clearHighlights() {
   document.querySelectorAll(".cell").forEach(el => {
-    el.classList.remove("selected", "highlight");
+    el.classList.remove("selected", "highlight", "same-number");
   });
 }
 
@@ -238,6 +253,18 @@ function _enterValue(num) {
   if (!Game.active || Game.eliminated || !Game.selectedCell) return;
   const [row, col] = Game.selectedCell;
   if (Game.givenCells && Game.givenCells.has(`${row},${col}`)) return;
+
+  // Client-side lockout check (mirrors server-side brute-force deterrent)
+  const lockKey = `${row},${col}`;
+  if (Game.lockedCells[lockKey] && Date.now() < Game.lockedCells[lockKey]) {
+    const cellEl = _cellEl(row, col);
+    if (cellEl) {
+      cellEl.classList.remove("locked");
+      void cellEl.offsetWidth;
+      cellEl.classList.add("locked");
+    }
+    return;
+  }
 
   if (Game.notesMode) {
     // Toggle pencil mark
@@ -252,6 +279,9 @@ function _enterValue(num) {
   Game.board[row][col] = num;
   _renderCell(row, col);
   Game.myFilledCount++;
+
+  // Refresh highlights so same-number tint reflects the newly entered value
+  _applyHighlights(row, col);
 
   WS.send({ type: "move", cell: [row, col], value: num });
 }
@@ -271,6 +301,8 @@ function _eraseValue() {
     Game.board[row][col] = 0;
     Game.myFilledCount = Math.max(0, Game.myFilledCount - 1);
     _renderCell(row, col);
+    // Cell is now empty — reapply highlights to clear same-number tints
+    _applyHighlights(row, col);
     WS.send({ type: "erase", cell: [row, col] });
   }
 }
@@ -460,6 +492,31 @@ function _animateOpponentCell(playerId, row, col) {
   setTimeout(() => cell.classList.remove("blink-on"), 350);
 }
 
+// ─── Numpad State ─────────────────────────────────────────────────────────────
+
+/**
+ * Count how many times each digit 1-9 appears correctly placed on the board
+ * (i.e. cell is non-zero and matches the solution as confirmed by server).
+ * When a digit reaches 9 placements, grey out its button.
+ * We use Game.board directly since only valid moves ever persist there.
+ */
+function _updateNumpad() {
+  if (!Game.board) return;
+  const counts = new Array(10).fill(0); // index 1-9
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const v = Game.board[r][c];
+      if (v !== 0) counts[v]++;
+    }
+  }
+  document.querySelectorAll(".num-btn[data-num]").forEach(btn => {
+    const n = parseInt(btn.dataset.num);
+    const complete = counts[n] >= 9;
+    btn.classList.toggle("num-complete", complete);
+    btn.disabled = complete;
+  });
+}
+
 // ─── WS Handlers ─────────────────────────────────────────────────────────────
 
 function _registerGameHandlers() {
@@ -468,12 +525,12 @@ function _registerGameHandlers() {
   });
 
   WS.on("move_result", msg => {
-    Game.onMoveResult(msg.cell[0], msg.cell[1], msg.valid, msg.complete);
+    Game.onMoveResult(msg.cell[0], msg.cell[1], msg.valid, msg.complete, msg.locked_until || null);
     if (!msg.valid && msg.lives_remaining !== undefined) {
       Game.onLivesUpdate(msg.lives_remaining);
     }
     if (msg.complete) {
-      showToast("Puzzle complete!", "success");
+      showToast("Puzzle complete! 🎉", "success");
     }
   });
 

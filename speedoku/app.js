@@ -8,6 +8,11 @@
 const App = {
   currentView: null,
   currentRoom: null,    // { code, players, difficulty, lives, host_id, ... }
+  myPlayerId: null,     // own player ID — works for guests too
+  _pendingQueueMode: null,   // "ranked" | "casual" — set during difficulty step
+  _selectedDifficulty: "medium",
+  _publicTab: "easy",        // currently viewed difficulty tab in public lobbies
+  _lastRoomList: [],
 
   init() {
     Auth.init();
@@ -41,6 +46,7 @@ const App = {
     const el = document.getElementById(`view-${name}`);
     if (el) el.classList.add("active");
     this.currentView = name;
+    if (name === "lobby-browser") WS.send({ type: "get_rooms" });
   },
 
   updateHeaderUser() {
@@ -94,17 +100,36 @@ function _bindNavigation() {
     if (e.target === e.currentTarget) e.currentTarget.classList.add("hidden");
   });
 
-  // Lobby Browser
+  // Lobby Browser — step 1: pick mode
   document.getElementById("btn-quick-match").addEventListener("click", () => {
     if (Auth.isGuest) { showToast("Ranked requires an account.", "error"); return; }
-    WS.send({ type: "join_queue", mode: "ranked" });
+    _showDifficultyPicker("ranked");
   });
   document.getElementById("btn-quick-casual").addEventListener("click", () => {
-    WS.send({ type: "join_queue", mode: "casual" });
+    _showDifficultyPicker("casual");
   });
   document.getElementById("btn-create-room").addEventListener("click", () => {
-    WS.send({ type: "create_room", difficulty: "medium", private: true, lives: 0 });
+    WS.send({ type: "create_room", difficulty: App._selectedDifficulty, private: true, lives: 0 });
   });
+
+  // Step 2: difficulty picker
+  document.querySelectorAll(".diff-pick").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".diff-pick").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      App._selectedDifficulty = btn.dataset.diff;
+    });
+  });
+  document.getElementById("btn-confirm-queue").addEventListener("click", () => {
+    const mode = App._pendingQueueMode;
+    const diff = App._selectedDifficulty;
+    _hideDifficultyPicker();
+    WS.send({ type: "join_queue", mode, difficulty: diff });
+  });
+  document.getElementById("btn-cancel-diff").addEventListener("click", () => {
+    _hideDifficultyPicker();
+  });
+
   document.getElementById("btn-leave-queue").addEventListener("click", () => {
     WS.send({ type: "leave_queue" });
     _hideMatchmaking();
@@ -125,21 +150,27 @@ function _bindNavigation() {
 
   // Room Lobby
   document.getElementById("btn-leave-room").addEventListener("click", () => {
+    WS.send({ type: "leave_room" });
     App.currentRoom = null;
     App.showView("lobby-browser");
-    WS.send({ type: "get_rooms" });
   });
-  document.getElementById("btn-copy-invite").addEventListener("click", () => {
+
+  // Notify server when page is closed or reloaded mid-lobby
+  window.addEventListener("beforeunload", () => {
+    if (App.currentRoom) WS.send({ type: "leave_room" });
+  });
+  const roomCodeLabel = document.getElementById("room-code-label");
+  const _copyRoomCode = () => {
     const code = App.currentRoom && App.currentRoom.code;
     if (!code) return;
-    const url = `${location.origin}${location.pathname}?room=${code}`;
-    navigator.clipboard.writeText(url).then(() => showToast("Invite link copied!", "success"));
-  });
-  document.getElementById("btn-start-game").addEventListener("click", () => {
-    WS.send({ type: "start_game" });
-  });
+    navigator.clipboard.writeText(code).then(() => showToast("Room code copied!", "success"));
+  };
+  roomCodeLabel.addEventListener("click", _copyRoomCode);
+  roomCodeLabel.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") _copyRoomCode(); });
   document.getElementById("btn-ready").addEventListener("click", () => {
     WS.send({ type: "ready" });
+    document.getElementById("btn-ready").disabled = true;
+    document.getElementById("btn-ready").textContent = "Waiting…";
   });
 
   // Difficulty buttons
@@ -173,6 +204,16 @@ function _bindNavigation() {
   // Profile
   document.getElementById("btn-profile-back").addEventListener("click", () => {
     App.showView("lobby-browser");
+  });
+
+  // Public lobby difficulty tabs
+  document.querySelectorAll(".diff-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".diff-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      App._publicTab = btn.dataset.tab;
+      _renderPublicRooms(App._lastRoomList || []);
+    });
   });
 }
 
@@ -218,6 +259,7 @@ function _registerAppHandlers() {
   // ─── Room ──────────────────────────────────────────────────────────────────
 
   WS.on("room_created", msg => {
+    App.myPlayerId = msg.my_player_id || (Auth.user && String(Auth.user.id)) || null;
     App.currentRoom = msg.room;
     _renderRoomLobby(msg.room);
     App.showView("room-lobby");
@@ -228,6 +270,7 @@ function _registerAppHandlers() {
       // This is the game-start version of room_joined (puzzle included)
       _startGameFromRoomJoined(msg);
     } else {
+      App.myPlayerId = msg.my_player_id || (Auth.user && String(Auth.user.id)) || null;
       App.currentRoom = msg.room || { code: msg.code };
       if (msg.room) _renderRoomLobby(msg.room);
       App.showView("room-lobby");
@@ -254,6 +297,21 @@ function _registerAppHandlers() {
     _renderRoomLobby(msg.room);
   });
 
+  WS.on("countdown_tick", msg => {
+    const wrap   = document.getElementById("lobby-countdown");
+    const label  = document.getElementById("lobby-countdown-label");
+    const number = document.getElementById("lobby-countdown-number");
+    if (!wrap) return;
+    if (msg.seconds != null) {
+      label.textContent = "Game starting in";
+      number.textContent = msg.seconds;
+      number.classList.remove("hidden");
+    } else {
+      label.textContent = "Waiting for players…";
+      number.classList.add("hidden");
+    }
+  });
+
   // ─── Game ──────────────────────────────────────────────────────────────────
 
   WS.on("game_start", msg => {
@@ -262,8 +320,13 @@ function _registerAppHandlers() {
     if (App.currentView !== "game") App.showView("game");
   });
 
+  WS.on("player_disconnected", msg => {
+    showToast(`${msg.username} disconnected — they forfeit the game.`, "error");
+  });
+
   WS.on("game_over", msg => {
     Game.stop();
+    App.currentRoom = null;
     _renderPostGame(msg);
     setTimeout(() => App.showView("post-game"), 800);
   });
@@ -293,10 +356,26 @@ function _renderRoomLobby(room) {
   App.currentRoom = room;
   document.getElementById("room-code-label").textContent = room.code;
 
-  const isHost = Auth.user && room.host_id === Auth.user.id;
-  document.getElementById("btn-start-game").classList.toggle("hidden", !isHost);
-  document.getElementById("btn-ready").classList.toggle("hidden", isHost);
-  document.getElementById("room-controls").classList.toggle("hidden", !isHost);
+  const myId = App.myPlayerId || (Auth.user && String(Auth.user.id));
+  const isHost = myId && String(room.host_id) === myId;
+  document.getElementById("room-controls").classList.toggle("hidden", !isHost || room.is_public);
+
+  // Public rooms use the countdown — no Ready button needed
+  const isPublic = !!room.is_public;
+  const readyBtn = document.getElementById("btn-ready");
+  const countdownWrap = document.getElementById("lobby-countdown");
+  readyBtn.classList.toggle("hidden", isPublic);
+  countdownWrap.classList.toggle("hidden", !isPublic);
+
+  if (!isPublic) {
+    // Reset ready button state for private rooms
+    readyBtn.disabled = false;
+    readyBtn.textContent = "Ready";
+  } else {
+    // Reset countdown to waiting state when entering a public room
+    document.getElementById("lobby-countdown-label").textContent = "Waiting for players…";
+    document.getElementById("lobby-countdown-number").classList.add("hidden");
+  }
 
   // Set difficulty buttons
   document.querySelectorAll("#difficulty-select [data-diff]").forEach(b => {
@@ -351,8 +430,8 @@ function _startGameFromRoomJoined(msg) {
   const lives = room.lives || 0;
   Game.init(msg.puzzle, msg.given_cells, lives);
 
-  // Register opponents
-  const myId = Auth.user ? String(Auth.user.id) : null;
+  // The server tells us exactly which player ID is ours — works for guests too.
+  const myId = String(msg.my_player_id || (Auth.user && Auth.user.id) || "");
   const players = msg.players || [];
   document.getElementById("opponents-section").innerHTML = "";
 
@@ -369,25 +448,53 @@ function _startGameFromRoomJoined(msg) {
 // ─── Room List ────────────────────────────────────────────────────────────────
 
 function _renderRoomList(rooms) {
-  const container = document.getElementById("room-list");
-  if (!rooms || rooms.length === 0) {
-    container.innerHTML = '<div class="room-list-empty">No open rooms. Create one!</div>';
+  App._lastRoomList = rooms;
+  _renderPublicRooms(rooms);
+}
+
+function _renderPublicRooms(rooms) {
+  const grid = document.getElementById("public-rooms-grid");
+  if (!grid) return;
+
+  const tab = App._publicTab || "easy";
+  const publicRooms = rooms
+    .filter(r => r.is_public && r.difficulty === tab)
+    .sort((a, b) => a.min_elo - b.min_elo);
+
+  if (publicRooms.length === 0) {
+    grid.innerHTML = '<div class="room-list-empty">Connecting\u2026</div>';
     return;
   }
-  container.innerHTML = "";
-  rooms.forEach(r => {
+
+  grid.innerHTML = "";
+  publicRooms.forEach(r => {
     const card = document.createElement("div");
-    card.className = "room-card";
+    card.className = `public-room-card${r.state !== "lobby" ? " unavailable" : ""}`;
+
+    let statusHtml;
+    if (r.state === "active") {
+      statusHtml = '<span class="prc-status in-progress">In progress</span>';
+    } else if (r.countdown != null && r.countdown > 0) {
+      statusHtml = `<span class="prc-status counting">${r.countdown}s</span>`;
+    } else if (r.player_count >= 2) {
+      statusHtml = '<span class="prc-status counting">Starting\u2026</span>';
+    } else {
+      statusHtml = '<span class="prc-status waiting">Waiting</span>';
+    }
+
     card.innerHTML = `
-      <span class="room-card-code">${_escapeHtml(r.code)}</span>
-      <span class="room-card-diff">${_escapeHtml(r.difficulty)}</span>
-      ${r.lives > 0 ? `<span class="room-card-diff">${r.lives} lives</span>` : ""}
-      <span class="room-card-players">${r.player_count}/8 players</span>
+      <div class="prc-tier">${_escapeHtml(r.elo_label)}</div>
+      <div class="prc-players">${r.player_count} <span>/ 8</span></div>
+      ${statusHtml}
     `;
-    card.addEventListener("click", () => {
-      WS.send({ type: "join_room", code: r.code });
-    });
-    container.appendChild(card);
+
+    if (r.state === "lobby") {
+      card.addEventListener("click", () => {
+        WS.send({ type: "join_room", code: r.code });
+      });
+    }
+
+    grid.appendChild(card);
   });
 }
 
@@ -457,20 +564,34 @@ function _renderProfile(profile) {
   });
 }
 
+// ─── Difficulty Picker UI ─────────────────────────────────────────────────────
+
+function _showDifficultyPicker(mode) {
+  App._pendingQueueMode = mode;
+  document.getElementById("browser-step-1").classList.add("hidden");
+  document.getElementById("browser-step-2").classList.remove("hidden");
+  const label = document.getElementById("difficulty-step-label");
+  label.textContent = mode === "ranked" ? "Ranked — select difficulty" : "Casual — select difficulty";
+}
+
+function _hideDifficultyPicker() {
+  document.getElementById("browser-step-2").classList.add("hidden");
+  document.getElementById("browser-step-1").classList.remove("hidden");
+  App._pendingQueueMode = null;
+}
+
 // ─── Matchmaking UI ───────────────────────────────────────────────────────────
 
 function _showMatchmaking(label) {
+  _hideDifficultyPicker();
+  document.getElementById("browser-step-1").classList.add("hidden");
   document.getElementById("matchmaking-status").classList.remove("hidden");
   document.getElementById("mm-label").textContent = label;
-  document.getElementById("browser-actions") &&
-    document.getElementById("browser-actions").querySelector(".btn-primary") &&
-    (document.getElementById("browser-actions").querySelector(".btn-primary").disabled = true);
 }
 
 function _hideMatchmaking() {
   document.getElementById("matchmaking-status").classList.add("hidden");
-  const btn = document.querySelector(".browser-actions .btn-primary");
-  if (btn) btn.disabled = false;
+  document.getElementById("browser-step-1").classList.remove("hidden");
 }
 
 // ─── URL Room Code ────────────────────────────────────────────────────────────
