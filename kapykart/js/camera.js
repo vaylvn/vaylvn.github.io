@@ -1,24 +1,29 @@
 // Both camera modes share the same recenter -> rotate -> project pipeline,
 // differing only in what they use as the camera anchor:
 //   - follow mode:    anchor = the followed kart (worldPos + heading), so it
-//                      rides along behind that kart.
+//                      rides along behind that kart, tight SNES-style.
 //   - overview mode:   anchor = a fixed point/heading at the track center,
 //                      giving a gently-tilted "SNES Mario Kart map" view.
 //
 // The floor layer is a flat image, tilted for "free" via a CSS
 // `perspective() rotateX()` transform on the whole canvas element. The
 // sprite layer is drawn per-kart with no CSS transform at all - each kart's
-// screen position/scale has to be computed by hand. For the two layers to
-// visually line up, that hand-rolled sprite math has to be the *exact* same
-// projection CSS applies to the floor, not just a similar-looking
-// approximation - an earlier version used an unrelated ad-hoc depth formula
-// and the two layers only roughly agreed, so karts visibly floated off the
-// actual track. See projectPoint() below for the shared derivation.
+// screen position/scale has to be computed by hand, using the exact same
+// perspective/rotateX math CSS applies to the floor (see projectPoint), so
+// the two layers agree on where world space lands.
+//
+// The floor canvas is deliberately bigger than the viewport (see
+// buildFloorCanvasSize + main.js) and centered over it: a steeply tilted
+// flat rectangle covers less of the screen than its own untilted size, so a
+// viewport-sized canvas leaves gaps at the edges once tilted. Sprites are
+// drawn on a separate, viewport-sized canvas with no CSS transform, so they
+// always use the viewport's own dimensions, never the floor's.
 
-const FOLLOW_FLOOR_SCALE = 1.15; // world-units-to-floor-canvas-px for the flat recentered/rotated floor layer
-const FOLLOW_PERSPECTIVE_PX = 600;
+const FOLLOW_FLOOR_SCALE = 1.15; // world-units-to-floor-canvas-px, before FOLLOW_FIXED_ZOOM
+const FOLLOW_PERSPECTIVE_PX = 600; // fixed - NOT scaled by zoom, so zoom can't change how much of the floor needs covering
 const FOLLOW_ROTATE_X_DEG = 55;
 export const FOLLOW_BASE_SPRITE_SCALE = 1.4;
+export const FOLLOW_FIXED_ZOOM = 1.8; // baked-in "tight SNES chase cam" zoom - no longer a user slider
 
 // Overview tuning is derived from the track's own size (see buildOverviewCamera)
 // rather than fixed constants, so a custom track from the editor still frames
@@ -31,6 +36,21 @@ const OVERVIEW_ANCHOR_ANGLE = -Math.PI / 2;
 
 const FOLLOW_ROTATE_X_RAD = FOLLOW_ROTATE_X_DEG * (Math.PI / 180);
 const OVERVIEW_ROTATE_X_RAD = OVERVIEW_ROTATE_X_DEG * (Math.PI / 180);
+
+// How much bigger than the viewport the floor canvas needs to be to fully
+// cover it after the CSS tilt, derived by forward-projecting the floor
+// canvas's own corners through projectPoint and checking they land past the
+// viewport edges - not a guess. Follow mode's steeper 55deg tilt is the
+// tighter constraint of the two modes; this comfortably covers both, with
+// the top ~27% of the screen intentionally left as an uncovered "horizon"
+// band (every pseudo-3D racer has one - nothing needs to render all the way
+// to the mathematical vanishing point).
+export const FLOOR_OVERSIZE_WIDTH = 1.8;
+export const FLOOR_OVERSIZE_HEIGHT = 1.35;
+
+export function buildFloorCanvasSize(viewportWidth, viewportHeight) {
+  return { width: viewportWidth * FLOOR_OVERSIZE_WIDTH, height: viewportHeight * FLOOR_OVERSIZE_HEIGHT };
+}
 
 /**
  * Precomputes the fixed overview camera anchor + tuning for a track. Anchor
@@ -80,13 +100,18 @@ function projectPoint(lx, ly, rotateXRad, perspectivePx) {
   return { x: lx / w, y: rotatedY / w, w };
 }
 
-/** Floor layer: recenter + rotate only, no depth scaling - stays flat, then CSS tilts the whole canvas. */
-export function followFloorProject(followedKart, canvasWidth, canvasHeight, worldX, worldY, zoomFactor) {
+/**
+ * Floor layer: recenter + rotate only, no depth scaling - stays flat, then
+ * CSS tilts the whole canvas. Positions within the floor canvas's OWN
+ * (oversized) dimensions - its center is CSS-positioned to coincide with the
+ * viewport's center, so this still lines up with sprite screen space.
+ */
+export function followFloorProject(followedKart, floorWidth, floorHeight, worldX, worldY, zoomFactor) {
   const { rx, ry } = recenterRotate(followedKart, worldX, worldY);
   const scale = FOLLOW_FLOOR_SCALE * zoomFactor;
   return {
-    x: canvasWidth / 2 + rx * scale,
-    y: canvasHeight / 2 - ry * scale,
+    x: floorWidth / 2 + rx * scale,
+    y: floorHeight / 2 - ry * scale,
   };
 }
 
@@ -94,47 +119,53 @@ export function followFloorProject(followedKart, canvasWidth, canvasHeight, worl
  * Sprite layer: recenter + rotate, then project through the exact same
  * perspective(...)/rotateX(...) math the floor's CSS transform uses, using
  * the same world-to-local scale as followFloorProject so the two layers
- * agree on where world space lands. `kartAngle` is the sprite's own world
- * heading; the returned `angle` is relative to the camera's facing
- * direction, which is what directional sprite frames should key off.
+ * agree on where world space lands. Positions within the viewport (the
+ * sprite canvas is never oversized or transformed). `kartAngle` is the
+ * sprite's own world heading; the returned `angle` is relative to the
+ * camera's facing direction, which is what directional sprite frames
+ * should key off.
  */
-export function followSpriteProject(followedKart, canvasWidth, canvasHeight, worldX, worldY, zoomFactor, kartAngle) {
+export function followSpriteProject(followedKart, viewportWidth, viewportHeight, worldX, worldY, zoomFactor, kartAngle) {
   const { rx, ry } = recenterRotate(followedKart, worldX, worldY);
   const scale = FOLLOW_FLOOR_SCALE * zoomFactor;
-  const perspectivePx = FOLLOW_PERSPECTIVE_PX * zoomFactor;
-  const p = projectPoint(rx * scale, -ry * scale, FOLLOW_ROTATE_X_RAD, perspectivePx);
+  const p = projectPoint(rx * scale, -ry * scale, FOLLOW_ROTATE_X_RAD, FOLLOW_PERSPECTIVE_PX);
   return {
-    x: canvasWidth / 2 + p.x,
-    y: canvasHeight / 2 + p.y,
-    scale: FOLLOW_BASE_SPRITE_SCALE / p.w,
+    x: viewportWidth / 2 + p.x,
+    y: viewportHeight / 2 + p.y,
+    scale: (FOLLOW_BASE_SPRITE_SCALE * zoomFactor) / p.w,
     angle: kartAngle - followedKart.angle,
     visible: p.w > 0.1, // guard against points behind the camera plane (w->0 or negative blows up/flips the projection)
   };
 }
 
-export function followPerspectiveCss(zoomFactor) {
-  return `perspective(${FOLLOW_PERSPECTIVE_PX * zoomFactor}px) rotateX(${FOLLOW_ROTATE_X_DEG}deg)`;
+export function followPerspectiveCss() {
+  return `perspective(${FOLLOW_PERSPECTIVE_PX}px) rotateX(${FOLLOW_ROTATE_X_DEG}deg)`;
 }
 
-/** Overview floor layer: same flat recenter+rotate idea, fit to the track's own size. */
-export function overviewFloorProject(overviewCamera, canvasWidth, canvasHeight, worldX, worldY, zoomFactor) {
+/**
+ * Overview floor layer: same flat recenter+rotate idea, fit to the track's
+ * own size. Scale is computed from the viewport (so "fit the track nicely"
+ * stays tied to what the streamer actually sees), but positions are within
+ * the floor canvas's own (oversized) dimensions.
+ */
+export function overviewFloorProject(overviewCamera, viewportWidth, viewportHeight, floorWidth, floorHeight, worldX, worldY, zoomFactor) {
   const { rx, ry } = recenterRotate(overviewCamera.anchor, worldX, worldY);
-  const scale = overviewCamera.floorScale * Math.min(canvasWidth, canvasHeight) * zoomFactor;
+  const scale = overviewCamera.floorScale * Math.min(viewportWidth, viewportHeight) * zoomFactor;
   return {
-    x: canvasWidth / 2 + rx * scale,
-    y: canvasHeight / 2 - ry * scale,
+    x: floorWidth / 2 + rx * scale,
+    y: floorHeight / 2 - ry * scale,
   };
 }
 
 /** Overview sprite layer: same idea as followSpriteProject, anchored to the fixed overview camera instead of a kart. */
-export function overviewSpriteProject(overviewCamera, canvasWidth, canvasHeight, worldX, worldY, zoomFactor, kartAngle) {
+export function overviewSpriteProject(overviewCamera, viewportWidth, viewportHeight, worldX, worldY, zoomFactor, kartAngle) {
   const { rx, ry } = recenterRotate(overviewCamera.anchor, worldX, worldY);
-  const scale = overviewCamera.floorScale * Math.min(canvasWidth, canvasHeight) * zoomFactor;
+  const scale = overviewCamera.floorScale * Math.min(viewportWidth, viewportHeight) * zoomFactor;
   const perspectivePx = OVERVIEW_PERSPECTIVE_PX * zoomFactor;
   const p = projectPoint(rx * scale, -ry * scale, OVERVIEW_ROTATE_X_RAD, perspectivePx);
   return {
-    x: canvasWidth / 2 + p.x,
-    y: canvasHeight / 2 + p.y,
+    x: viewportWidth / 2 + p.x,
+    y: viewportHeight / 2 + p.y,
     scale: OVERVIEW_BASE_SPRITE_SCALE / p.w,
     angle: kartAngle - overviewCamera.anchor.angle,
     visible: p.w > 0.1,

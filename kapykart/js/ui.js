@@ -78,8 +78,12 @@ export function wireCameraUI(gameState, spriteCanvas) {
 /** Call once per frame (or on state changes) to keep button/slider state in sync. */
 export function updateCameraUI(gameState) {
   const overviewBtn = document.getElementById('cam-overview-btn');
+  const zoomRow = document.getElementById('cam-zoom-row');
   const isOverview = gameState.camera.mode === 'overview';
 
   overviewBtn.classList.toggle('active', isOverview);
   overviewBtn.textContent = isOverview ? 'Overview ✓' : 'Overview';
+  // Follow mode uses a fixed, baked-in "tight SNES chase cam" zoom - only
+  // overview's "fit the whole track" framing benefits from being adjustable.
+  zoomRow.classList.toggle('hidden', !isOverview);
 }

@@ -1,7 +1,7 @@
 import { sampleTrack } from './track.js';
 import {
   buildOverviewCamera, overviewFloorProject, overviewSpriteProject, overviewPerspectiveCss,
-  followFloorProject, followSpriteProject, followPerspectiveCss,
+  followFloorProject, followSpriteProject, followPerspectiveCss, FOLLOW_FIXED_ZOOM,
 } from './camera.js';
 import { pickFrameIndex } from './assets.js';
 import {
@@ -350,31 +350,36 @@ function drawImageWorldRect(ctx, project, img, imgW, imgH) {
 }
 
 /** Draws the floor into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
-function drawPixelatedFloor(realCtx, canvas, track, canvasWidth, canvasHeight, project) {
-  const pctx = getPixelContext(canvas, canvasWidth, canvasHeight);
+function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, project) {
+  const pctx = getPixelContext(canvas, floorWidth, floorHeight);
   pctx.fillStyle = GROUND_COLOR;
-  pctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  pctx.fillRect(0, 0, floorWidth, floorHeight);
   if (track.backgroundImage) {
     drawImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
   } else {
     drawRoad(pctx, track, project);
     drawMarkers(pctx, track, project);
   }
-  blitPixelBuffer(realCtx, canvas, canvasWidth, canvasHeight);
+  blitPixelBuffer(realCtx, canvas, floorWidth, floorHeight);
 }
 
 /**
  * Shared by both camera modes: draws the floor (CSS-tilted, pixelated) and
  * the sprites (depth-projected, pixelated bodies + crisp labels on top).
  * `projectFloor`/`projectSprite` differ only in which anchor they recenter
- * on - a followed kart, or the fixed overview anchor (see camera.js).
+ * on - a followed kart, or the fixed overview anchor (see camera.js). The
+ * floor canvas is bigger than the viewport (see camera.js's
+ * buildFloorCanvasSize) and centered over it, so projectFloor works in the
+ * floor's own (larger) dimensions while projectSprite works in the
+ * viewport's - sprites are drawn on a separate, untransformed, viewport-
+ * sized canvas.
  */
 function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssTransform, hitboxSink }) {
-  const { track, karts, canvasWidth, canvasHeight } = gameState;
+  const { track, karts, canvasWidth, canvasHeight, floorWidth, floorHeight } = gameState;
 
   layers.floorCanvas.style.display = 'block';
   layers.floorCanvas.style.transform = cssTransform;
-  drawPixelatedFloor(layers.floorCtx, layers.floorCanvas, track, canvasWidth, canvasHeight, projectFloor);
+  drawPixelatedFloor(layers.floorCtx, layers.floorCanvas, track, floorWidth, floorHeight, projectFloor);
 
   const spritePixelCtx = getPixelContext(layers.spriteCanvas, canvasWidth, canvasHeight);
 
@@ -404,11 +409,11 @@ function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssT
 }
 
 export function renderOverview(gameState, layers) {
-  const { track, canvasWidth, canvasHeight, camera } = gameState;
+  const { track, canvasWidth, canvasHeight, floorWidth, floorHeight, camera } = gameState;
   const overviewCamera = getOverviewCamera(track);
 
   renderCameraView(gameState, layers, {
-    projectFloor: (x, y) => overviewFloorProject(overviewCamera, canvasWidth, canvasHeight, x, y, camera.zoomFactor),
+    projectFloor: (x, y) => overviewFloorProject(overviewCamera, canvasWidth, canvasHeight, floorWidth, floorHeight, x, y, camera.zoomFactor),
     projectSprite: kart => overviewSpriteProject(
       overviewCamera, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, camera.zoomFactor, kart.angle,
     ),
@@ -418,16 +423,16 @@ export function renderOverview(gameState, layers) {
 }
 
 export function renderFollow(gameState, layers) {
-  const { track, karts, canvasWidth, canvasHeight, camera } = gameState;
+  const { track, karts, canvasWidth, canvasHeight, floorWidth, floorHeight, camera } = gameState;
   const followedKart = karts.get(camera.followedId);
   if (!followedKart) return;
 
   renderCameraView(gameState, layers, {
-    projectFloor: (x, y) => followFloorProject(followedKart, canvasWidth, canvasHeight, x, y, camera.zoomFactor),
+    projectFloor: (x, y) => followFloorProject(followedKart, floorWidth, floorHeight, x, y, FOLLOW_FIXED_ZOOM),
     projectSprite: kart => followSpriteProject(
-      followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, camera.zoomFactor, kart.angle,
+      followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, FOLLOW_FIXED_ZOOM, kart.angle,
     ),
-    cssTransform: followPerspectiveCss(camera.zoomFactor),
+    cssTransform: followPerspectiveCss(),
     hitboxSink: null,
   });
 }

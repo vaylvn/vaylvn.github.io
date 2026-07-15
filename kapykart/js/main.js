@@ -3,6 +3,7 @@ import { buildTrack, loadTrackList, loadTrackBackground } from './track.js';
 import { createKart, updateKart, resetKartColorCycle, resetKartToStart } from './kart.js';
 import { applyTrackEvents, createChaosState, updateChaosEvent } from './events.js';
 import { render, setAssets } from './render.js';
+import { buildFloorCanvasSize } from './camera.js';
 import { loadAssets } from './assets.js';
 import { KART_PALETTE } from './palette.js';
 import { wireCameraUI, updateCameraUI } from './ui.js';
@@ -27,6 +28,8 @@ const gameState = {
   camera: { mode: 'overview', followedId: null, zoomFactor: 1.2 },
   canvasWidth: 0,
   canvasHeight: 0,
+  floorWidth: 0,
+  floorHeight: 0,
   overviewHitboxes: [],
   raceStartedAt: 0,
   raceEndedAt: 0,
@@ -44,12 +47,26 @@ function resizeCanvases() {
   gameState.canvasWidth = rect.width;
   gameState.canvasHeight = rect.height;
 
-  for (const canvas of [floorCanvas, spriteCanvas]) {
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${rect.height}px`;
-  }
+  spriteCanvas.width = rect.width * dpr;
+  spriteCanvas.height = rect.height * dpr;
+  spriteCanvas.style.width = `${rect.width}px`;
+  spriteCanvas.style.height = `${rect.height}px`;
+
+  // The floor canvas is deliberately bigger than the viewport and centered
+  // over it - a steeply tilted flat rectangle covers less screen area than
+  // its own untilted size, so a viewport-sized canvas leaves gaps at the
+  // edges once CSS tilts it (see camera.js's buildFloorCanvasSize).
+  const floorSize = buildFloorCanvasSize(rect.width, rect.height);
+  gameState.floorWidth = floorSize.width;
+  gameState.floorHeight = floorSize.height;
+
+  floorCanvas.width = floorSize.width * dpr;
+  floorCanvas.height = floorSize.height * dpr;
+  floorCanvas.style.width = `${floorSize.width}px`;
+  floorCanvas.style.height = `${floorSize.height}px`;
+  floorCanvas.style.left = `${(rect.width - floorSize.width) / 2}px`;
+  floorCanvas.style.top = `${(rect.height - floorSize.height) / 2}px`;
+
   floorCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   spriteCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
