@@ -12,7 +12,28 @@ import {
 
 const ROAD_SAMPLES = 240; // resolution for the drawn track ribbon
 const KART_BASE_SIZE = 24; // px at scale 1
-const PIXEL_SCALE = 3; // how chunky the 8-bit look is - same offscreen-buffer trick as BrainDead (zombie/js/render.js)
+const PIXEL_SCALE = 2; // how chunky the 8-bit look is - same offscreen-buffer trick as BrainDead (zombie/js/render.js)
+
+// A kart's angle relative to the camera is always exactly 0 for the kart
+// the camera is actually following - the anchor IS that kart's own
+// heading, so it can never show a turning frame on its own. To still show
+// "turning" for the kart you're riding along with (and to make gentle
+// curves elsewhere register at all against the sheet's 45deg-per-frame
+// granularity), blend in how much the track curves just ahead of each
+// kart's own position, amplified so it reads clearly rather than needing a
+// near-hairpin to flip even one frame.
+const TURN_LOOKAHEAD_PROGRESS = 0.025;
+const TURN_EMPHASIS = 3;
+
+function turnFrameDelta(track, kart) {
+  if (kart.finished) return 0;
+  const current = sampleTrack(track, kart.lapProgress);
+  const ahead = sampleTrack(track, kart.lapProgress + TURN_LOOKAHEAD_PROGRESS);
+  let delta = ahead.angle - current.angle;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  return delta * TURN_EMPHASIS;
+}
 
 // --- Custom art (see assets.js). Null until/unless loadAssets() resolves with real files. ---
 
@@ -313,14 +334,26 @@ function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle, { highlight
 /** Full-res pass, drawn after the pixel buffer is blitted up - keeps names crisp instead of blocky. */
 function drawKartLabel(ctx, kart, x, y, scale) {
   const size = KART_BASE_SIZE * scale;
-  const labelScale = Math.max(0.6, Math.min(1, scale));
+  const labelScale = Math.max(0.65, Math.min(1.15, scale));
+  const fontSize = 13 * labelScale;
   ctx.save();
-  ctx.font = `${11 * labelScale}px Consolas, monospace`;
+  ctx.font = `bold ${fontSize}px Consolas, monospace`;
   ctx.textAlign = 'center';
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-  ctx.fillStyle = kart.finished ? '#9aa39a' : '#f2f2f2';
-  const labelY = y - size * 0.85 - 6;
+  ctx.textBaseline = 'middle';
+  const labelY = y - size * 0.85 - 8;
+
+  // A dark plate behind the name reads far better over busy track art than
+  // a text stroke alone, especially at the smaller sizes overview mode draws.
+  const textWidth = ctx.measureText(kart.name).width;
+  const paddingX = fontSize * 0.5;
+  const paddingY = fontSize * 0.32;
+  ctx.fillStyle = 'rgba(10,10,10,0.72)';
+  roundRect(ctx, x - textWidth / 2 - paddingX, labelY - fontSize / 2 - paddingY, textWidth + paddingX * 2, fontSize + paddingY * 2, fontSize * 0.4);
+  ctx.fill();
+
+  ctx.lineWidth = Math.max(2, fontSize * 0.22);
+  ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+  ctx.fillStyle = kart.finished ? '#9aa39a' : '#fff8e6';
   ctx.strokeText(kart.name, x, labelY);
   ctx.fillText(kart.name, x, labelY);
   ctx.restore();
@@ -398,7 +431,8 @@ function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssT
   }
 
   for (const { kart, p } of projected) {
-    drawKartBodyAndEffects(spritePixelCtx, kart, p.x, p.y, p.scale, p.angle, {
+    const frameAngle = p.angle + turnFrameDelta(track, kart);
+    drawKartBodyAndEffects(spritePixelCtx, kart, p.x, p.y, p.scale, frameAngle, {
       highlighted: hitboxSink ? false : kart.id === gameState.camera.followedId,
       chaosWarning: kart.id === chaosTargetId,
     });

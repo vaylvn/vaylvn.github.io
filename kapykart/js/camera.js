@@ -23,7 +23,7 @@ const FOLLOW_FLOOR_SCALE = 1.15; // world-units-to-floor-canvas-px, before FOLLO
 const FOLLOW_PERSPECTIVE_PX = 600; // fixed - NOT scaled by zoom, so zoom can't change how much of the floor needs covering
 const FOLLOW_ROTATE_X_DEG = 55;
 export const FOLLOW_BASE_SPRITE_SCALE = 1.4;
-export const FOLLOW_FIXED_ZOOM = 1.8; // baked-in "tight SNES chase cam" zoom - no longer a user slider
+export const FOLLOW_FIXED_ZOOM = 2.6; // baked-in "tight SNES chase cam" zoom - no longer a user slider
 
 // Overview tuning is derived from the track's own size (see buildOverviewCamera)
 // rather than fixed constants, so a custom track from the editor still frames
@@ -42,11 +42,12 @@ const OVERVIEW_ROTATE_X_RAD = OVERVIEW_ROTATE_X_DEG * (Math.PI / 180);
 // canvas's own corners through projectPoint and checking they land past the
 // viewport edges - not a guess. Follow mode's steeper 55deg tilt is the
 // tighter constraint of the two modes; this comfortably covers both, with
-// the top ~27% of the screen intentionally left as an uncovered "horizon"
+// the top ~16% of the screen intentionally left as an uncovered "horizon"
 // band (every pseudo-3D racer has one - nothing needs to render all the way
-// to the mathematical vanishing point).
-export const FLOOR_OVERSIZE_WIDTH = 1.8;
-export const FLOOR_OVERSIZE_HEIGHT = 1.35;
+// to the mathematical vanishing point; pushing the oversize further shrinks
+// that band further too, at the cost of a bigger pixel buffer to fill).
+export const FLOOR_OVERSIZE_WIDTH = 2.6;
+export const FLOOR_OVERSIZE_HEIGHT = 2.8;
 
 export function buildFloorCanvasSize(viewportWidth, viewportHeight) {
   return { width: viewportWidth * FLOOR_OVERSIZE_WIDTH, height: viewportHeight * FLOOR_OVERSIZE_HEIGHT };

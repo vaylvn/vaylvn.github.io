@@ -1,12 +1,16 @@
 :root {
-  --bg: #0a0d0a;
-  --panel-bg: rgba(14, 18, 14, 0.92);
-  --panel-border: #2a332a;
-  --text: #f2f2f2;
-  --text-dim: #9aa39a;
-  --accent: #06d6a0;
-  --danger: #e63946;
+  --bg: #0d0b0b;
+  --panel-bg: rgba(20, 15, 15, 0.92);
+  --panel-border: #3d2626;
+  --text: #f5efe6;
+  --text-dim: #a89890;
+  --accent: #ff3b30; /* racing red - checkered-flag energy instead of the old survival-horror teal */
+  --accent-2: #ffc93c; /* checkered-flag gold, for secondary highlights/warnings */
+  --danger: #8f1d1d; /* deeper crimson so "stop" actions stay visually distinct from the bright primary red */
+  --track-asphalt: #201a1a;
+  --input-bg: #1a1313;
   --mono: 'Consolas', 'SFMono-Regular', 'Courier New', monospace;
+  --display: 'Arial Black', 'Segoe UI Black', Impact, var(--mono);
 }
 
 * { box-sizing: border-box; }
@@ -184,13 +188,13 @@ body[data-game-state="PLAYING"] #camera-controls {
 #camera-controls button {
   width: 100%;
   margin-bottom: 6px;
-  background: #22301f;
+  background: var(--track-asphalt);
   color: var(--text);
   font-size: 12px;
 }
 #camera-controls #cam-overview-btn.active {
   background: var(--accent);
-  color: #04120d;
+  color: #fff;
 }
 #camera-controls .cam-row {
   display: grid;
@@ -247,19 +251,28 @@ body[data-game-state="LOBBY"] #config-panel { display: block; }
 button {
   font-family: var(--mono);
   background: var(--accent);
-  color: #04120d;
+  color: #fff;
   border: none;
   border-radius: 4px;
   padding: 7px 12px;
   font-weight: bold;
   cursor: pointer;
 }
-button:hover { filter: brightness(1.1); }
+button:hover { filter: brightness(1.15); }
 button:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+/* Primary calls-to-action get the bolder display face - a race "GO" feel
+   without making every small secondary button chunky/hard to read. */
+#connect-submit-btn, #start-round-btn, #back-to-lobby-btn {
+  font-family: var(--display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
 
 input[type="text"] {
   font-family: var(--mono);
-  background: #141814;
+  background: var(--input-bg);
   border: 1px solid var(--panel-border);
   color: var(--text);
   border-radius: 4px;
@@ -275,7 +288,7 @@ input[type="range"] { width: 100%; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 40%, #10160f 0%, #05070a 70%);
+  background: radial-gradient(circle at 50% 35%, #241414 0%, #070505 70%);
 }
 .boot-card {
   width: 420px;
@@ -286,13 +299,35 @@ input[type="range"] { width: 100%; }
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow: hidden;
 }
 .logo-text {
-  margin: 0 auto 4px;
+  margin: -28px -28px 12px;
   text-align: center;
-  color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+  font-family: var(--display);
+  text-transform: uppercase;
   font-size: 32px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  padding: 18px 28px 14px;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+}
+
+/* Checkered-flag strip: a tasteful nod to the SNES racing look, reused as a
+   divider on the boot card and results screen. Classic 2-layer diagonal-
+   gradient checkerboard trick, no image asset needed. */
+.checkered-strip {
+  height: 10px;
+  margin: 0 -28px 16px;
+  background-image:
+    linear-gradient(45deg, #141010 25%, transparent 25%),
+    linear-gradient(-45deg, #141010 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #141010 75%),
+    linear-gradient(-45deg, transparent 75%, #141010 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+  background-color: #f5efe6;
 }
 .boot-card .tagline { color: var(--text-dim); margin: 0 0 12px; font-size: 13px; line-height: 1.4; text-align: center; }
 .boot-card .tagline code { color: var(--accent); }
@@ -315,7 +350,7 @@ input[type="range"] { width: 100%; }
 }
 #test-console h3 { margin: 0 0 6px; font-size: 12px; color: var(--text-dim); }
 .test-quick-buttons { display: flex; gap: 6px; margin-bottom: 8px; }
-.test-quick-buttons button { background: #22301f; color: var(--text); font-size: 11px; padding: 4px 8px; }
+.test-quick-buttons button { background: var(--track-asphalt); color: var(--text); font-size: 11px; padding: 4px 8px; }
 #test-form { display: flex; gap: 6px; align-items: center; }
 #test-form #test-message { flex: 1; }
 
@@ -327,19 +362,27 @@ input[type="range"] { width: 100%; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 40%, #10160f 0%, #05070a 70%);
+  background: radial-gradient(circle at 50% 35%, #241414 0%, #070505 70%);
 }
 .results-card {
   width: min(480px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--panel-bg);
   border: 1px solid var(--accent);
   border-radius: 8px;
   padding: 24px 28px;
   text-align: center;
 }
-.results-card h1 { margin: 0 0 4px; color: var(--accent); font-size: 26px; }
+.results-card h1 {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 26px;
+}
 .results-card .tagline { margin: 0 0 16px; color: var(--text-dim); }
 .results-table-wrap { max-height: 360px; overflow-y: auto; margin-bottom: 18px; }
 .results-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
