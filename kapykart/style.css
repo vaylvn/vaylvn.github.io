@@ -53,6 +53,13 @@ body[data-game-state="PLAYING"] #hud-top {
   display: none;
   position: fixed;
   top: 36px; left: 0; right: 0; bottom: 0;
+  /* Sky layer: the tilted floor canvas is deliberately not big enough to
+     reach the top of the screen (see camera.js) - real pseudo-3D racers
+     always have a horizon, and pushing the canvas further to close that
+     gap gets expensive fast. This plain, untransformed gradient just sits
+     behind both canvases and shows through wherever the tilted floor
+     doesn't reach, so the gap reads as "sky" instead of a black void. */
+  background: linear-gradient(to bottom, #17335e 0%, #3f6fa8 35%, #8fb8d9 62%, #cfe3ec 100%);
 }
 body[data-game-state="LOBBY"] #game-area,
 body[data-game-state="PLAYING"] #game-area {
@@ -108,7 +115,7 @@ body[data-game-state="LOBBY"] #lobby-prompt {
   position: fixed;
   top: 46px; right: 16px;
   z-index: 15;
-  width: 220px;
+  width: 240px;
   padding: 8px 10px 12px;
 }
 body[data-game-state="LOBBY"] #leaderboard,
@@ -131,36 +138,62 @@ body[data-game-state="PLAYING"] #leaderboard {
   position: absolute;
   left: 0; right: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  height: 30px;
-  padding: 0 8px;
-  border-left: 3px solid transparent;
+  gap: 8px;
+  height: 38px;
+  padding: 0 6px;
   background: rgba(255,255,255,0.03);
-  border-radius: 3px;
+  border-radius: 6px;
   font-size: 13px;
   transition: top 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   white-space: nowrap;
   overflow: hidden;
 }
+.lb-rank {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: #04120d;
+}
+.lb-headshot {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.lb-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.25;
+}
 .lb-name {
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-right: 8px;
+  white-space: nowrap;
+  font-weight: bold;
   text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7);
 }
-.lb-kills {
-  font-weight: bold;
+.lb-stat {
+  font-size: 11px;
   color: var(--accent);
   text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7);
 }
-.lb-kills.lb-pop { animation: lb-pop 0.28s ease-out; }
+.lb-stat.lb-pop { animation: lb-pop 0.28s ease-out; }
 @keyframes lb-pop {
-  0% { transform: scale(1.6); color: #fff; }
+  0% { transform: scale(1.5); color: #fff; }
   100% { transform: scale(1); }
 }
-.lb-row.lb-dead { opacity: 0.7; border-left-color: transparent !important; }
-.lb-row.lb-dead .lb-kills { color: var(--text-dim); }
+.lb-row.lb-dead { opacity: 0.7; }
+.lb-row.lb-dead .lb-stat { color: var(--text-dim); }
 .lb-overflow {
   position: absolute;
   left: 0; right: 0;

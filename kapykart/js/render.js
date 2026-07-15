@@ -48,6 +48,11 @@ export function setAssets(loadedAssets) {
   assets = loadedAssets;
 }
 
+/** Read-only access for other UI modules that want to draw kart art (see leaderboard.js's headshots). */
+export function getAssets() {
+  return assets;
+}
+
 /** Draws `img` centered at the origin, fit inside a `boxW`x`boxH` box (preserving aspect ratio). */
 function drawFitted(ctx, img, boxW, boxH) {
   const imgAspect = img.naturalWidth ? img.naturalWidth / img.naturalHeight : img.width / img.height;
@@ -364,16 +369,23 @@ function drawKartLabel(ctx, kart, x, y, scale) {
   ctx.restore();
 }
 
+const TILE_FILL_MULTIPLIER = 24; // fills a (2*24+1)-tile-wide grid around the origin tile - see drawTiledImageWorldRect
+
 /**
- * Draws `img` (spanning world-space rect [0,0]-[imgW,imgH]) through the same
- * flat `project` function used for the road/markers. The floor projection
- * is pure rotate+scale+translate (no depth term), so instead of re-deriving
- * that rotation matrix by hand, it's read off 3 already-correct projected
- * points and composed onto the context's existing transform (`ctx.transform`,
- * not `setTransform` - the pixel buffer already has its own PIXEL_SCALE
- * scale applied, which must stay in effect underneath this one).
+ * Tiles `img` (one repeating unit spans world-space rect [0,0]-[imgW,imgH])
+ * through the same flat `project` function used for the road/markers. Real
+ * SNES Mode 7 tracks work this way - the ground texture repeats infinitely,
+ * so there's never an edge to run out of no matter how the camera zooms or
+ * tilts. The floor projection is pure rotate+scale+translate (no depth
+ * term), so instead of re-deriving that rotation matrix by hand, it's read
+ * off 3 already-correct projected points and composed onto the context's
+ * existing transform (`ctx.transform`, not `setTransform` - the pixel
+ * buffer already has its own PIXEL_SCALE scale applied, which must stay in
+ * effect underneath this one). Filling a big rect with a repeating pattern
+ * is one GPU-tiled draw call regardless of how many repetitions it spans,
+ * so being generous here costs essentially nothing.
  */
-function drawImageWorldRect(ctx, project, img, imgW, imgH) {
+function drawTiledImageWorldRect(ctx, project, img, imgW, imgH) {
   const p00 = project(0, 0);
   const p10 = project(imgW, 0);
   const p01 = project(0, imgH);
@@ -383,7 +395,9 @@ function drawImageWorldRect(ctx, project, img, imgW, imgH) {
     (p01.x - p00.x) / imgH, (p01.y - p00.y) / imgH,
     p00.x, p00.y,
   );
-  ctx.drawImage(img, 0, 0, imgW, imgH);
+  const pattern = ctx.createPattern(img, 'repeat');
+  ctx.fillStyle = pattern;
+  ctx.fillRect(-imgW * TILE_FILL_MULTIPLIER, -imgH * TILE_FILL_MULTIPLIER, imgW * TILE_FILL_MULTIPLIER * 2, imgH * TILE_FILL_MULTIPLIER * 2);
   ctx.restore();
 }
 
@@ -393,7 +407,7 @@ function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, pro
   pctx.fillStyle = GROUND_COLOR;
   pctx.fillRect(0, 0, floorWidth, floorHeight);
   if (track.backgroundImage) {
-    drawImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
+    drawTiledImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
   } else {
     drawRoad(pctx, track, project);
     drawMarkers(pctx, track, project);
