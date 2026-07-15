@@ -42,12 +42,16 @@ const OVERVIEW_ROTATE_X_RAD = OVERVIEW_ROTATE_X_DEG * (Math.PI / 180);
 // canvas's own corners through projectPoint and checking they land past the
 // viewport edges - not a guess. Follow mode's steeper 55deg tilt is the
 // tighter constraint of the two modes; this comfortably covers both, with
-// the top ~16% of the screen intentionally left as an uncovered "horizon"
+// the top ~27% of the screen intentionally left as an uncovered "horizon"
 // band (every pseudo-3D racer has one - nothing needs to render all the way
-// to the mathematical vanishing point; pushing the oversize further shrinks
-// that band further too, at the cost of a bigger pixel buffer to fill).
-export const FLOOR_OVERSIZE_WIDTH = 2.6;
-export const FLOOR_OVERSIZE_HEIGHT = 2.8;
+// to the mathematical vanishing point). Pushing this further shrinks that
+// band, but the floor canvas's pixel-fill cost scales with its area - a
+// prior attempt at 2.6x2.8 (16% band) cost ~6.7x more per-frame canvas work
+// than this combined with PIXEL_SCALE and was a real, noticeable perf hit.
+// This is the "known good" balance; revisit only with a profiling number in
+// hand, not another guess.
+export const FLOOR_OVERSIZE_WIDTH = 1.8;
+export const FLOOR_OVERSIZE_HEIGHT = 1.35;
 
 export function buildFloorCanvasSize(viewportWidth, viewportHeight) {
   return { width: viewportWidth * FLOOR_OVERSIZE_WIDTH, height: viewportHeight * FLOOR_OVERSIZE_HEIGHT };

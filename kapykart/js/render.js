@@ -12,7 +12,7 @@ import {
 
 const ROAD_SAMPLES = 240; // resolution for the drawn track ribbon
 const KART_BASE_SIZE = 24; // px at scale 1
-const PIXEL_SCALE = 2; // how chunky the 8-bit look is - same offscreen-buffer trick as BrainDead (zombie/js/render.js)
+const PIXEL_SCALE = 3; // how chunky the 8-bit look is - same offscreen-buffer trick as BrainDead (zombie/js/render.js)
 
 // A kart's angle relative to the camera is always exactly 0 for the kart
 // the camera is actually following - the anchor IS that kart's own
@@ -20,10 +20,15 @@ const PIXEL_SCALE = 2; // how chunky the 8-bit look is - same offscreen-buffer t
 // "turning" for the kart you're riding along with (and to make gentle
 // curves elsewhere register at all against the sheet's 45deg-per-frame
 // granularity), blend in how much the track curves just ahead of each
-// kart's own position, amplified so it reads clearly rather than needing a
-// near-hairpin to flip even one frame.
+// kart's own position. Hard-clamped: a sharp corner on a hand-drawn custom
+// track can curve much more per lookahead-step than this oval does, and
+// without a cap the emphasis multiplier could push the angle far enough to
+// select the oncoming/front frame instead of a subtle turn - reading as the
+// kart spinning to face backward mid-corner, which is worse than the
+// "soft" turning this was meant to fix.
 const TURN_LOOKAHEAD_PROGRESS = 0.025;
-const TURN_EMPHASIS = 3;
+const TURN_EMPHASIS = 1.6;
+const TURN_MAX_DELTA = Math.PI / 2.8; // ~64deg cap - at most ~1.4 frame-steps away from baseline, never near "facing backward"
 
 function turnFrameDelta(track, kart) {
   if (kart.finished) return 0;
@@ -32,7 +37,7 @@ function turnFrameDelta(track, kart) {
   let delta = ahead.angle - current.angle;
   while (delta > Math.PI) delta -= Math.PI * 2;
   while (delta < -Math.PI) delta += Math.PI * 2;
-  return delta * TURN_EMPHASIS;
+  return Math.max(-TURN_MAX_DELTA, Math.min(TURN_MAX_DELTA, delta * TURN_EMPHASIS));
 }
 
 // --- Custom art (see assets.js). Null until/unless loadAssets() resolves with real files. ---
