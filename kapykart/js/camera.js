@@ -19,11 +19,18 @@
 // drawn on a separate, viewport-sized canvas with no CSS transform, so they
 // always use the viewport's own dimensions, never the floor's.
 
-const FOLLOW_FLOOR_SCALE = 1.15; // world-units-to-floor-canvas-px, before FOLLOW_FIXED_ZOOM
-const FOLLOW_PERSPECTIVE_PX = 600; // fixed - NOT scaled by zoom, so zoom can't change how much of the floor needs covering
+// Follow mode's scale is fit to the track's own size (see buildFollowCamera)
+// rather than a fixed zoom - the whole track image should stay visible even
+// though the camera is anchored to a moving kart, and a fixed tight zoom
+// fundamentally can't guarantee that (you're always just seeing whatever's
+// near the kart). Fit uses the full bbox diagonal, not half of it like
+// overview's radius - the follow anchor can be sitting right at one edge of
+// the track, needing to still reach the far edge from there, not just from
+// a centered point.
+const FOLLOW_FIT_FACTOR = 0.4; // x (canvas min dimension / track bbox diagonal)
+const FOLLOW_PERSPECTIVE_PX = 600;
 const FOLLOW_ROTATE_X_DEG = 55;
 export const FOLLOW_BASE_SPRITE_SCALE = 1.4;
-export const FOLLOW_FIXED_ZOOM = 2.6; // baked-in "tight SNES chase cam" zoom - no longer a user slider
 
 // Overview tuning is derived from the track's own size (see buildOverviewCamera)
 // rather than fixed constants, so a custom track from the editor still frames
@@ -73,6 +80,18 @@ export function buildOverviewCamera(track) {
 }
 
 /**
+ * Precomputes follow mode's fit scale for a track - see FOLLOW_FIT_FACTOR.
+ * Unlike overview, there's no fixed anchor point to precompute here (the
+ * anchor is whichever kart is being followed, recomputed every frame); this
+ * only caches the one thing that's constant per track.
+ */
+export function buildFollowCamera(track) {
+  const { bbox } = track;
+  const diagonal = Math.hypot(bbox.width, bbox.height);
+  return { floorScale: FOLLOW_FIT_FACTOR / diagonal };
+}
+
+/**
  * Recenter + rotate relative to an arbitrary camera anchor ({worldPos, angle}).
  * Returns { rx, ry } where ry = distance "ahead" of the anchor along its
  * facing direction (positive = ahead) and rx = sideways offset.
@@ -109,11 +128,13 @@ function projectPoint(lx, ly, rotateXRad, perspectivePx) {
  * Floor layer: recenter + rotate only, no depth scaling - stays flat, then
  * CSS tilts the whole canvas. Positions within the floor canvas's OWN
  * (oversized) dimensions - its center is CSS-positioned to coincide with the
- * viewport's center, so this still lines up with sprite screen space.
+ * viewport's center, so this still lines up with sprite screen space. Scale
+ * comes from buildFollowCamera (fit to the track's own size), not a zoom
+ * slider, so the whole track image stays in view.
  */
-export function followFloorProject(followedKart, floorWidth, floorHeight, worldX, worldY, zoomFactor) {
+export function followFloorProject(followCamera, followedKart, viewportWidth, viewportHeight, floorWidth, floorHeight, worldX, worldY) {
   const { rx, ry } = recenterRotate(followedKart, worldX, worldY);
-  const scale = FOLLOW_FLOOR_SCALE * zoomFactor;
+  const scale = followCamera.floorScale * Math.min(viewportWidth, viewportHeight);
   return {
     x: floorWidth / 2 + rx * scale,
     y: floorHeight / 2 - ry * scale,
@@ -130,14 +151,14 @@ export function followFloorProject(followedKart, floorWidth, floorHeight, worldX
  * camera's facing direction, which is what directional sprite frames
  * should key off.
  */
-export function followSpriteProject(followedKart, viewportWidth, viewportHeight, worldX, worldY, zoomFactor, kartAngle) {
+export function followSpriteProject(followCamera, followedKart, viewportWidth, viewportHeight, worldX, worldY, kartAngle) {
   const { rx, ry } = recenterRotate(followedKart, worldX, worldY);
-  const scale = FOLLOW_FLOOR_SCALE * zoomFactor;
+  const scale = followCamera.floorScale * Math.min(viewportWidth, viewportHeight);
   const p = projectPoint(rx * scale, -ry * scale, FOLLOW_ROTATE_X_RAD, FOLLOW_PERSPECTIVE_PX);
   return {
     x: viewportWidth / 2 + p.x,
     y: viewportHeight / 2 + p.y,
-    scale: (FOLLOW_BASE_SPRITE_SCALE * zoomFactor) / p.w,
+    scale: FOLLOW_BASE_SPRITE_SCALE / p.w,
     angle: kartAngle - followedKart.angle,
     visible: p.w > 0.1, // guard against points behind the camera plane (w->0 or negative blows up/flips the projection)
   };

@@ -1,7 +1,7 @@
 import { sampleTrack } from './track.js';
 import {
   buildOverviewCamera, overviewFloorProject, overviewSpriteProject, overviewPerspectiveCss,
-  followFloorProject, followSpriteProject, followPerspectiveCss, FOLLOW_FIXED_ZOOM,
+  buildFollowCamera, followFloorProject, followSpriteProject, followPerspectiveCss,
 } from './camera.js';
 import { pickFrameIndex } from './assets.js';
 import {
@@ -68,6 +68,7 @@ function drawFitted(ctx, img, boxW, boxH) {
 let cachedTrack = null;
 let cachedEdges = null;
 let cachedOverviewCamera = null;
+let cachedFollowCamera = null;
 
 function getRoadEdges(track) {
   ensureTrackCache(track);
@@ -77,6 +78,11 @@ function getRoadEdges(track) {
 function getOverviewCamera(track) {
   ensureTrackCache(track);
   return cachedOverviewCamera;
+}
+
+function getFollowCamera(track) {
+  ensureTrackCache(track);
+  return cachedFollowCamera;
 }
 
 function ensureTrackCache(track) {
@@ -94,6 +100,7 @@ function ensureTrackCache(track) {
   cachedTrack = track;
   cachedEdges = { left, right };
   cachedOverviewCamera = buildOverviewCamera(track);
+  cachedFollowCamera = buildFollowCamera(track);
 }
 
 // --- Pixelation: draw the "world" (floor + karts) at low res, upscale with
@@ -369,23 +376,22 @@ function drawKartLabel(ctx, kart, x, y, scale) {
   ctx.restore();
 }
 
-const TILE_FILL_MULTIPLIER = 24; // fills a (2*24+1)-tile-wide grid around the origin tile - see drawTiledImageWorldRect
-
 /**
- * Tiles `img` (one repeating unit spans world-space rect [0,0]-[imgW,imgH])
- * through the same flat `project` function used for the road/markers. Real
- * SNES Mode 7 tracks work this way - the ground texture repeats infinitely,
- * so there's never an edge to run out of no matter how the camera zooms or
- * tilts. The floor projection is pure rotate+scale+translate (no depth
- * term), so instead of re-deriving that rotation matrix by hand, it's read
- * off 3 already-correct projected points and composed onto the context's
- * existing transform (`ctx.transform`, not `setTransform` - the pixel
- * buffer already has its own PIXEL_SCALE scale applied, which must stay in
- * effect underneath this one). Filling a big rect with a repeating pattern
- * is one GPU-tiled draw call regardless of how many repetitions it spans,
- * so being generous here costs essentially nothing.
+ * Draws `img` once (spanning world-space rect [0,0]-[imgW,imgH]) through the
+ * same flat `project` function used for the road/markers. The track image
+ * is a specific one-off drawing - a start line, ponds, and curves at fixed
+ * positions - not a generic repeating ground texture, so tiling it (an
+ * earlier attempt) duplicated the whole track layout side by side instead
+ * of reading as more world. Follow mode's camera now zooms out to fit the
+ * whole image instead (see buildFollowCamera), which is what actually
+ * avoids running past its edges. The floor projection is pure
+ * rotate+scale+translate (no depth term), so instead of re-deriving that
+ * rotation matrix by hand, it's read off 3 already-correct projected points
+ * and composed onto the context's existing transform (`ctx.transform`, not
+ * `setTransform` - the pixel buffer already has its own PIXEL_SCALE scale
+ * applied, which must stay in effect underneath this one).
  */
-function drawTiledImageWorldRect(ctx, project, img, imgW, imgH) {
+function drawImageWorldRect(ctx, project, img, imgW, imgH) {
   const p00 = project(0, 0);
   const p10 = project(imgW, 0);
   const p01 = project(0, imgH);
@@ -395,9 +401,7 @@ function drawTiledImageWorldRect(ctx, project, img, imgW, imgH) {
     (p01.x - p00.x) / imgH, (p01.y - p00.y) / imgH,
     p00.x, p00.y,
   );
-  const pattern = ctx.createPattern(img, 'repeat');
-  ctx.fillStyle = pattern;
-  ctx.fillRect(-imgW * TILE_FILL_MULTIPLIER, -imgH * TILE_FILL_MULTIPLIER, imgW * TILE_FILL_MULTIPLIER * 2, imgH * TILE_FILL_MULTIPLIER * 2);
+  ctx.drawImage(img, 0, 0, imgW, imgH);
   ctx.restore();
 }
 
@@ -407,7 +411,7 @@ function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, pro
   pctx.fillStyle = GROUND_COLOR;
   pctx.fillRect(0, 0, floorWidth, floorHeight);
   if (track.backgroundImage) {
-    drawTiledImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
+    drawImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
   } else {
     drawRoad(pctx, track, project);
     drawMarkers(pctx, track, project);
@@ -479,11 +483,12 @@ export function renderFollow(gameState, layers) {
   const { track, karts, canvasWidth, canvasHeight, floorWidth, floorHeight, camera } = gameState;
   const followedKart = karts.get(camera.followedId);
   if (!followedKart) return;
+  const followCamera = getFollowCamera(track);
 
   renderCameraView(gameState, layers, {
-    projectFloor: (x, y) => followFloorProject(followedKart, floorWidth, floorHeight, x, y, FOLLOW_FIXED_ZOOM),
+    projectFloor: (x, y) => followFloorProject(followCamera, followedKart, canvasWidth, canvasHeight, floorWidth, floorHeight, x, y),
     projectSprite: kart => followSpriteProject(
-      followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, FOLLOW_FIXED_ZOOM, kart.angle,
+      followCamera, followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, kart.angle,
     ),
     cssTransform: followPerspectiveCss(),
     hitboxSink: null,
