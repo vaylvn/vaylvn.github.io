@@ -42,9 +42,32 @@
 // clip at this zoom - that's the source art needing more border, not a
 // renderer bug.
 const FOLLOW_FIT_FACTOR = 2.6; // x (canvas min dimension / track road width)
-const FOLLOW_PERSPECTIVE_PX = 600;
 const FOLLOW_ROTATE_X_DEG = 55;
-export const FOLLOW_BASE_SPRITE_SCALE = 1.4;
+
+// FOLLOW_PERSPECTIVE_PX is a fixed CSS pixel distance, not world-scaled -
+// unlike floorScale above, this one deliberately does NOT track the per-
+// track zoom. It's already sitting close to a real constraint: the floor
+// canvas's own near/bottom edge (see FLOOR_OVERSIZE_HEIGHT) needs `w` to
+// stay comfortably positive at this same d, or that edge distorts the same
+// way the far edge would if pushed too far the other way. Shrinking it to
+// buy more forward visibility trades away that headroom - verified this
+// pushes w on the near edge from ~0.26 (already tight) toward/through 0,
+// which would distort the area right around the kart instead of fixing
+// anything. Widening forward visibility for real needs the floor canvas
+// resized/repositioned to extend further ahead and less behind (it's
+// currently centered symmetrically on the kart), which is a separate,
+// carefully-verified change, not a one-constant tweak - not attempted here.
+const FOLLOW_PERSPECTIVE_PX = 600;
+
+// Kart sprites were a fixed PIXEL size (FOLLOW_BASE_SPRITE_SCALE), so when
+// the zoom above got much tighter (the road now fills far more of the
+// screen), the kart's on-screen size didn't grow to match, reading as
+// disproportionately "tiny" next to it. Giving it a WORLD size instead
+// (in the same units as the road/checker line) means it scales up right
+// along with everything else. ~12 world units is about one starting-grid
+// checker square (see render.js's CHECKER_SQUARE_SIZE) - a kart roughly
+// that wide across.
+const FOLLOW_KART_WORLD_SIZE = 12; // world units - see render.js's KART_BASE_SIZE for how this becomes pixels
 
 // Overview tuning is derived from the track's own size (see buildOverviewCamera)
 // rather than fixed constants, so a custom track from the editor still frames
@@ -170,7 +193,10 @@ export function followSpriteProject(followCamera, followedKart, viewportWidth, v
   return {
     x: viewportWidth / 2 + p.x,
     y: viewportHeight / 2 + p.y,
-    scale: FOLLOW_BASE_SPRITE_SCALE / p.w,
+    // 24 = render.js's KART_BASE_SIZE (the reference sprite size a scale of
+    // 1 means), so this comes out to FOLLOW_KART_WORLD_SIZE*scale/p.w
+    // pixels - a genuine world size, not a fixed pixel one.
+    scale: (FOLLOW_KART_WORLD_SIZE * scale) / 24 / p.w,
     angle: kartAngle - followedKart.angle,
     visible: p.w > 0.1, // guard against points behind the camera plane (w->0 or negative blows up/flips the projection)
   };
