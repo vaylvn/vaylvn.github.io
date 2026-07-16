@@ -19,26 +19,29 @@
 // drawn on a separate, viewport-sized canvas with no CSS transform, so they
 // always use the viewport's own dimensions, never the floor's.
 
-// Follow mode's scale is fit to the track's own size (see buildFollowCamera)
-// rather than a fixed zoom - the whole track image should stay visible even
-// though the camera is anchored to a moving kart, and a fixed tight zoom
-// fundamentally can't guarantee that (you're always just seeing whatever's
-// near the kart). Fit uses the full bbox diagonal, not half of it like
-// overview's radius - the follow anchor can be sitting right at one edge of
-// the track, needing to still reach the far edge from there, not just from
-// a centered point.
+// Follow mode's scale is fit to the ROAD's own width (track.def.width), not
+// the overall track's bbox - a close chase-cam should feel the same whether
+// the track loop is big or small, and going tighter needs LESS world space
+// to fill the screen, not more, so (counterintuitively) it's what keeps the
+// camera from ever needing to see past a background track image's edge, not
+// what causes it. Verified against the real shipped track (tracks/track.json
+// + assets/track1.png, road only ~50-90px from the image edge, vs a 145px-
+// wide road): the drawn image fully covers the visible floor at every point
+// around the loop at this zoom (see conversation history / prior sim).
 //
-// A roadwidth-relative tight zoom was tried and reverted: it kept the track
-// image itself fully covered (verified), but every world-space-sized floor
-// feature (the checkered start line, road-edge striping) is drawn at a
-// fixed real-world size, and scaling those ~77x closer blew each one up to
-// span most of the screen - the CSS tilt then stretched those oversized
-// shapes into the "completely fucked" warped diamonds seen in testing. The
-// perspective math itself wasn't broken; the zoom was just far tighter than
-// any of the other floor-drawing code was built to tolerate. Revisit only
-// with a plan for the checker-line/road-edge sizes too, not the camera
-// scale alone.
-const FOLLOW_FIT_FACTOR = 0.4; // x (canvas min dimension / track bbox diagonal)
+// A first attempt at this same formula caused visibly "warped diamond"
+// floor art - but that turned out to be the built-in fallback track's
+// procedural checkered start line (drawCheckerLine in render.js), which
+// draws in fixed WORLD units and had a fixed low square count (6) tuned for
+// the old, much-more-zoomed-out scale. At this tighter scale each square
+// covers much more of the screen, same as the road ribbon correctly getting
+// wider when you zoom in - just too few of them to still read as a checker
+// pattern. Fixed by upping the square count there instead of retreating on
+// zoom (see drawCheckerLine's SQUARES constant). A custom track background
+// image with thinner margins than ~25% of its own road width could still
+// clip at this zoom - that's the source art needing more border, not a
+// renderer bug.
+const FOLLOW_FIT_FACTOR = 2.6; // x (canvas min dimension / track road width)
 const FOLLOW_PERSPECTIVE_PX = 600;
 const FOLLOW_ROTATE_X_DEG = 55;
 export const FOLLOW_BASE_SPRITE_SCALE = 1.4;
@@ -97,9 +100,7 @@ export function buildOverviewCamera(track) {
  * only caches the one thing that's constant per track.
  */
 export function buildFollowCamera(track) {
-  const { bbox } = track;
-  const diagonal = Math.hypot(bbox.width, bbox.height);
-  return { floorScale: FOLLOW_FIT_FACTOR / diagonal };
+  return { floorScale: FOLLOW_FIT_FACTOR / track.def.width };
 }
 
 /**

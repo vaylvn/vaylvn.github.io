@@ -179,18 +179,28 @@ function drawRoad(ctx, track, project) {
   drawCheckerLine(ctx, track, project);
 }
 
+// Squares are laid out across the road at a fixed WORLD size, same as the
+// road ribbon itself - correct for them to look bigger on screen at a
+// tighter camera zoom, just like the road does. 6 was tuned for the old,
+// much-more-zoomed-out follow scale; at the current tight SNES-close zoom
+// that read as a couple of giant blocks instead of a checker pattern, so
+// this is sized relative to the road width instead of a fixed count, to
+// keep individual squares a reasonable, recognizable size regardless of
+// zoom or a custom track's road width.
+const CHECKER_SQUARE_SIZE = 12; // world units per square
+
 function drawCheckerLine(ctx, track, project) {
   const halfWidth = track.def.width / 2;
   const p = sampleTrack(track, 0);
   const perpX = -Math.sin(p.angle);
   const perpY = Math.cos(p.angle);
-  const squares = 6;
+  const squares = Math.max(4, Math.round((halfWidth * 2) / CHECKER_SQUARE_SIZE));
   for (let i = 0; i < squares; i++) {
     const f0 = i / squares;
     const f1 = (i + 1) / squares;
     const a = { x: p.x + perpX * (-halfWidth + f0 * halfWidth * 2), y: p.y + perpY * (-halfWidth + f0 * halfWidth * 2) };
     const b = { x: p.x + perpX * (-halfWidth + f1 * halfWidth * 2), y: p.y + perpY * (-halfWidth + f1 * halfWidth * 2) };
-    const thickness = 10;
+    const thickness = CHECKER_SQUARE_SIZE;
     const alongX = Math.cos(p.angle) * thickness;
     const alongY = Math.sin(p.angle) * thickness;
     const sa = project(a.x, a.y);
