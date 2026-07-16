@@ -73,6 +73,19 @@ function resizeCanvases() {
 
 window.addEventListener('resize', resizeCanvases);
 
+// This is a streaming overlay (OBS browser source or a full-window kiosk
+// tab) - an accidental ctrl+scroll, trackpad pinch, or ctrl+plus/minus
+// zooming the whole page would visibly break the layout on stream. This is
+// the browser's own native page zoom, unrelated to the in-game overview
+// zoom slider (see ui.js), which is a separate custom control that stays
+// untouched. Pinch-to-zoom on trackpads/touchscreens fires as a `wheel`
+// event with ctrlKey set (Chrome/Firefox convention), so one listener
+// covers both that and literal ctrl+scroll.
+window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '0'].includes(e.key)) e.preventDefault();
+});
+
 // --- Chat: the only chat-driven action is !join (see spec §1/§7) ---
 
 function handleChatMessage(gameState, msg) {
