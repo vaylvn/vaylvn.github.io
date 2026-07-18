@@ -38,6 +38,16 @@
       <input type="range" id="cam-zoom-slider" min="60" max="220" value="120">
     </div>
     <p class="hint">Click a kart in overview mode to ride along with it.</p>
+    <button type="button" id="end-race-btn">End race</button>
+    <p class="hint" id="end-race-hint">First-place finish doesn't cut the race short - stragglers keep going until you end it.</p>
+  </div>
+
+  <div id="winner-splash" class="hidden">
+    <div class="winner-splash-card">
+      <div class="checkered-strip"></div>
+      <p class="winner-splash-label">Winner</p>
+      <h2 id="winner-splash-name"></h2>
+    </div>
   </div>
 
   <div id="results-screen" class="hidden">

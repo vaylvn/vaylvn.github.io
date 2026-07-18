@@ -45,14 +45,20 @@ function drawHeadshot(canvas, kart) {
 
   const assets = getAssets();
   const sheet = assets && assets.kartSheet;
-  const frames = sheet && sheet.frames.get(kart.color);
-  if (frames) {
-    // Frame 0 is the dead-on "facing the camera" pose (see assets.js) -
-    // the only one of the 8 that reads as a portrait rather than a profile.
-    const frame = frames[0];
+  const animBlocks = sheet && sheet.frames.get(kart.color);
+  if (animBlocks) {
+    // Frame 0 of animation block 0 is the dead-on "facing the camera" pose
+    // (see assets.js) - the only one of the 8 that reads as a portrait
+    // rather than a profile. Headshots don't need to reflect the bob
+    // animation, so always use the first block.
+    const frame = animBlocks[0][0];
     const zoom = 1.7; // crop in past the kart body to frame mostly the capybara's face
     const size = HEADSHOT_SIZE * zoom;
-    ctx.drawImage(frame, (HEADSHOT_SIZE - size) / 2, (HEADSHOT_SIZE - size) / 2 - HEADSHOT_SIZE * 0.12, size, size);
+    // The face fills roughly the top two-thirds of the source frame and the
+    // kart/wheels sit in the bottom third, so the crop window is shifted UP
+    // (a positive y offset, toward the top of the frame) rather than
+    // centered - a centered crop reads as mostly kart with the face cut off.
+    ctx.drawImage(frame, (HEADSHOT_SIZE - size) / 2, (HEADSHOT_SIZE - size) / 2 + HEADSHOT_SIZE * 0.25, size, size);
   } else {
     ctx.fillStyle = '#241a1a';
     ctx.fillRect(0, 0, HEADSHOT_SIZE, HEADSHOT_SIZE);

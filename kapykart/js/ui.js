@@ -20,6 +20,7 @@ function setFollowedKart(gameState, kartId) {
   if (kartId == null) return;
   gameState.camera.mode = 'follow';
   gameState.camera.followedId = kartId;
+  gameState.camera.smoothedAngle = null; // snap to the new kart's heading instead of easing from whichever way the old one was facing
 }
 
 function cycleFollowed(gameState, delta) {

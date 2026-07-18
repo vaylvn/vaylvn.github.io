@@ -17,6 +17,20 @@
 //      red and KART_SHEET_FRAME0_OFFSET/KART_SHEET_CLOCKWISE to its frame
 //      order.
 //
+//      The sheet can also stack multiple such 4x2 blocks vertically
+//      (KART_SHEET_ANIM_BLOCKS) - each block is the SAME 8 directions in
+//      the SAME order, just a different animation pose. render.js cycles
+//      through these based on how far each kart has actually traveled, so
+//      it animates while moving and holds still when parked.
+//
+//      The current sheet is 4x8 (4 stacked blocks): blocks 0-1 are a
+//      normal-driving pose pair (e.g. a head-bob), blocks 2-3 are the SAME
+//      pose pair again but with a boost exhaust-flame effect added - used
+//      whenever a kart's boostTimer is active (see KART_SHEET_BOOST_BLOCK_OFFSET
+//      in render.js). If more normal or boost pose variations get added
+//      later, keep the two groups the same size and contiguous (normal
+//      poses first, then the matching boost poses).
+//
 //   2. Two flat images - assets/kart.png (tintable flat silhouette) and
 //      assets/capybara.png (fixed-color character), layered and always
 //      drawn upright. Used only if the sheet above isn't present.
@@ -34,7 +48,21 @@ const ASSET_PATHS = {
 };
 
 const KART_SHEET_COLS = 4;
-const KART_SHEET_ROWS = 2;
+const KART_SHEET_ROWS = 2; // rows per animation block - 8 directions per block, laid out the same way in every block
+
+// The sheet can stack multiple full 4x2 (COLS x ROWS) direction-sets on top
+// of each other, each one a different animation pose of the SAME 8
+// directions in the SAME order - e.g. a 4x4 sheet is 2 stacked blocks (a
+// head-bob pair), a 4x8 sheet is 4. Bump this if more blocks get added.
+const KART_SHEET_ANIM_BLOCKS = 4;
+
+// Of the KART_SHEET_ANIM_BLOCKS above, how many are the "normal driving"
+// pose variations - the rest (from this index on) are the SAME pose
+// variations again but with a boost exhaust-flame effect added, in the
+// same order. render.js picks a block from the first group while
+// boostTimer is inactive, and the matching block from the second group
+// while it's active.
+const KART_SHEET_NORMAL_BLOCKS = 2;
 
 // Tuned against the real kart_capybara_sheet.png (4x2, 300px frames):
 // frame 0 is the dead-on "facing the camera" pose (relativeAngle = 180deg,
@@ -157,24 +185,44 @@ export function pickFrameIndex(relativeAngle, frameCount) {
   return Math.round(a / (Math.PI * 2 / frameCount)) % frameCount;
 }
 
-function buildKartSheet(img, kartColors) {
+/** Hands control back to the browser for one macrotask - NOT requestAnimationFrame, which never fires in some embedded/headless preview contexts. */
+function yieldToBrowser() {
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+// Recoloring is per-pixel HSL math over every frame of every animation block
+// for every kart color (buildKartSheet below) - real work that doubled when
+// the sheet grew from 2 animation blocks to 4 (see KART_SHEET_ANIM_BLOCKS),
+// and ran as one single uninterruptible synchronous pass. On a slower
+// machine/tab that reads as the page having actually frozen (nothing can
+// paint or respond, including the "Loading track and assets" text itself,
+// for the whole multi-second pass) rather than just taking a while. Yielding
+// once per color spreads that same work across multiple macrotasks instead,
+// so the tab stays responsive throughout - total time is barely affected
+// (a handful of ~0ms setTimeout hops), but it no longer LOOKS hung.
+async function buildKartSheet(img, kartColors) {
   const frameCount = KART_SHEET_COLS * KART_SHEET_ROWS;
   const frameW = img.naturalWidth / KART_SHEET_COLS;
-  const frameH = img.naturalHeight / KART_SHEET_ROWS;
-  const frames = new Map(); // color -> array of recolored frame canvases, indexed by frame index
+  const frameH = img.naturalHeight / (KART_SHEET_ROWS * KART_SHEET_ANIM_BLOCKS);
+  const frames = new Map(); // color -> array[animBlock] -> array of recolored frame canvases, indexed by direction frame index
 
   for (const color of kartColors) {
     const targetHue = hexToHue(color);
-    const perFrame = [];
-    for (let i = 0; i < frameCount; i++) {
-      const col = i % KART_SHEET_COLS;
-      const row = Math.floor(i / KART_SHEET_COLS);
-      perFrame.push(recolorFrameHue(img, col * frameW, row * frameH, frameW, frameH, targetHue));
+    const perAnimBlock = [];
+    for (let b = 0; b < KART_SHEET_ANIM_BLOCKS; b++) {
+      const perFrame = [];
+      for (let i = 0; i < frameCount; i++) {
+        const col = i % KART_SHEET_COLS;
+        const row = b * KART_SHEET_ROWS + Math.floor(i / KART_SHEET_COLS);
+        perFrame.push(recolorFrameHue(img, col * frameW, row * frameH, frameW, frameH, targetHue));
+      }
+      perAnimBlock.push(perFrame);
     }
-    frames.set(color, perFrame);
+    frames.set(color, perAnimBlock);
+    await yieldToBrowser();
   }
 
-  return { frameCount, frames };
+  return { frameCount, animBlocks: KART_SHEET_ANIM_BLOCKS, normalBlocks: KART_SHEET_NORMAL_BLOCKS, frames };
 }
 
 /** Recolors a flat white/light silhouette to `color`, using the source's own alpha as the mask (used by the flat kart.png fallback). */
@@ -202,7 +250,7 @@ export async function loadAssets(kartColors) {
     loadImage(ASSET_PATHS.capybara),
   ]);
 
-  const kartSheet = sheetImg ? buildKartSheet(sheetImg, kartColors) : null;
+  const kartSheet = sheetImg ? await buildKartSheet(sheetImg, kartColors) : null;
 
   const kartTints = new Map();
   if (kartImg) {

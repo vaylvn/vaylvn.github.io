@@ -60,6 +60,8 @@ function applyStartingState(kart, track, gridSlot) {
   kart.totalProgress = 0;
   kart.lateralOffset = spawn.lateralOffset;
   kart.lateralTarget = spawn.lateralOffset;
+  kart.animProgress = 0;
+  kart.spinElapsed = 0; // seconds into the current stun, from 0 - see render.js's spin-cycling visual
   kart.weavePeriod = WEAVE_PERIOD_MIN + Math.random() * (WEAVE_PERIOD_MAX - WEAVE_PERIOD_MIN);
   kart.weavePhase = Math.random() * Math.PI * 2;
   kart.weaveAmplitude = WEAVE_AMPLITUDE_MIN + Math.random() * (WEAVE_AMPLITUDE_MAX - WEAVE_AMPLITUDE_MIN);
@@ -106,22 +108,28 @@ export function resetKartColorCycle() {
  * derive worldPos from the single sampleTrack() source of truth. A kart with
  * an active spinTimer skips movement entirely - it's what a hazard hit
  * produces (see events.js): frozen in place, visibly spinning.
+ *
+ * A finished kart does NOT stop moving - it keeps looping the track (like
+ * the podium overlay in most racing games, with racing continuing visibly
+ * behind it) rather than parking dead at the line. `finished`/`finishTime`
+ * are set once and never touched again (see the `!kart.finished` guard
+ * below), so this only affects ongoing movement/animation - every place
+ * that ranks or displays karts already branches on the `finished` flag
+ * itself, not on the raw lap/progress numbers, so letting those keep
+ * climbing forever afterward doesn't change anyone's result or standing.
  */
 export function updateKart(kart, track, dt, now) {
-  if (kart.finished) {
-    kart.speedCurrent = 0;
-    return;
-  }
-
   if (kart.boostTimer > 0) {
     kart.boostTimer = Math.max(0, kart.boostTimer - dt);
   }
 
   if (kart.spinTimer > 0) {
     kart.spinTimer = Math.max(0, kart.spinTimer - dt);
+    kart.spinElapsed += dt;
     kart.speedCurrent = 0;
     return;
   }
+  kart.spinElapsed = 0; // reset so the next hazard/chaos hit's spin-cycle starts from frame 0 again
 
   kart.speedCurrent = kart.speedBase * (kart.boostTimer > 0 ? kart.boostMultiplier : 1);
   kart.lapProgress += (kart.speedCurrent * dt) / track.length;
@@ -129,14 +137,18 @@ export function updateKart(kart, track, dt, now) {
   if (kart.lapProgress >= 1) {
     kart.lap += 1;
     kart.lapProgress -= 1;
-    if (kart.lap >= track.def.laps) {
+    if (!kart.finished && kart.lap >= track.def.laps) {
       kart.finished = true;
       kart.finishTime = now;
-      kart.lap = track.def.laps;
-      kart.lapProgress = 0;
     }
   }
   kart.totalProgress = kart.lap + kart.lapProgress;
+
+  // Advances at the kart's unboosted base speed rather than speedCurrent, so
+  // a boost pad (a temporary speed MULTIPLIER) doesn't also speed up the
+  // sprite's animation cycle - render.js ties frame timing to this instead
+  // of totalProgress specifically to keep it decoupled from boosts.
+  kart.animProgress += (kart.speedBase * dt) / track.length;
 
   const maxOffset = track.def.width * 0.5 * LANE_BOUND_FRACTION;
   const jitterBound = maxOffset * WEAVE_JITTER_BOUND_FRACTION;

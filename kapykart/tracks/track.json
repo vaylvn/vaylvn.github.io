@@ -199,6 +199,49 @@
       "duration": 1.4
     }
   ],
-  "hazards": [],
+  "hazards": [
+    {
+      "x": 297,
+      "y": 307,
+      "radius": 16,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 802,
+      "y": 157,
+      "radius": 23,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 1046,
+      "y": 472,
+      "radius": 15,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 1047,
+      "y": 509,
+      "radius": 14,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 581,
+      "y": 1157,
+      "radius": 14,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 235,
+      "y": 836,
+      "radius": 13,
+      "type": "banana",
+      "spinDuration": 1.5
+    }
+  ],
   "backgroundImage": "assets/track1.png"
 }

@@ -53,12 +53,16 @@ body[data-game-state="PLAYING"] #hud-top {
   display: none;
   position: fixed;
   top: 36px; left: 0; right: 0; bottom: 0;
-  /* Sky layer: the tilted floor canvas is deliberately not big enough to
-     reach the top of the screen (see camera.js) - real pseudo-3D racers
-     always have a horizon, and pushing the canvas further to close that
-     gap gets expensive fast. This plain, untransformed gradient just sits
-     behind both canvases and shows through wherever the tilted floor
-     doesn't reach, so the gap reads as "sky" instead of a black void. */
+  /* The tilted floor canvas doesn't physically reach the very top of the
+     screen (see camera.js) - a steeply-tilted flat rectangle can't cover
+     the whole viewport without an extremely, sometimes prohibitively
+     large buffer. This ONLY shows at that true, distant edge now that the
+     floor's own forward capacity was tripled (camera.js's
+     FOLLOW_AHEAD_WORLD_UNITS) and its "ran out of unique track art"
+     fallback reads as grass (palette.js's GROUND_COLOR) rather than a
+     void - so a plain sky gradient here reads as an actual distant
+     horizon above that grass, not a cutoff interrupting the track close
+     to the racer. A placeholder for a real horizon image later. */
   background: linear-gradient(to bottom, #17335e 0%, #3f6fa8 35%, #8fb8d9 62%, #cfe3ec 100%);
 }
 body[data-game-state="LOBBY"] #game-area,
@@ -243,6 +247,58 @@ body[data-game-state="PLAYING"] #camera-controls {
   font-size: 11px;
   color: var(--text-dim);
   line-height: 1.4;
+}
+#end-race-btn, #end-race-hint {
+  display: none;
+}
+#end-race-btn {
+  margin-top: 10px;
+  background: var(--danger);
+  color: #fff;
+}
+body[data-game-state="PLAYING"] #end-race-btn,
+body[data-game-state="PLAYING"] #end-race-hint {
+  display: block;
+}
+
+/* --- Winner splash --- */
+#winner-splash {
+  position: fixed;
+  top: 56px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  pointer-events: none;
+  animation: winner-splash-inout 6s ease-in-out forwards;
+}
+.winner-splash-card {
+  width: 320px;
+  background: var(--panel-bg);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 20px 18px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.winner-splash-card .checkered-strip { margin: 0 -20px 12px; }
+.winner-splash-label {
+  margin: 0 0 2px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+#winner-splash-name {
+  margin: 0;
+  font-family: var(--display);
+  color: var(--accent-2);
+  font-size: 22px;
+  text-transform: uppercase;
+}
+@keyframes winner-splash-inout {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  8% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
 }
 
 /* --- Config panel --- */

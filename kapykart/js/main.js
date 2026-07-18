@@ -3,7 +3,7 @@ import { buildTrack, loadTrackList, loadTrackBackground } from './track.js';
 import { createKart, updateKart, resetKartColorCycle, resetKartToStart } from './kart.js';
 import { applyTrackEvents, createChaosState, updateChaosEvent } from './events.js';
 import { render, setAssets } from './render.js';
-import { buildFloorCanvasSize } from './camera.js';
+import { buildFloorCanvasSize, advanceFollowCameraHeading } from './camera.js';
 import { loadAssets } from './assets.js';
 import { KART_PALETTE } from './palette.js';
 import { wireCameraUI, updateCameraUI } from './ui.js';
@@ -33,6 +33,7 @@ const gameState = {
   overviewHitboxes: [],
   raceStartedAt: 0,
   raceEndedAt: 0,
+  winnerAnnounced: false, // first-place finish no longer ends the race outright - see announceWinner()
 };
 
 function setState(next) {
@@ -113,16 +114,30 @@ function startRace() {
   gameState.chaosEnabled = document.getElementById('cfg-chaos-toggle').checked;
   gameState.chaos = createChaosState(performance.now());
   gameState.raceStartedAt = performance.now();
+  gameState.winnerAnnounced = false;
   gameState.camera.mode = 'overview';
   gameState.camera.followedId = null;
   setState('PLAYING');
   playRaceStart();
 }
 
+/** First-place finish alone doesn't end the race anymore - see announceWinner(). This is the manual "streamer decided to wrap up" trigger, from the End race button. */
 function endRace() {
+  if (gameState.state !== 'PLAYING') return;
   gameState.raceEndedAt = performance.now();
   setState('ENDED');
   showResults();
+}
+
+/** Called once, the moment the first kart finishes - shows a transient banner (see the CSS animation on #winner-splash) without touching game state, so stragglers keep racing normally. */
+function announceWinner(kart) {
+  gameState.winnerAnnounced = true;
+  const splash = document.getElementById('winner-splash');
+  document.getElementById('winner-splash-name').textContent = kart.name;
+  splash.classList.remove('hidden');
+  splash.style.animation = 'none';
+  void splash.offsetWidth; // force reflow so the animation restarts if a splash is somehow re-triggered
+  splash.style.animation = '';
   playFinish();
 }
 
@@ -132,7 +147,9 @@ function resetToLobby() {
   resetKartColorCycle();
   gameState.camera.mode = 'overview';
   gameState.camera.followedId = null;
+  gameState.winnerAnnounced = false;
   document.getElementById('results-screen').classList.add('hidden');
+  document.getElementById('winner-splash').classList.add('hidden');
   initLeaderboard();
   setState('LOBBY');
 }
@@ -290,6 +307,7 @@ document.getElementById('test-join-batch').addEventListener('click', () => {
 
 document.getElementById('start-round-btn').addEventListener('click', startRace);
 document.getElementById('back-to-lobby-btn').addEventListener('click', resetToLobby);
+document.getElementById('end-race-btn').addEventListener('click', endRace);
 
 const lapsInput = document.getElementById('cfg-laps');
 const lapsLabel = document.getElementById('cfg-laps-label');
@@ -321,11 +339,20 @@ function tick(now) {
 
     if (!gameState.camera.followedId) {
       const ranked = rankedKarts();
-      if (ranked.length) gameState.camera.followedId = ranked[0].id;
+      if (ranked.length) {
+        gameState.camera.followedId = ranked[0].id;
+        gameState.camera.smoothedAngle = null; // snap to this kart's heading instead of easing from a stale previous value
+      }
     }
 
-    if ([...gameState.karts.values()].some(k => k.finished)) {
-      endRace();
+    if (gameState.camera.mode === 'follow' && gameState.camera.followedId) {
+      const followedKart = gameState.karts.get(gameState.camera.followedId);
+      if (followedKart) advanceFollowCameraHeading(gameState.camera, followedKart, dt);
+    }
+
+    if (!gameState.winnerAnnounced) {
+      const winner = [...gameState.karts.values()].find(k => k.finished);
+      if (winner) announceWinner(winner);
     }
 
     const elapsedSec = Math.floor((now - gameState.raceStartedAt) / 1000);

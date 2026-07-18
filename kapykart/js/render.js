@@ -1,18 +1,57 @@
 import { sampleTrack } from './track.js';
 import {
-  buildOverviewCamera, overviewFloorProject, overviewSpriteProject, overviewPerspectiveCss,
-  buildFollowCamera, followFloorProject, followSpriteProject, followPerspectiveCss,
+  buildOverviewCamera, overviewFloorProject, overviewSpriteProject, overviewPerspectiveCss, overviewFloorTop,
+  buildFollowCamera, followFloorProject, followSpriteProject, followPerspectiveCss, followTransformOrigin, followFloorTop,
 } from './camera.js';
 import { pickFrameIndex } from './assets.js';
 import {
   CAPYBARA_COLOR, CAPYBARA_EAR_COLOR, STROKE_COLOR, GROUND_COLOR, ROAD_COLOR,
-  ROAD_EDGE_COLOR, CHECKER_A, CHECKER_B, BOOST_COLOR, HAZARD_COLOR, ACCENT_COLOR,
+  ROAD_EDGE_COLOR, CHECKER_A, CHECKER_B, BOOST_COLOR, HAZARD_COLOR,
   CHAOS_WARNING_COLOR,
 } from './palette.js';
 
 const ROAD_SAMPLES = 240; // resolution for the drawn track ribbon
 const KART_BASE_SIZE = 24; // px at scale 1
-const PIXEL_SCALE = 3; // how chunky the 8-bit look is - same offscreen-buffer trick as BrainDead (zombie/js/render.js)
+// How chunky the 8-bit look is - same offscreen-buffer trick as BrainDead
+// (zombie/js/render.js). This is the default, used for BOTH camera modes'
+// sprite layer (always viewport-sized, unaffected by FLOOR_OVERSIZE) and
+// overview mode's floor layer (its canvas size never changed).
+const PIXEL_SCALE = 3;
+
+// Follow mode's floor buffer specifically got much bigger (see camera.js's
+// FLOOR_OVERSIZE_WIDTH/HEIGHT, for real forward/sideways track visibility)
+// - this compensates ONLY that one buffer so the extra canvas area doesn't
+// cost proportionally more per-frame fill work. Scoped to follow mode's
+// floor only: bumping the shared PIXEL_SCALE instead (an earlier mistake)
+// also chunked up overview mode's floor and BOTH modes' sprites, none of
+// which needed it since their buffers never grew.
+//
+// Raised from 5 to 8 alongside camera.js doubling its forward/sideways
+// capacity (300 world-units, up from 150) - the raw per-frame fill cost of
+// that buffer is now ~16x the ORIGINAL baseline (vs. ~4x before), so this
+// needed to grow too to keep actual cost in a similar ballpark (~1.8x
+// baseline-actual). If it's still too slow in practice, raise this further
+// before shrinking the buffer back down - it directly trades chunkiness
+// for speed without giving up any of the forward/sideways visibility.
+const FOLLOW_FLOOR_PIXEL_SCALE = 8;
+
+// Overview's kart sprites are drawn small (KART_BASE_SIZE=24px at scale 1,
+// vs follow mode's much bigger world-sized kart) - at the shared
+// PIXEL_SCALE=3, a 24px kart only spans ~8 pixelation blocks across, so the
+// SAME block size that reads as a fine 8-bit texture on the (much larger)
+// floor reads as noticeably chunkier on the kart itself, purely because
+// there's so little of the kart for each block to cover. This doesn't
+// change the floor's own pixel scale, which is unrelated - only how finely
+// the small sprite gets bucketed.
+const OVERVIEW_SPRITE_PIXEL_SCALE = 1;
+
+// Follow mode's kart was first matched exactly to FOLLOW_FLOOR_PIXEL_SCALE
+// (8) so it didn't read as artificially sharp against a deliberately
+// blocky floor - but at 8, the (much bigger, 132px) follow-mode kart
+// itself started looking a bit too coarse. This sits between the two:
+// closer to the floor's chunkiness than the crisp default (3), but with
+// more of its own detail intact than a straight match would give.
+const FOLLOW_SPRITE_PIXEL_SCALE = 5;
 
 // A kart's angle relative to the camera is always exactly 0 for the kart
 // the camera is actually following - the anchor IS that kart's own
@@ -31,7 +70,6 @@ const TURN_EMPHASIS = 1.6;
 const TURN_MAX_DELTA = Math.PI / 2.8; // ~64deg cap - at most ~1.4 frame-steps away from baseline, never near "facing backward"
 
 function turnFrameDelta(track, kart) {
-  if (kart.finished) return 0;
   const current = sampleTrack(track, kart.lapProgress);
   const ahead = sampleTrack(track, kart.lapProgress + TURN_LOOKAHEAD_PROGRESS);
   let delta = ahead.angle - current.angle;
@@ -109,9 +147,9 @@ function ensureTrackCache(track) {
 
 const pixelCanvases = new WeakMap(); // real canvas element -> { canvas, ctx } low-res buffer
 
-function getPixelContext(targetCanvas, canvasWidth, canvasHeight) {
-  const w = Math.max(1, Math.round(canvasWidth / PIXEL_SCALE));
-  const h = Math.max(1, Math.round(canvasHeight / PIXEL_SCALE));
+function getPixelContext(targetCanvas, canvasWidth, canvasHeight, pixelScale = PIXEL_SCALE) {
+  const w = Math.max(1, Math.round(canvasWidth / pixelScale));
+  const h = Math.max(1, Math.round(canvasHeight / pixelScale));
   let entry = pixelCanvases.get(targetCanvas);
   if (!entry) {
     const canvas = document.createElement('canvas');
@@ -124,7 +162,7 @@ function getPixelContext(targetCanvas, canvasWidth, canvasHeight) {
   }
   entry.ctx.setTransform(1, 0, 0, 1, 0, 0);
   entry.ctx.clearRect(0, 0, w, h);
-  entry.ctx.scale(1 / PIXEL_SCALE, 1 / PIXEL_SCALE);
+  entry.ctx.scale(1 / pixelScale, 1 / pixelScale);
   return entry.ctx;
 }
 
@@ -267,11 +305,58 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// How much of a lap (kart.animProgress, a continuous distance measure that
+// advances at the kart's unboosted base speed - see kart.js) advances the
+// sheet's animation block by one step. Ties the animation to actual
+// movement rather than wall-clock time, so it cycles while driving and
+// holds on one pose when stationary (spinning from a hazard, sitting in the
+// lobby, etc.) without any extra state to track. Deliberately NOT
+// kart.totalProgress - that advances at the kart's real (possibly boosted)
+// speed, which made the bob visibly speed up under a boost pad. Arbitrary/
+// by-eye value - retune directly if the bob reads too fast or too slow once
+// you can see it in motion.
+const KART_ANIM_PROGRESS_PER_STEP = 1 / 120;
+
+// A hazard/chaos hit stuns a kart in place (see kart.js's spinTimer) -
+// previously the only visual cue was a static dashed white arc drawn over
+// an otherwise motionless sprite, which read as "engine trouble" rather
+// than "just got spun out". Cycling the directional sprite itself through
+// a fast full rotation (using kart.spinElapsed, which counts UP from 0 for
+// as long as the stun lasts - see kart.js) makes it visually read as the
+// kart spinning in place instead. ~2.5 full rotations/sec so even the
+// shortest hazard's spinDuration (see track-editor.html / track.js
+// defaults, ~1-1.5s) completes a couple of full spins rather than one slow
+// turn - retune by eye if it reads as too fast/slow once you see it.
+const SPIN_VISUAL_ROTATION_RATE = Math.PI * 2 * 2.5;
+
+// A fast opacity flicker layered on top of the spin - a cheap, readable
+// "you got hit" cue that needs no extra art. Toggles on kart.spinElapsed
+// (not wall-clock time) so it can't drift out of sync with the spin cycle
+// above, and so it starts from the same "just got hit" instant every time.
+const SPIN_FLICKER_INTERVAL = 0.08; // seconds per on/off toggle
+const SPIN_FLICKER_MIN_ALPHA = 0.3;
+
 function drawKartBody(ctx, kart, size, spriteAngle) {
   const sheet = assets && assets.kartSheet;
-  const sheetFrames = sheet && sheet.frames.get(kart.color);
-  if (sheetFrames) {
-    const frame = sheetFrames[pickFrameIndex(spriteAngle, sheet.frameCount)];
+  const sheetAnimBlocks = sheet && sheet.frames.get(kart.color);
+  if (sheetAnimBlocks) {
+    // Blocks [0, normalBlocks) are the normal-driving pose variations;
+    // [normalBlocks, animBlocks) are the SAME variations again with a boost
+    // exhaust-flame effect added (see assets.js). Both groups are cycled
+    // through identically by animProgress - only which GROUP is picked
+    // depends on whether this kart is currently boosting. Sheets with only
+    // a normal group (normalBlocks >= animBlocks, e.g. an older un-upgraded
+    // sheet) have no boost group to switch to, so boosting just keeps the
+    // normal pose.
+    const animBlocks = sheet.animBlocks ?? 1;
+    const normalBlocks = Math.min(sheet.normalBlocks ?? animBlocks, animBlocks);
+    const hasBoostBlocks = normalBlocks < animBlocks;
+    const groupSize = hasBoostBlocks && kart.boostTimer > 0 ? animBlocks - normalBlocks : normalBlocks;
+    const groupStart = hasBoostBlocks && kart.boostTimer > 0 ? normalBlocks : 0;
+    const animIndex = groupSize > 1
+      ? groupStart + (Math.floor(kart.animProgress / KART_ANIM_PROGRESS_PER_STEP) % groupSize)
+      : groupStart;
+    const frame = sheetAnimBlocks[animIndex][pickFrameIndex(spriteAngle, sheet.frameCount)];
     drawFitted(ctx, frame, size, size);
     return;
   }
@@ -311,42 +396,19 @@ function drawKartBody(ctx, kart, size, spriteAngle) {
 }
 
 /** Body + status effects only - the pixelated layer. Name label is drawn separately at full res, see drawKartLabel. */
-function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle, { highlighted = false, chaosWarning = false } = {}) {
+function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle, { chaosWarning = false } = {}) {
   const size = KART_BASE_SIZE * scale;
   ctx.save();
   ctx.translate(x, y);
 
+  if (kart.spinTimer > 0) {
+    const flickerOn = Math.floor(kart.spinElapsed / SPIN_FLICKER_INTERVAL) % 2 === 0;
+    ctx.globalAlpha = flickerOn ? 1 : SPIN_FLICKER_MIN_ALPHA;
+  }
+
   drawKartBody(ctx, kart, size, spriteAngle);
 
-  if (kart.spinTimer > 0) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = Math.max(1, 1.5 * scale);
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.1, size * 0.85, 0, Math.PI * 1.5);
-    ctx.stroke();
-  }
-
-  if (kart.boostTimer > 0) {
-    ctx.fillStyle = BOOST_COLOR;
-    ctx.beginPath();
-    ctx.moveTo(-size * 0.3, size * 0.3);
-    ctx.lineTo(-size * 0.1, size * 0.55);
-    ctx.lineTo(-size * 0.3, size * 0.8);
-    ctx.moveTo(size * 0.3, size * 0.3);
-    ctx.lineTo(size * 0.1, size * 0.55);
-    ctx.lineTo(size * 0.3, size * 0.8);
-    ctx.lineWidth = Math.max(1, 2 * scale);
-    ctx.strokeStyle = BOOST_COLOR;
-    ctx.stroke();
-  }
-
-  if (highlighted) {
-    ctx.strokeStyle = ACCENT_COLOR;
-    ctx.lineWidth = Math.max(1.5, 2 * scale);
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.05, size * 0.95, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  ctx.globalAlpha = 1; // restore before any effect below that shouldn't flicker with the stun
 
   if (chaosWarning) {
     ctx.fillStyle = CHAOS_WARNING_COLOR;
@@ -416,8 +478,8 @@ function drawImageWorldRect(ctx, project, img, imgW, imgH) {
 }
 
 /** Draws the floor into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
-function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, project) {
-  const pctx = getPixelContext(canvas, floorWidth, floorHeight);
+function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, project, floorPixelScale) {
+  const pctx = getPixelContext(canvas, floorWidth, floorHeight, floorPixelScale);
   pctx.fillStyle = GROUND_COLOR;
   pctx.fillRect(0, 0, floorWidth, floorHeight);
   if (track.backgroundImage) {
@@ -440,14 +502,16 @@ function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, pro
  * viewport's - sprites are drawn on a separate, untransformed, viewport-
  * sized canvas.
  */
-function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssTransform, hitboxSink }) {
+function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssTransform, transformOrigin, floorTop, floorPixelScale, spritePixelScale, hitboxSink }) {
   const { track, karts, canvasWidth, canvasHeight, floorWidth, floorHeight } = gameState;
 
   layers.floorCanvas.style.display = 'block';
   layers.floorCanvas.style.transform = cssTransform;
-  drawPixelatedFloor(layers.floorCtx, layers.floorCanvas, track, floorWidth, floorHeight, projectFloor);
+  layers.floorCanvas.style.transformOrigin = transformOrigin;
+  layers.floorCanvas.style.top = `${floorTop}px`;
+  drawPixelatedFloor(layers.floorCtx, layers.floorCanvas, track, floorWidth, floorHeight, projectFloor, floorPixelScale);
 
-  const spritePixelCtx = getPixelContext(layers.spriteCanvas, canvasWidth, canvasHeight);
+  const spritePixelCtx = getPixelContext(layers.spriteCanvas, canvasWidth, canvasHeight, spritePixelScale);
 
   const chaosTargetId = gameState.chaos.pending ? gameState.chaos.pending.targetId : null;
   const projected = [];
@@ -464,9 +528,10 @@ function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssT
   }
 
   for (const { kart, p } of projected) {
-    const frameAngle = p.angle + turnFrameDelta(track, kart);
+    const frameAngle = kart.spinTimer > 0
+      ? kart.spinElapsed * SPIN_VISUAL_ROTATION_RATE
+      : p.angle + turnFrameDelta(track, kart);
     drawKartBodyAndEffects(spritePixelCtx, kart, p.x, p.y, p.scale, frameAngle, {
-      highlighted: hitboxSink ? false : kart.id === gameState.camera.followedId,
       chaosWarning: kart.id === chaosTargetId,
     });
   }
@@ -485,6 +550,10 @@ export function renderOverview(gameState, layers) {
       overviewCamera, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, camera.zoomFactor, kart.angle,
     ),
     cssTransform: overviewPerspectiveCss(camera.zoomFactor),
+    transformOrigin: '50% 50%',
+    floorTop: overviewFloorTop(canvasHeight, floorHeight),
+    floorPixelScale: PIXEL_SCALE, // overview's own canvas never grew - no compensation needed, see FOLLOW_FLOOR_PIXEL_SCALE
+    spritePixelScale: OVERVIEW_SPRITE_PIXEL_SCALE,
     hitboxSink: gameState.overviewHitboxes,
   });
 }
@@ -494,13 +563,22 @@ export function renderFollow(gameState, layers) {
   const followedKart = karts.get(camera.followedId);
   if (!followedKart) return;
   const followCamera = getFollowCamera(track);
+  // Same position as the real kart every frame - only the heading is
+  // smoothed (see camera.js's advanceFollowCameraHeading, called from
+  // main.js's tick() before render()) - so the camera's turn-in eases
+  // instead of snapping, without introducing any positional lag/drift.
+  const cameraAnchor = { worldPos: followedKart.worldPos, angle: camera.smoothedAngle ?? followedKart.angle };
 
   renderCameraView(gameState, layers, {
-    projectFloor: (x, y) => followFloorProject(followCamera, followedKart, canvasWidth, canvasHeight, floorWidth, floorHeight, x, y),
+    projectFloor: (x, y) => followFloorProject(followCamera, cameraAnchor, canvasWidth, canvasHeight, floorWidth, floorHeight, x, y),
     projectSprite: kart => followSpriteProject(
-      followCamera, followedKart, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, kart.angle,
+      followCamera, cameraAnchor, canvasWidth, canvasHeight, kart.worldPos.x, kart.worldPos.y, kart.angle,
     ),
     cssTransform: followPerspectiveCss(),
+    transformOrigin: followTransformOrigin(),
+    floorTop: followFloorTop(canvasHeight, floorHeight),
+    floorPixelScale: FOLLOW_FLOOR_PIXEL_SCALE,
+    spritePixelScale: FOLLOW_SPRITE_PIXEL_SCALE,
     hitboxSink: null,
   });
 }
