@@ -700,5 +700,6 @@
       "spinDuration": 1.5
     }
   ],
-  "backgroundImage": "assets/track3.png"
+  "backgroundImage": "assets/track3.png",
+  "groundColors": ["#d9b877", "#e8cc94", "#b8935a"]
 }
