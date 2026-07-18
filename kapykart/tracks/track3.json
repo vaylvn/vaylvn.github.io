@@ -649,34 +649,56 @@
       "duration": 1.4
     },
     {
-      "x": 544,
-      "y": 806,
+      "x": 619,
+      "y": 819,
       "radius": 21,
       "strength": 1.5,
       "duration": 1.4
     },
     {
-      "x": 1086,
-      "y": 509,
+      "x": 1078,
+      "y": 556,
       "radius": 20,
       "strength": 1.5,
       "duration": 1.4
     },
     {
-      "x": 546,
-      "y": 166,
+      "x": 544,
+      "y": 176,
       "radius": 20,
       "strength": 1.5,
       "duration": 1.4
     },
     {
-      "x": 93,
-      "y": 454,
+      "x": 74,
+      "y": 463,
       "radius": 21,
       "strength": 1.5,
       "duration": 1.4
     }
   ],
-  "hazards": [],
+  "hazards": [
+    {
+      "x": 375,
+      "y": 875,
+      "radius": 19,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 968,
+      "y": 257,
+      "radius": 19,
+      "type": "banana",
+      "spinDuration": 1.5
+    },
+    {
+      "x": 315,
+      "y": 425,
+      "radius": 19,
+      "type": "banana",
+      "spinDuration": 1.5
+    }
+  ],
   "backgroundImage": "assets/track3.png"
 }
