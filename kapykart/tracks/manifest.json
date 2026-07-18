@@ -1,3 +1,4 @@
 [
-  { "file": "track.json", "label": "Capy Speedway" }
+  { "file": "track.json", "label": "Capy Speedway" },
+  { "file": "track2.json", "label": "Infiniwinter" }
 ]

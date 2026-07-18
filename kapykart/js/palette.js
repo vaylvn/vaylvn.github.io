@@ -17,6 +17,14 @@ export const STROKE_COLOR = '#0A0A0A';
 // (~#357607-#448107 across several samples) so the "ran out of unique
 // track art" edge reads as more grass continuing, not a wall.
 export const GROUND_COLOR = '#3b7a08';
+
+// Default out-of-bounds ground TEXTURE tones - [base, light speckle, dark
+// speckle] - used when a track doesn't specify its own `groundColors` (see
+// track.js's TRACK_DEF and render.js's buildGroundTexture). A track authored
+// for different terrain (snow, sand, whatever) can override this per-track
+// in its JSON; this is just the grass default so existing tracks don't need
+// to specify anything to keep looking the way they already did.
+export const DEFAULT_GROUND_COLORS = [GROUND_COLOR, '#4c8f12', '#2f6606'];
 export const ROAD_COLOR = '#3A3A3A';
 export const ROAD_EDGE_COLOR = 'rgba(242,242,242,0.5)';
 export const CHECKER_A = '#F2F2F2';

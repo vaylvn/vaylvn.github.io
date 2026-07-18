@@ -35,6 +35,12 @@ export const TRACK_DEF = {
     { x: 531, y: 52, radius: 55, type: 'banana', spinDuration: 1.5 },
     { x: 434, y: 547, radius: 55, type: 'banana', spinDuration: 1.5 },
   ],
+  // Optional: [base, light speckle, dark speckle] hex colors for the
+  // procedurally-textured out-of-bounds ground (see render.js's
+  // buildGroundTexture) - lets a track set its own terrain (snow, sand,
+  // ...) instead of the default grass. Omit entirely to use that default -
+  // this field is not required by isValidTrackDef.
+  // groundColors: ['#3b7a08', '#4c8f12', '#2f6606'],
 };
 
 function catmullRom(p0, p1, p2, p3, t) {

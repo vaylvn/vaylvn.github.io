@@ -5,8 +5,8 @@ import {
 } from './camera.js';
 import { pickFrameIndex } from './assets.js';
 import {
-  CAPYBARA_COLOR, CAPYBARA_EAR_COLOR, STROKE_COLOR, GROUND_COLOR, ROAD_COLOR,
-  ROAD_EDGE_COLOR, CHECKER_A, CHECKER_B, BOOST_COLOR, HAZARD_COLOR,
+  CAPYBARA_COLOR, CAPYBARA_EAR_COLOR, STROKE_COLOR, ROAD_COLOR,
+  ROAD_EDGE_COLOR, CHECKER_A, CHECKER_B, BOOST_COLOR, HAZARD_COLOR, DEFAULT_GROUND_COLORS,
 } from './palette.js';
 
 const ROAD_SAMPLES = 240; // resolution for the drawn track ribbon
@@ -106,6 +106,7 @@ let cachedTrack = null;
 let cachedEdges = null;
 let cachedOverviewCamera = null;
 let cachedFollowCamera = null;
+let cachedGroundTexture = null;
 
 function getRoadEdges(track) {
   ensureTrackCache(track);
@@ -120,6 +121,11 @@ function getOverviewCamera(track) {
 function getFollowCamera(track) {
   ensureTrackCache(track);
   return cachedFollowCamera;
+}
+
+function getGroundTexture(track) {
+  ensureTrackCache(track);
+  return cachedGroundTexture;
 }
 
 function ensureTrackCache(track) {
@@ -138,6 +144,7 @@ function ensureTrackCache(track) {
   cachedEdges = { left, right };
   cachedOverviewCamera = buildOverviewCamera(track);
   cachedFollowCamera = buildFollowCamera(track);
+  cachedGroundTexture = buildGroundTexture(track.def.groundColors || DEFAULT_GROUND_COLORS);
 }
 
 // --- Pixelation: draw the "world" (floor + karts) at low res, upscale with
@@ -440,6 +447,96 @@ function drawKartLabel(ctx, kart, x, y, scale) {
   ctx.restore();
 }
 
+// Resolution of the cached procedural ground-texture tile (see
+// buildGroundTexture) - just needs enough pixels for the speckle dots to
+// read as distinct flecks; this isn't the game's actual pixelation (that
+// still happens via the shared low-res pixel buffer/blit, same as
+// everything else on the floor layer).
+const GROUND_TEXTURE_TILE_PX = 64;
+
+// How large one repeat of the tile looks on the ground, in world units -
+// tune by eye against the road width (150 by default) to get a speckle
+// grain that reads as "textured ground", not a giant blotchy checkerboard
+// or fine static.
+const GROUND_TEXTURE_TILE_WORLD_SIZE = 40;
+
+const GROUND_TEXTURE_SPECKLE_COUNT = 70;
+
+/**
+ * Draws one speckle dot centered at (x, y) with radius r, replicated at the
+ * tile's 4 wrap-around offsets so a dot overlapping an edge still appears
+ * correctly on the opposite edge once the tile repeats - without this, any
+ * speckle straddling a tile boundary would get clipped on one side and
+ * leave a visible seam where tiles meet.
+ */
+function drawWrappedSpeckle(ctx, x, y, r, tileSize) {
+  for (const dx of [0, -tileSize, tileSize]) {
+    for (const dy of [0, -tileSize, tileSize]) {
+      const wx = x + dx;
+      const wy = y + dy;
+      if (wx + r < 0 || wx - r > tileSize || wy + r < 0 || wy - r > tileSize) continue;
+      ctx.beginPath();
+      ctx.arc(wx, wy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+/**
+ * Procedurally builds a small seamless-tiling speckled texture (a solid
+ * base color plus scattered light/dark dots) from a track's `groundColors`
+ * - cheaper than hand-drawing and repeating a real texture image, and lets
+ * each track pick its own out-of-bounds terrain (grass, snow, sand, ...)
+ * with just 3 hex colors instead of new art. Built ONCE per track (see
+ * ensureTrackCache) and then painted every frame as a native CanvasPattern
+ * (see paintGroundTexture) - the per-pixel speckle work happens here, at
+ * load time, not in the render hot path.
+ */
+function buildGroundTexture([base, light, dark]) {
+  const canvas = document.createElement('canvas');
+  canvas.width = GROUND_TEXTURE_TILE_PX;
+  canvas.height = GROUND_TEXTURE_TILE_PX;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, GROUND_TEXTURE_TILE_PX, GROUND_TEXTURE_TILE_PX);
+  for (let i = 0; i < GROUND_TEXTURE_SPECKLE_COUNT; i++) {
+    ctx.fillStyle = Math.random() < 0.5 ? light : dark;
+    const x = Math.random() * GROUND_TEXTURE_TILE_PX;
+    const y = Math.random() * GROUND_TEXTURE_TILE_PX;
+    const r = 1 + Math.random() * 2;
+    drawWrappedSpeckle(ctx, x, y, r, GROUND_TEXTURE_TILE_PX);
+  }
+  return canvas;
+}
+
+/**
+ * Fills the floor with the track's ground texture, anchored to WORLD space
+ * (not screen/buffer space) so it stays put under the track as the camera
+ * pans/rotates instead of sliding along with it. Uses the exact same
+ * "read the linear transform off 3 projected points" trick as
+ * drawImageWorldRect below, but applied to a CanvasPattern's own transform
+ * instead of the context's - a pattern fill is one native fillRect either
+ * way, so this costs about the same as the flat single-color fill it
+ * replaces despite now being a real (if simple) texture.
+ */
+function paintGroundTexture(ctx, track, project, floorWidth, floorHeight) {
+  const tile = getGroundTexture(track);
+  const pattern = ctx.createPattern(tile, 'repeat');
+  const size = GROUND_TEXTURE_TILE_WORLD_SIZE;
+  const p00 = project(0, 0);
+  const p10 = project(size, 0);
+  const p01 = project(0, size);
+  if (pattern.setTransform) {
+    pattern.setTransform(new DOMMatrix([
+      (p10.x - p00.x) / size, (p10.y - p00.y) / size,
+      (p01.x - p00.x) / size, (p01.y - p00.y) / size,
+      p00.x, p00.y,
+    ]));
+  }
+  ctx.fillStyle = pattern;
+  ctx.fillRect(0, 0, floorWidth, floorHeight);
+}
+
 /**
  * Draws `img` once (spanning world-space rect [0,0]-[imgW,imgH]) through the
  * same flat `project` function used for the road/markers. The track image
@@ -472,8 +569,7 @@ function drawImageWorldRect(ctx, project, img, imgW, imgH) {
 /** Draws the floor into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
 function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, project, floorPixelScale) {
   const pctx = getPixelContext(canvas, floorWidth, floorHeight, floorPixelScale);
-  pctx.fillStyle = GROUND_COLOR;
-  pctx.fillRect(0, 0, floorWidth, floorHeight);
+  paintGroundTexture(pctx, track, project, floorWidth, floorHeight);
   if (track.backgroundImage) {
     drawImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
   } else {
