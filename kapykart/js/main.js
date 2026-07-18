@@ -59,14 +59,28 @@ function resizeCanvases() {
   gameState.floorWidth = floorSize.width;
   gameState.floorHeight = floorSize.height;
 
-  floorCanvas.width = floorSize.width * dpr;
-  floorCanvas.height = floorSize.height * dpr;
+  // Deliberately NOT multiplied by dpr, unlike the sprite canvas above.
+  // Everything drawn onto the floor canvas goes through a low-res buffer
+  // that's upscaled with smoothing OFF (see render.js's getPixelContext/
+  // blitPixelBuffer) - it's already a deliberately blocky, chunky look
+  // regardless of the backing store's native pixel count, so scaling it by
+  // a high-DPI screen's devicePixelRatio (2x-3x is common) buys zero
+  // visible sharpness. It DOES cost real GPU compositing time every frame
+  // though: this canvas is already FLOOR_OVERSIZE_WIDTH/HEIGHT times
+  // bigger than the viewport (needed for forward/sideways visibility, see
+  // camera.js), so multiplying that by dpr^2 on top was pushing a genuinely
+  // enormous bitmap through the CSS 3D transform every frame for no visual
+  // benefit - a real, measured cause of poor framerates on HiDPI displays.
+  // The sprite canvas keeps full dpr since it draws actually-crisp content
+  // (name labels) and is much smaller (viewport-sized, not oversized).
+  floorCanvas.width = floorSize.width;
+  floorCanvas.height = floorSize.height;
   floorCanvas.style.width = `${floorSize.width}px`;
   floorCanvas.style.height = `${floorSize.height}px`;
   floorCanvas.style.left = `${(rect.width - floorSize.width) / 2}px`;
   floorCanvas.style.top = `${(rect.height - floorSize.height) / 2}px`;
 
-  floorCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  floorCtx.setTransform(1, 0, 0, 1, 0, 0);
   spriteCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 

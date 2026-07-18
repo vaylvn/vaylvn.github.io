@@ -144,7 +144,7 @@ function ensureTrackCache(track) {
   cachedEdges = { left, right };
   cachedOverviewCamera = buildOverviewCamera(track);
   cachedFollowCamera = buildFollowCamera(track);
-  cachedGroundTexture = buildGroundTexture(track.def.groundColors || DEFAULT_GROUND_COLORS);
+  cachedGroundTexture = buildGroundTexturePattern(track.def.groundColors || DEFAULT_GROUND_COLORS);
 }
 
 // --- Pixelation: draw the "world" (floor + karts) at low res, upscale with
@@ -488,9 +488,10 @@ function drawWrappedSpeckle(ctx, x, y, r, tileSize) {
  * - cheaper than hand-drawing and repeating a real texture image, and lets
  * each track pick its own out-of-bounds terrain (grass, snow, sand, ...)
  * with just 3 hex colors instead of new art. Built ONCE per track (see
- * ensureTrackCache) and then painted every frame as a native CanvasPattern
- * (see paintGroundTexture) - the per-pixel speckle work happens here, at
- * load time, not in the render hot path.
+ * ensureTrackCache), along with a single reusable CanvasPattern + DOMMatrix
+ * (see buildGroundTexturePattern) - painting it every frame (paintGroundTexture)
+ * then only has to MUTATE that matrix's 6 numbers, not allocate a new
+ * Pattern/Matrix pair 60 times a second.
  */
 function buildGroundTexture([base, light, dark]) {
   const canvas = document.createElement('canvas');
@@ -510,6 +511,23 @@ function buildGroundTexture([base, light, dark]) {
 }
 
 /**
+ * Builds the tile (see buildGroundTexture above) plus the CanvasPattern and
+ * DOMMatrix it's painted with every frame - a Pattern only needs SOME 2D
+ * context to be constructed via createPattern, but the resulting object is
+ * a portable paint source usable as any other context's fillStyle, so a
+ * scratch context here is fine; the real per-frame pctx never needs its own.
+ * Caching these (instead of building a fresh Pattern + Matrix every single
+ * frame, as the first version of this did) avoids continuous small-object
+ * allocation on a 60fps hot path.
+ */
+function buildGroundTexturePattern(groundColors) {
+  const tile = buildGroundTexture(groundColors);
+  const scratchCtx = document.createElement('canvas').getContext('2d');
+  const pattern = scratchCtx.createPattern(tile, 'repeat');
+  return { pattern, matrix: new DOMMatrix(), supportsTransform: typeof pattern.setTransform === 'function' };
+}
+
+/**
  * Fills the floor with the track's ground texture, anchored to WORLD space
  * (not screen/buffer space) so it stays put under the track as the camera
  * pans/rotates instead of sliding along with it. Uses the exact same
@@ -517,21 +535,25 @@ function buildGroundTexture([base, light, dark]) {
  * drawImageWorldRect below, but applied to a CanvasPattern's own transform
  * instead of the context's - a pattern fill is one native fillRect either
  * way, so this costs about the same as the flat single-color fill it
- * replaces despite now being a real (if simple) texture.
+ * replaces despite now being a real (if simple) texture. The pattern and
+ * matrix themselves are cached per-track (see ensureTrackCache) and reused
+ * every frame - only the matrix's 6 numbers change per frame, not the
+ * Pattern/Matrix objects themselves.
  */
 function paintGroundTexture(ctx, track, project, floorWidth, floorHeight) {
-  const tile = getGroundTexture(track);
-  const pattern = ctx.createPattern(tile, 'repeat');
+  const { pattern, matrix, supportsTransform } = getGroundTexture(track);
   const size = GROUND_TEXTURE_TILE_WORLD_SIZE;
   const p00 = project(0, 0);
   const p10 = project(size, 0);
   const p01 = project(0, size);
-  if (pattern.setTransform) {
-    pattern.setTransform(new DOMMatrix([
-      (p10.x - p00.x) / size, (p10.y - p00.y) / size,
-      (p01.x - p00.x) / size, (p01.y - p00.y) / size,
-      p00.x, p00.y,
-    ]));
+  if (supportsTransform) {
+    matrix.a = (p10.x - p00.x) / size;
+    matrix.b = (p10.y - p00.y) / size;
+    matrix.c = (p01.x - p00.x) / size;
+    matrix.d = (p01.y - p00.y) / size;
+    matrix.e = p00.x;
+    matrix.f = p00.y;
+    pattern.setTransform(matrix);
   }
   ctx.fillStyle = pattern;
   ctx.fillRect(0, 0, floorWidth, floorHeight);

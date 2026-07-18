@@ -87,7 +87,25 @@ const FOLLOW_FIT_FACTOR = 2.0; // x (canvas min dimension / track road width)
 // further from 300 to 400 alongside FOLLOW_FIT_FACTOR dropping to 2.0 -
 // the smaller kart needs a smaller buffer for the same world-reach, so
 // this jump costs almost nothing extra (see FOLLOW_FIT_FACTOR's comment).
-const FOLLOW_AHEAD_WORLD_UNITS = 400; // matches FLOOR_OVERSIZE_HEIGHT/WIDTH's derivation below
+//
+// Pushed again, 400->550, once main.js's floor canvas stopped scaling its
+// backing store by devicePixelRatio - that fix alone cut real GPU
+// compositing cost 4x-9x on typical HiDPI screens (the floor canvas is
+// already FLOOR_OVERSIZE_WIDTH/HEIGHT times the viewport; multiplying that
+// by dpr^2 on top of it was the actual framerate problem, not any of the
+// draw calls into it - see main.js's resizeCanvases). That freed real
+// budget to spend back on forward reach: sampled real forward-art extent
+// at 8 points around BOTH shipped tracks' loops (not just the starting
+// grid) - it ranges 272-1264 world-units depending on point, so 550 sits
+// solidly in the "most points, not just the best case" zone for both,
+// without chasing the single most generous corner. Also checked against
+// the OTHER hard limit this buffer answers to - followSpriteProject's
+// perspective divide (see FOLLOW_PERSPECTIVE_PX/FOLLOW_ROTATE_X_DEG below):
+// w = 1 - ry*sin(55deg)/600 hits exactly 0 (a genuine math singularity,
+// not just a style choice) at ry~=733, and render.js's `visible: p.w > 0.1`
+// cutoff kicks in around ry~=698. At 550, w~=0.249 - real margin from
+// either limit, unlike pushing all the way to that ceiling would be.
+const FOLLOW_AHEAD_WORLD_UNITS = 550; // matches FLOOR_OVERSIZE_HEIGHT/WIDTH's derivation below
 const FOLLOW_BEHIND_WORLD_UNITS = 25; // small and fixed on purpose - see above
 const FOLLOW_FORWARD_FRACTION = FOLLOW_AHEAD_WORLD_UNITS / (FOLLOW_AHEAD_WORLD_UNITS + FOLLOW_BEHIND_WORLD_UNITS);
 
@@ -205,8 +223,32 @@ const OVERVIEW_ROTATE_X_RAD = OVERVIEW_ROTATE_X_DEG * (Math.PI / 180);
 // raising that pixel scale is the first lever before shrinking these back
 // down, and dropping FOLLOW_FIT_FACTOR more is the second (at the cost of
 // an even smaller kart).
+//
+// HEIGHT pushed again (5.862->7.931) alongside FOLLOW_AHEAD_WORLD_UNITS's
+// 400->550 (see its own comment for why there was budget for this). WIDTH
+// deliberately NOT grown to match - the "equal forward/sideways reach"
+// balance from the 300-world-unit pass was a reasonable default, but every
+// complaint about cutoff has been specifically about what's ahead, never
+// to the sides, so only paying for more of the dimension that's actually
+// wanted keeps this cheaper than scaling both.
+//
+// This isn't a guess: the floor's forward reach in world-units is exactly
+// FLOOR_OVERSIZE_HEIGHT * FOLLOW_FORWARD_FRACTION * (track.def.width /
+// FOLLOW_FIT_FACTOR) (solve followFloorProject's `y = floorHeight*fraction
+// - ry*scale` for ry at y=0, then substitute floorHeight =
+// viewportHeight*FLOOR_OVERSIZE_HEIGHT and scale = (FIT_FACTOR/trackWidth)
+// * min(viewportW,viewportH) - viewportHeight cancels with
+// min(viewportW,viewportH) for any landscape aspect ratio, since height is
+// the smaller dimension, leaving a viewport-independent constant). Backed
+// out from the OLD values this way: 400 world-units of nominal reach
+// actually resolved to ~414 real world-units at the far edge (5862's
+// hard-coded value carries a ~3.4% margin beyond the literal 400 label) -
+// applying that same margin to the new 550 target and solving for the
+// matching HEIGHT gives 7.931. Verified in-browser against both shipped
+// tracks (see the forward-reach sampling in this session's history) rather
+// than trusted as pure algebra alone.
 export const FLOOR_OVERSIZE_WIDTH = 6.897;
-export const FLOOR_OVERSIZE_HEIGHT = 5.862;
+export const FLOOR_OVERSIZE_HEIGHT = 7.931;
 
 export function buildFloorCanvasSize(viewportWidth, viewportHeight) {
   return { width: viewportWidth * FLOOR_OVERSIZE_WIDTH, height: viewportHeight * FLOOR_OVERSIZE_HEIGHT };
