@@ -1,14 +1,14 @@
 import { connectTwitch } from './twitch.js';
 import { buildTrack, loadTrackList, loadTrackBackground } from './track.js';
 import { createKart, updateKart, resetKartColorCycle, resetKartToStart } from './kart.js';
-import { applyTrackEvents, createChaosState, updateChaosEvent } from './events.js';
+import { applyTrackEvents } from './events.js';
 import { render, setAssets } from './render.js';
 import { buildFloorCanvasSize, advanceFollowCameraHeading } from './camera.js';
 import { loadAssets } from './assets.js';
 import { KART_PALETTE } from './palette.js';
 import { wireCameraUI, updateCameraUI } from './ui.js';
 import { initLeaderboard, updateLeaderboard } from './leaderboard.js';
-import { unlockAudio, playJoin, playRaceStart, playBoost, playHazard, playChaosHit, playFinish } from './audio.js';
+import { unlockAudio, playJoin, playRaceStart, playBoost, playHazard, playFinish } from './audio.js';
 
 const floorCanvas = document.getElementById('floor-canvas');
 const floorCtx = floorCanvas.getContext('2d');
@@ -23,8 +23,6 @@ const gameState = {
   trackList: [], // [{ label, def }], see track.js's loadTrackList()
   trackIndex: 0,
   karts: new Map(),
-  chaos: createChaosState(0),
-  chaosEnabled: true,
   camera: { mode: 'overview', followedId: null, zoomFactor: 1.2 },
   canvasWidth: 0,
   canvasHeight: 0,
@@ -111,8 +109,6 @@ function startRace() {
   if (gameState.state !== 'LOBBY' || gameState.karts.size === 0) return;
   const lapsInput = document.getElementById('cfg-laps');
   gameState.track.def.laps = Number(lapsInput.value);
-  gameState.chaosEnabled = document.getElementById('cfg-chaos-toggle').checked;
-  gameState.chaos = createChaosState(performance.now());
   gameState.raceStartedAt = performance.now();
   gameState.winnerAnnounced = false;
   gameState.camera.mode = 'overview';
@@ -333,9 +329,6 @@ function tick(now) {
       if (boosted) playBoost();
       if (hazarded) playHazard();
     }
-
-    const chaosHitId = updateChaosEvent(gameState.chaos, gameState.karts, now, gameState.chaosEnabled);
-    if (chaosHitId) playChaosHit();
 
     if (!gameState.camera.followedId) {
       const ranked = rankedKarts();

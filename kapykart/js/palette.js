@@ -24,4 +24,3 @@ export const CHECKER_B = '#141414';
 export const BOOST_COLOR = '#06D6A0';
 export const HAZARD_COLOR = '#F1C40F';
 export const ACCENT_COLOR = '#06D6A0';
-export const CHAOS_WARNING_COLOR = '#E63946';

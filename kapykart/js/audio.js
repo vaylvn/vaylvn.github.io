@@ -9,8 +9,6 @@ const SOUND_FILES = {
   start: 'sounds/start.mp3',
   boost: 'sounds/boost.mp3',
   hazard: 'sounds/hazard.mp3',
-  chaosWarning: 'sounds/chaos_warning.mp3',
-  chaosHit: 'sounds/chaos_hit.mp3',
   finish: 'sounds/finish.mp3',
 };
 
@@ -54,15 +52,6 @@ export function playBoost() {
 
 export function playHazard() {
   playOneShot('hazard', 0.6, { rateJitter: 0.08 });
-}
-
-/** The couple-second window between a chaos event locking a target and the hit landing. */
-export function playChaosWarning() {
-  playOneShot('chaosWarning', 0.5);
-}
-
-export function playChaosHit() {
-  playOneShot('chaosHit', 0.7);
 }
 
 export function playFinish() {

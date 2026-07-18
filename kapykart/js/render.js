@@ -7,7 +7,6 @@ import { pickFrameIndex } from './assets.js';
 import {
   CAPYBARA_COLOR, CAPYBARA_EAR_COLOR, STROKE_COLOR, GROUND_COLOR, ROAD_COLOR,
   ROAD_EDGE_COLOR, CHECKER_A, CHECKER_B, BOOST_COLOR, HAZARD_COLOR,
-  CHAOS_WARNING_COLOR,
 } from './palette.js';
 
 const ROAD_SAMPLES = 240; // resolution for the drawn track ribbon
@@ -317,16 +316,16 @@ function roundRect(ctx, x, y, w, h, r) {
 // you can see it in motion.
 const KART_ANIM_PROGRESS_PER_STEP = 1 / 120;
 
-// A hazard/chaos hit stuns a kart in place (see kart.js's spinTimer) -
-// previously the only visual cue was a static dashed white arc drawn over
-// an otherwise motionless sprite, which read as "engine trouble" rather
-// than "just got spun out". Cycling the directional sprite itself through
-// a fast full rotation (using kart.spinElapsed, which counts UP from 0 for
-// as long as the stun lasts - see kart.js) makes it visually read as the
-// kart spinning in place instead. ~2.5 full rotations/sec so even the
-// shortest hazard's spinDuration (see track-editor.html / track.js
-// defaults, ~1-1.5s) completes a couple of full spins rather than one slow
-// turn - retune by eye if it reads as too fast/slow once you see it.
+// A hazard hit eases a kart's speed down to 0 rather than freezing it (see
+// kart.js's updateKart) - previously the only visual cue was a static
+// dashed white arc drawn over an otherwise motionless sprite, which read as
+// "engine trouble" rather than "just got spun out". Cycling the directional
+// sprite itself through a fast full rotation (using kart.spinElapsed, which
+// counts UP from 0 for as long as the slowdown lasts - see kart.js) makes
+// it visually read as the kart spinning out instead. ~2.5 full rotations/
+// sec so even the shortest hazard's spinDuration (see events.js's default,
+// ~0.9-1.5s) completes a couple of full spins rather than one slow turn -
+// retune by eye if it reads as too fast/slow once you see it.
 const SPIN_VISUAL_ROTATION_RATE = Math.PI * 2 * 2.5;
 
 // A fast opacity flicker layered on top of the spin - a cheap, readable
@@ -396,7 +395,7 @@ function drawKartBody(ctx, kart, size, spriteAngle) {
 }
 
 /** Body + status effects only - the pixelated layer. Name label is drawn separately at full res, see drawKartLabel. */
-function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle, { chaosWarning = false } = {}) {
+function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle) {
   const size = KART_BASE_SIZE * scale;
   ctx.save();
   ctx.translate(x, y);
@@ -408,14 +407,7 @@ function drawKartBodyAndEffects(ctx, kart, x, y, scale, spriteAngle, { chaosWarn
 
   drawKartBody(ctx, kart, size, spriteAngle);
 
-  ctx.globalAlpha = 1; // restore before any effect below that shouldn't flicker with the stun
-
-  if (chaosWarning) {
-    ctx.fillStyle = CHAOS_WARNING_COLOR;
-    ctx.font = `bold ${Math.max(10, 16 * scale)}px Consolas, monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText('!', 0, -size * 0.95);
-  }
+  ctx.globalAlpha = 1; // restore before ctx.restore(), in case a future effect below needs full opacity
 
   ctx.restore();
 }
@@ -513,7 +505,6 @@ function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssT
 
   const spritePixelCtx = getPixelContext(layers.spriteCanvas, canvasWidth, canvasHeight, spritePixelScale);
 
-  const chaosTargetId = gameState.chaos.pending ? gameState.chaos.pending.targetId : null;
   const projected = [];
   for (const kart of karts.values()) {
     const p = projectSprite(kart);
@@ -531,9 +522,7 @@ function renderCameraView(gameState, layers, { projectFloor, projectSprite, cssT
     const frameAngle = kart.spinTimer > 0
       ? kart.spinElapsed * SPIN_VISUAL_ROTATION_RATE
       : p.angle + turnFrameDelta(track, kart);
-    drawKartBodyAndEffects(spritePixelCtx, kart, p.x, p.y, p.scale, frameAngle, {
-      chaosWarning: kart.id === chaosTargetId,
-    });
+    drawKartBodyAndEffects(spritePixelCtx, kart, p.x, p.y, p.scale, frameAngle);
   }
   blitPixelBuffer(layers.spriteCtx, layers.spriteCanvas, canvasWidth, canvasHeight);
 

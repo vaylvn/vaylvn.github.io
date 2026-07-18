@@ -71,6 +71,7 @@ function applyStartingState(kart, track, gridSlot) {
   kart.boostTimer = 0;
   kart.boostMultiplier = 1;
   kart.spinTimer = 0;
+  kart.spinDuration = 0; // total length of the CURRENT slowdown, set by events.js when a hazard hits - see updateKart's easing curve
   kart.finished = false;
   kart.finishTime = null;
   kart.insideBoostIds = kart.insideBoostIds || new Set(); // marker indices currently inside - see events.js's enter/exit edge detection
@@ -105,9 +106,16 @@ export function resetKartColorCycle() {
 
 /**
  * Every tick: advance progress along the spline, wander laterally, and
- * derive worldPos from the single sampleTrack() source of truth. A kart with
- * an active spinTimer skips movement entirely - it's what a hazard hit
- * produces (see events.js): frozen in place, visibly spinning.
+ * derive worldPos from the single sampleTrack() source of truth.
+ *
+ * A hazard hit (see events.js) doesn't freeze a kart in place - it eases
+ * speedCurrent down to 0 along a quarter-sine curve over kart.spinDuration
+ * seconds (a smooth "spinning out" slowdown, not an instant wall), while
+ * the kart keeps advancing/weaving normally at whatever that reduced speed
+ * is. The instant spinElapsed reaches spinDuration (spinTimer hits 0), the
+ * kart is already back to full speed next tick - no held "stopped" period
+ * and no gradual re-acceleration either, so it reads as "slowed briefly,
+ * then straight back to racing" rather than a stun.
  *
  * A finished kart does NOT stop moving - it keeps looping the track (like
  * the podium overlay in most racing games, with racing continuing visibly
@@ -126,12 +134,13 @@ export function updateKart(kart, track, dt, now) {
   if (kart.spinTimer > 0) {
     kart.spinTimer = Math.max(0, kart.spinTimer - dt);
     kart.spinElapsed += dt;
-    kart.speedCurrent = 0;
-    return;
+    const progress = Math.min(1, kart.spinElapsed / kart.spinDuration);
+    kart.speedCurrent = kart.speedBase * Math.cos(progress * (Math.PI / 2)); // eases 1 -> 0
+  } else {
+    kart.spinElapsed = 0; // reset so the next hazard hit's spin-cycle/slowdown starts from 0 again
+    kart.speedCurrent = kart.speedBase * (kart.boostTimer > 0 ? kart.boostMultiplier : 1);
   }
-  kart.spinElapsed = 0; // reset so the next hazard/chaos hit's spin-cycle starts from frame 0 again
 
-  kart.speedCurrent = kart.speedBase * (kart.boostTimer > 0 ? kart.boostMultiplier : 1);
   kart.lapProgress += (kart.speedCurrent * dt) / track.length;
 
   if (kart.lapProgress >= 1) {
