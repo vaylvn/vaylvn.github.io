@@ -332,9 +332,29 @@ wireCameraUI(gameState, spriteCanvas);
 
 let lastFrameTime = performance.now();
 
+// A real, always-on FPS readout - after several rounds of guessing at
+// performance fixes from synthetic benchmarks that didn't match what the
+// streamer actually saw on their own machine, this exists so future
+// changes get judged by an actual number from the real page, not another
+// guess. Averaged over a rolling ~0.5s window (raw per-frame 1/dt is too
+// jumpy to read at a glance) and updated independently of gameState.state
+// so it's visible in the lobby too, not just mid-race.
+let fpsFrameCount = 0;
+let fpsWindowStart = performance.now();
+const FPS_UPDATE_INTERVAL_MS = 500;
+
 function tick(now) {
   const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
   lastFrameTime = now;
+
+  fpsFrameCount++;
+  const fpsElapsed = now - fpsWindowStart;
+  if (fpsElapsed >= FPS_UPDATE_INTERVAL_MS) {
+    const fps = (fpsFrameCount * 1000) / fpsElapsed;
+    document.getElementById('hud-fps').textContent = fps.toFixed(0);
+    fpsFrameCount = 0;
+    fpsWindowStart = now;
+  }
 
   if (gameState.state === 'PLAYING') {
     for (const kart of gameState.karts.values()) {

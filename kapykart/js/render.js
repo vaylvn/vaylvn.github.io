@@ -106,7 +106,6 @@ let cachedTrack = null;
 let cachedEdges = null;
 let cachedOverviewCamera = null;
 let cachedFollowCamera = null;
-let cachedGroundTexture = null;
 
 function getRoadEdges(track) {
   ensureTrackCache(track);
@@ -121,11 +120,6 @@ function getOverviewCamera(track) {
 function getFollowCamera(track) {
   ensureTrackCache(track);
   return cachedFollowCamera;
-}
-
-function getGroundTexture(track) {
-  ensureTrackCache(track);
-  return cachedGroundTexture;
 }
 
 function ensureTrackCache(track) {
@@ -144,7 +138,6 @@ function ensureTrackCache(track) {
   cachedEdges = { left, right };
   cachedOverviewCamera = buildOverviewCamera(track);
   cachedFollowCamera = buildFollowCamera(track);
-  cachedGroundTexture = buildGroundTexturePattern(track.def.groundColors || DEFAULT_GROUND_COLORS);
 }
 
 // --- Pixelation: draw the "world" (floor + karts) at low res, upscale with
@@ -447,115 +440,28 @@ function drawKartLabel(ctx, kart, x, y, scale) {
   ctx.restore();
 }
 
-// Resolution of the cached procedural ground-texture tile (see
-// buildGroundTexture) - just needs enough pixels for the speckle dots to
-// read as distinct flecks; this isn't the game's actual pixelation (that
-// still happens via the shared low-res pixel buffer/blit, same as
-// everything else on the floor layer).
-const GROUND_TEXTURE_TILE_PX = 64;
-
-// How large one repeat of the tile looks on the ground, in world units -
-// tune by eye against the road width (150 by default) to get a speckle
-// grain that reads as "textured ground", not a giant blotchy checkerboard
-// or fine static.
-const GROUND_TEXTURE_TILE_WORLD_SIZE = 40;
-
-const GROUND_TEXTURE_SPECKLE_COUNT = 70;
-
 /**
- * Draws one speckle dot centered at (x, y) with radius r, replicated at the
- * tile's 4 wrap-around offsets so a dot overlapping an edge still appears
- * correctly on the opposite edge once the tile repeats - without this, any
- * speckle straddling a tile boundary would get clipped on one side and
- * leave a visible seam where tiles meet.
+ * A speckled-texture version of this used to live here (a small procedural
+ * tile painted every frame as a repeating CanvasPattern, world-anchored via
+ * a per-frame matrix update). Profiling in isolation never showed it as
+ * expensive, but the actual streamer machine this runs on kept getting
+ * slower across sessions regardless, and further guessing at increasingly
+ * subtle causes (devicePixelRatio, buffer size, ...) wasn't converging.
+ * Scrapped back to a flat per-track color fill - the ONLY per-frame cost
+ * now is exactly what it was before any of this texture work started (one
+ * solid-color fillRect), while keeping the actual feature that mattered:
+ * each track still picks its own out-of-bounds ground tone via
+ * `groundColors` (see DEFAULT_GROUND_COLORS/track.js) instead of one fixed
+ * green for every map. If a real speckled/tiled look is wanted again
+ * later, it should come from hand-authored art (a real repeating PNG) or a
+ * render approach that doesn't need a live per-frame pattern fill at all,
+ * not another procedural-pattern attempt - this exact idea already had two
+ * rounds of "make the cheap part cheaper" without resolving the framerate
+ * complaint, which means the pattern mechanism itself was the wrong lever.
  */
-function drawWrappedSpeckle(ctx, x, y, r, tileSize) {
-  for (const dx of [0, -tileSize, tileSize]) {
-    for (const dy of [0, -tileSize, tileSize]) {
-      const wx = x + dx;
-      const wy = y + dy;
-      if (wx + r < 0 || wx - r > tileSize || wy + r < 0 || wy - r > tileSize) continue;
-      ctx.beginPath();
-      ctx.arc(wx, wy, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-/**
- * Procedurally builds a small seamless-tiling speckled texture (a solid
- * base color plus scattered light/dark dots) from a track's `groundColors`
- * - cheaper than hand-drawing and repeating a real texture image, and lets
- * each track pick its own out-of-bounds terrain (grass, snow, sand, ...)
- * with just 3 hex colors instead of new art. Built ONCE per track (see
- * ensureTrackCache), along with a single reusable CanvasPattern + DOMMatrix
- * (see buildGroundTexturePattern) - painting it every frame (paintGroundTexture)
- * then only has to MUTATE that matrix's 6 numbers, not allocate a new
- * Pattern/Matrix pair 60 times a second.
- */
-function buildGroundTexture([base, light, dark]) {
-  const canvas = document.createElement('canvas');
-  canvas.width = GROUND_TEXTURE_TILE_PX;
-  canvas.height = GROUND_TEXTURE_TILE_PX;
-  const ctx = canvas.getContext('2d');
+function paintGroundTexture(ctx, track, floorWidth, floorHeight) {
+  const [base] = track.def.groundColors || DEFAULT_GROUND_COLORS;
   ctx.fillStyle = base;
-  ctx.fillRect(0, 0, GROUND_TEXTURE_TILE_PX, GROUND_TEXTURE_TILE_PX);
-  for (let i = 0; i < GROUND_TEXTURE_SPECKLE_COUNT; i++) {
-    ctx.fillStyle = Math.random() < 0.5 ? light : dark;
-    const x = Math.random() * GROUND_TEXTURE_TILE_PX;
-    const y = Math.random() * GROUND_TEXTURE_TILE_PX;
-    const r = 1 + Math.random() * 2;
-    drawWrappedSpeckle(ctx, x, y, r, GROUND_TEXTURE_TILE_PX);
-  }
-  return canvas;
-}
-
-/**
- * Builds the tile (see buildGroundTexture above) plus the CanvasPattern and
- * DOMMatrix it's painted with every frame - a Pattern only needs SOME 2D
- * context to be constructed via createPattern, but the resulting object is
- * a portable paint source usable as any other context's fillStyle, so a
- * scratch context here is fine; the real per-frame pctx never needs its own.
- * Caching these (instead of building a fresh Pattern + Matrix every single
- * frame, as the first version of this did) avoids continuous small-object
- * allocation on a 60fps hot path.
- */
-function buildGroundTexturePattern(groundColors) {
-  const tile = buildGroundTexture(groundColors);
-  const scratchCtx = document.createElement('canvas').getContext('2d');
-  const pattern = scratchCtx.createPattern(tile, 'repeat');
-  return { pattern, matrix: new DOMMatrix(), supportsTransform: typeof pattern.setTransform === 'function' };
-}
-
-/**
- * Fills the floor with the track's ground texture, anchored to WORLD space
- * (not screen/buffer space) so it stays put under the track as the camera
- * pans/rotates instead of sliding along with it. Uses the exact same
- * "read the linear transform off 3 projected points" trick as
- * drawImageWorldRect below, but applied to a CanvasPattern's own transform
- * instead of the context's - a pattern fill is one native fillRect either
- * way, so this costs about the same as the flat single-color fill it
- * replaces despite now being a real (if simple) texture. The pattern and
- * matrix themselves are cached per-track (see ensureTrackCache) and reused
- * every frame - only the matrix's 6 numbers change per frame, not the
- * Pattern/Matrix objects themselves.
- */
-function paintGroundTexture(ctx, track, project, floorWidth, floorHeight) {
-  const { pattern, matrix, supportsTransform } = getGroundTexture(track);
-  const size = GROUND_TEXTURE_TILE_WORLD_SIZE;
-  const p00 = project(0, 0);
-  const p10 = project(size, 0);
-  const p01 = project(0, size);
-  if (supportsTransform) {
-    matrix.a = (p10.x - p00.x) / size;
-    matrix.b = (p10.y - p00.y) / size;
-    matrix.c = (p01.x - p00.x) / size;
-    matrix.d = (p01.y - p00.y) / size;
-    matrix.e = p00.x;
-    matrix.f = p00.y;
-    pattern.setTransform(matrix);
-  }
-  ctx.fillStyle = pattern;
   ctx.fillRect(0, 0, floorWidth, floorHeight);
 }
 
@@ -591,7 +497,7 @@ function drawImageWorldRect(ctx, project, img, imgW, imgH) {
 /** Draws the floor into a pixel buffer for `canvas`, then blits it up (pixelated) onto `realCtx`. */
 function drawPixelatedFloor(realCtx, canvas, track, floorWidth, floorHeight, project, floorPixelScale) {
   const pctx = getPixelContext(canvas, floorWidth, floorHeight, floorPixelScale);
-  paintGroundTexture(pctx, track, project, floorWidth, floorHeight);
+  paintGroundTexture(pctx, track, floorWidth, floorHeight);
   if (track.backgroundImage) {
     drawImageWorldRect(pctx, project, track.backgroundImage, track.backgroundImage.naturalWidth, track.backgroundImage.naturalHeight);
   } else {

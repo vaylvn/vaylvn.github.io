@@ -3,7 +3,22 @@ import { KART_PALETTE } from './palette.js';
 
 let joinCounter = 0;
 
-const LAP_SECONDS = 22; // roughly how long a lap takes at base speed - tune the whole race's pace from here
+// A fixed world-units/sec speed, NOT a fixed lap time - a kart's raw speed
+// used to be derived from track.length/LAP_SECONDS (targeting ~22s/lap
+// regardless of how long the track actually was), but that meant a longer
+// or more winding track forced a proportionally FASTER kart to still hit
+// that same lap time. Checked directly: the winding "Sandwinder" track's
+// actual path length is 7382 world-units vs ~3550 for the two simpler oval
+// tracks - more than double - so its karts were running at ~336 units/sec
+// while the others ran at ~160, visibly and jarringly faster on the exact
+// same screen scale (road width is ~150 on all three, so on-screen scale
+// doesn't compensate for this at all). Fixed by normalizing speed instead
+// of lap time - 160 matches the ORIGINAL two tracks' existing feel (so
+// they're unchanged), and lap time now simply varies with track length
+// (a longer/twistier track takes longer to lap at the same kart speed,
+// same as it would in a real racing game) instead of being propped up to a
+// fixed number by inflating speed.
+const BASE_SPEED_WORLD_UNITS_PER_SEC = 160;
 const SPEED_VARIANCE = 0.12; // +/- fraction of base speed, randomized per kart
 const LATERAL_SMOOTHING = 1.2; // per-second ease rate toward lateralTarget
 const LANE_BOUND_FRACTION = 0.6; // how much of the half-track-width the weave is allowed to use
@@ -66,7 +81,7 @@ function applyStartingState(kart, track, gridSlot) {
   kart.weavePhase = Math.random() * Math.PI * 2;
   kart.weaveAmplitude = WEAVE_AMPLITUDE_MIN + Math.random() * (WEAVE_AMPLITUDE_MAX - WEAVE_AMPLITUDE_MIN);
   kart.weaveJitter = 0;
-  kart.speedBase = (track.length / LAP_SECONDS) * (1 + (Math.random() * 2 - 1) * SPEED_VARIANCE);
+  kart.speedBase = BASE_SPEED_WORLD_UNITS_PER_SEC * (1 + (Math.random() * 2 - 1) * SPEED_VARIANCE);
   kart.speedCurrent = 0;
   kart.boostTimer = 0;
   kart.boostMultiplier = 1;
